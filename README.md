@@ -1,103 +1,92 @@
+# TalkTime - Empowering Through Conversation
+
 <p align="center">
-  <img src="https://lh3.googleusercontent.com/J68ffoWBYBsMDTpuQbu_AiOn8SpAi4AycmZ4xblZluSPDWdPVqZFREbxucrfCMq-ciFOPQ-6bNn3ju7pOw=w480-h492-rw-no">
+  <img src="https://user-images.githubusercontent.com/1234567/100000000-abcdef123456.png" alt="TalkTime Logo" width="200"/>
 </p>
 
-# WebRTC Video Conference
+**TalkTime** is a modern, secure, and user-friendly video conferencing platform designed to connect enthusiastic volunteers with Maasai students in Rombo, Kenya. Our mission is to boost English skills and build confidence through friendly, one-on-one video conversations.
 
-**Live demo:** https://webrtc-video-conference-sample.herokuapp.com/
+This project is built with a focus on simplicity and impact, providing a seamless experience for both volunteers and students. It is proudly supported by the **ADEA Foundation**.
 
-WebRTC video conference sample application. Uses Mesh architecture (every participant sends and receives its media to all other participants).
+---
 
-## Getting Started
+## ✨ Features
 
-In your terminal type:
+- **Modern, Responsive UI**: A beautiful, branded interface that looks great on any device.
+- **Role-Based Access**: Separate, tailored flows for Volunteers and Students.
+- **One-to-One Video Calls**: Direct, secure video connections powered by WebRTC.
+- **40-Minute Call Timer**: A built-in timer ensures sessions are focused and consistent, automatically ending the call after 40 minutes.
+- **Admin Controls**: Volunteers have administrative privileges during calls.
+- **Simple Meeting Links**: Easy-to-use links for joining meetings.
 
-```bash
-# Clone from Github
-git clone https://github.com/avoup/webrtc-video-conference myproject
+## 🚀 Getting Started
 
-# Change directory
-cd myproject
+To get a local copy up and running, follow these simple steps.
 
-# Install NPM dependencies
-npm install
+### Prerequisites
 
-# Start app
-npm start
+- [Node.js](https://nodejs.org/en/) (which includes npm)
 
-```
+### Installation
 
-## Project Structure
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/nellylemmy/talktime-video-app.git
+    ```
+2.  **Navigate to the project directory:**
+    ```bash
+    cd talktime-video-app
+    ```
+3.  **Install NPM dependencies:**
+    ```bash
+    npm install
+    ```
+4.  **Start the development server:**
+    ```bash
+    npm start
+    ```
+    The application will be running at `http://localhost:3000`.
 
-| Name                    | Description                                                  |
-| ----------------------- | ------------------------------------------------------------ |
-| **public**/js/webrtc.js | Main webrtc logic.                                           |
-| **public**/js/main.js   | Js for using webrtc.js.                                      |
-| **public**/css/main.css | Style                                                        |
-| **public**/index.html   | Landing page.                                                |
-| .gitignore              | Folder and files to be ignored by git.                       |
-| server.js               | Sample server for webrtc signaling using socket.io.          |
-| package.json            | NPM dependencies.                                            |
-| package-lock.json       | Contains exact versions of NPM dependencies in package.json. |
+## 📂 Project Structure
 
-<br>
+| Name | Description |
+| :--- | :--- |
+| **`public/`** | Contains all static assets for the frontend. |
+| ┣ `css/main.css` | Custom stylesheets for the application. |
+| ┣ `js/main.js` | Core application logic for the user interface and event handling. |
+| ┣ `js/webrtc.js` | Handles all WebRTC peer-to-peer connection logic. |
+| ┣ `index.html` | The main landing page for the website. |
+| ┣ `app.html` | The core video conferencing application page. |
+| ┣ `data.json` | Mock data for students and volunteers. |
+| **`server.js`** | The Node.js/Express server that handles signaling and serves the app. |
+| **`package.json`** | Lists project dependencies and scripts. |
+| **`README.md`** | You are here! |
 
-# Documentation
+## 🛠️ Technology Stack
 
-Project uses Webrtc API without external libraries, for signaling it uses socket.io, stun and turn servers are publicly available free servers, see the list [here](https://gist.github.com/sagivo/3a4b2f2c7ac6e1b5267c2f1f59ac6c6b).
+- **Frontend**: HTML5, CSS3, JavaScript, Tailwind CSS
+- **Backend**: Node.js, Express
+- **Real-Time Communication**: WebRTC, Socket.IO
 
-For easy implementation and modular design all the webrtc logic is contained in the Webrtc class in `public/js/webrtc.js` file. This class is an extension of EventTarget class, meaning it emits events and we can add event listeners to it.
-The class's construction function takes 3 arguments
-<br>
-<br>
-**_Note:_** _private properties and methods of the class are named starting with underscore('\_privateProp') and should not be accessed from outside.
-<br>
-JS's built in private properties ('#privateProp') are not used as that's a relatively new future and only newest versions of the browsers support it._
+## 🤝 Contributing
 
-```js
-class Webrtc extends EventTarget {
-    constructor(socket, pcConfig, logging) {
-        super();
-        ...
-    }
-```
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-example initialization
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 
-```js
-const webrtc = new Webrtc(
-    socket,
-    { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] },
-    {
-        log: true,
-        warn: true,
-        error: true,
-    }
-);
-```
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-## Arguments
+## 📜 License
 
--   **socket** - socket.io instance (_required at least version 4.1.3_)
--   **pcConfig** - peer connection configuration. Stun/Turn servers can be passed here. If not provided webrtc will not use any servers and will be operational only on local network. Any number of stun and turn servers can be passed.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-```js
-{
-    iceServers: [
-        {
-            urls: [
-                'stun:stun.l.google.com:19302',
-                'stun:stun1.l.google.com:19302'
-            ],
-        },
-        {
-            urls: 'turn:numb.viagenie.ca',
-            credential: 'muazkh',
-            username: 'webrtc@live.com',
-        },
-    ],
-}
-```
+---
+
+> Built with ❤️ by the **ADEA Foundation** for the students of the Maasai community.
 
 -   **logging** - enable or disable logging on actions.
     -   log - enable console.log
