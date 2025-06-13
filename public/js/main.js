@@ -8,29 +8,38 @@ if (window.appInitialized) {
     console.log('Initializing app...');
 
     // --- DOM Elements ---
-    const landingPage = document.getElementById('landing-page');
-    const callScreen = document.getElementById('call-screen');
-    const localVideoContainer = document.getElementById('local-video-container');
-    const remoteVideoContainer = document.getElementById('remote-video-container');
-    const timerEl = document.getElementById('timer');
-    const userSelection = document.getElementById('user-selection');
-    const volunteerBtn = document.getElementById('volunteer-btn');
-    const studentBtn = document.getElementById('student-btn');
-    const volunteerActions = document.getElementById('volunteer-actions');
-    const studentNameInput = document.getElementById('student-name-input');
-    const startInstantMeetingBtn = document.getElementById('start-instant-meeting-btn');
-    const studentActions = document.getElementById('student-actions');
-    const meetingLinkInput = document.getElementById('meeting-link-input');
-    const volunteerNameInput = document.getElementById('volunteer-name-input');
-    const joinMeetingBtn = document.getElementById('join-meeting-btn');
-    const micBtn = document.getElementById('mic-btn');
-    const cameraBtn = document.getElementById('camera-btn');
-    const copyLinkBtn = document.getElementById('copy-link-btn');
-    const chatBtn = document.getElementById('chat-btn');
-    const endCallBtn = document.getElementById('end-call-btn');
-    const chatPanel = document.getElementById('chat-panel');
-    const closeChatBtn = document.getElementById('close-chat-btn');
-    const notification = document.getElementById('notification');
+    const elements = {
+        // Splash Page
+        splashPage: document.getElementById('splash-page'),
+        getStartedBtn: document.getElementById('get-started-btn'),
+
+        // Landing Page
+        landingPage: document.getElementById('landing-page'),
+        userSelection: document.getElementById('user-selection'),
+        volunteerBtn: document.getElementById('volunteer-btn'),
+        studentBtn: document.getElementById('student-btn'),
+        volunteerActions: document.getElementById('volunteer-actions'),
+        studentNameInput: document.getElementById('student-name-input'),
+        startInstantMeetingBtn: document.getElementById('start-instant-meeting-btn'),
+        studentActions: document.getElementById('student-actions'),
+        meetingLinkInput: document.getElementById('meeting-link-input'),
+        volunteerNameInput: document.getElementById('volunteer-name-input'),
+        joinMeetingBtn: document.getElementById('join-meeting-btn'),
+
+        // Call Screen
+        callScreen: document.getElementById('call-screen'),
+        localVideoContainer: document.getElementById('local-video-container'),
+        remoteVideoContainer: document.getElementById('remote-video-container'),
+        timerEl: document.getElementById('timer'),
+        micBtn: document.getElementById('mic-btn'),
+        cameraBtn: document.getElementById('camera-btn'),
+        copyLinkBtn: document.getElementById('copy-link-btn'),
+        chatBtn: document.getElementById('chat-btn'),
+        endCallBtn: document.getElementById('end-call-btn'),
+        chatPanel: document.getElementById('chat-panel'),
+        closeChatBtn: document.getElementById('close-chat-btn'),
+        notification: document.getElementById('notification'),
+    };
 
     // --- Global State ---
     let userRole;
@@ -67,30 +76,30 @@ if (window.appInitialized) {
 
     // --- UI Management ---
     function showCallScreen() {
-        landingPage.classList.add('hidden');
-        callScreen.classList.remove('hidden');
+        elements.landingPage.classList.add('hidden');
+        elements.callScreen.classList.remove('hidden');
     }
 
     function showLandingPage() {
-        callScreen.classList.add('hidden');
-        landingPage.classList.remove('hidden');
-        if (remoteVideoContainer) {
-            remoteVideoContainer.innerHTML = '';
+        elements.callScreen.classList.add('hidden');
+        elements.landingPage.classList.remove('hidden');
+        if (elements.remoteVideoContainer) {
+            elements.remoteVideoContainer.innerHTML = '';
         }
         // Reset landing page state
-        userSelection.classList.remove('hidden');
-        volunteerActions.classList.add('hidden');
-        studentActions.classList.add('hidden');
-        studentNameInput.value = '';
-        meetingLinkInput.value = '';
-        volunteerNameInput.value = '';
+        elements.userSelection.classList.remove('hidden');
+        elements.volunteerActions.classList.add('hidden');
+        elements.studentActions.classList.add('hidden');
+        elements.studentNameInput.value = '';
+        elements.meetingLinkInput.value = '';
+        elements.volunteerNameInput.value = '';
     }
 
     function showNotification(message) {
-        notification.textContent = message;
-        notification.classList.add('show');
+        elements.notification.textContent = message;
+        elements.notification.classList.add('show');
         setTimeout(() => {
-            notification.classList.remove('show');
+            elements.notification.classList.remove('show');
         }, 3000);
     }
 
@@ -108,9 +117,9 @@ if (window.appInitialized) {
             localVideo.autoplay = true;
             localVideo.muted = true;
             localVideo.playsinline = true;
-            localVideoContainer.innerHTML = '';
-            localVideoContainer.appendChild(localVideo);
-            localVideoContainer.appendChild(createUserInfoOverlay(userRole));
+            elements.localVideoContainer.innerHTML = '';
+            elements.localVideoContainer.appendChild(localVideo);
+            elements.localVideoContainer.appendChild(createUserInfoOverlay(userRole));
             
             showCallScreen();
             setupMeetingPageEventListeners(); // Setup controls now that we have a stream
@@ -163,7 +172,7 @@ if (window.appInitialized) {
             seconds = parseInt(timer % 60, 10);
             minutes = minutes < 10 ? "0" + minutes : minutes;
             seconds = seconds < 10 ? "0" + seconds : seconds;
-            timerEl.textContent = minutes + ":" + seconds;
+            elements.timerEl.textContent = minutes + ":" + seconds;
             if (--timer < 0) {
                 stopTimer();
                 alert('The meeting has reached its 40-minute limit and will now end.');
@@ -174,11 +183,11 @@ if (window.appInitialized) {
 
     function stopTimer() {
         clearInterval(meetingTimer);
-        timerEl.textContent = "40:00";
+        elements.timerEl.textContent = "40:00";
     }
 
     function setupVideoResizing() {
-        [localVideoContainer, remoteVideoContainer].forEach(container => {
+        [elements.localVideoContainer, elements.remoteVideoContainer].forEach(container => {
             container.addEventListener('click', () => {
                 if (container.classList.contains('video-player-main')) return;
                 const currentMain = document.querySelector('.video-player-main');
@@ -194,21 +203,28 @@ if (window.appInitialized) {
     }
 
     function setupLandingPageEventListeners() {
-        volunteerBtn.addEventListener('click', () => {
+        if (elements.getStartedBtn) {
+            elements.getStartedBtn.addEventListener('click', () => {
+                elements.splashPage.classList.add('hidden');
+                elements.landingPage.classList.remove('hidden');
+            });
+        }
+
+        elements.volunteerBtn.addEventListener('click', () => {
             userRole = 'volunteer';
-            userSelection.classList.add('hidden');
-            volunteerActions.classList.remove('hidden');
+            elements.userSelection.classList.add('hidden');
+            elements.volunteerActions.classList.remove('hidden');
         });
 
-        studentBtn.addEventListener('click', () => {
+        elements.studentBtn.addEventListener('click', () => {
             userRole = 'student';
-            userSelection.classList.add('hidden');
-            studentActions.classList.remove('hidden');
+            elements.userSelection.classList.add('hidden');
+            elements.studentActions.classList.remove('hidden');
         });
 
-        startInstantMeetingBtn.addEventListener('click', async () => {
+        elements.startInstantMeetingBtn.addEventListener('click', async () => {
             if (!isDataLoaded) await loadData();
-            const studentName = studentNameInput.value.trim();
+            const studentName = elements.studentNameInput.value.trim();
             if (!studentName) return alert("Please enter the student's name.");
             const isValidStudent = appData.users.students.some(s => s.name.toLowerCase() === studentName.toLowerCase());
             if (!isValidStudent) return alert('Student not found. Please enter a valid name.');
@@ -219,10 +235,10 @@ if (window.appInitialized) {
             startCall(newRoomId);
         });
 
-        joinMeetingBtn.addEventListener('click', async () => {
+        elements.joinMeetingBtn.addEventListener('click', async () => {
             if (!isDataLoaded) await loadData();
-            const meetingLink = meetingLinkInput.value.trim();
-            const volunteerName = volunteerNameInput.value.trim();
+            const meetingLink = elements.meetingLinkInput.value.trim();
+            const volunteerName = elements.volunteerNameInput.value.trim();
             if (!meetingLink || !volunteerName) return alert("Please provide the meeting link/ID and the volunteer's name.");
             const isValidVolunteer = appData.users.volunteers.some(v => v.name.toLowerCase() === volunteerName.toLowerCase());
             if (!isValidVolunteer) return alert('Volunteer not found. Please check the name.');
@@ -246,23 +262,23 @@ if (window.appInitialized) {
     }
 
     function setupMeetingPageEventListeners() {
-        micBtn.addEventListener('click', () => {
+        elements.micBtn.addEventListener('click', () => {
             const audioTrack = webrtc.localStream.getAudioTracks()[0];
             if (audioTrack) {
                 audioTrack.enabled = !audioTrack.enabled;
-                micBtn.innerHTML = audioTrack.enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+                elements.micBtn.innerHTML = audioTrack.enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
             }
         });
 
-        cameraBtn.addEventListener('click', () => {
+        elements.cameraBtn.addEventListener('click', () => {
             const videoTrack = webrtc.localStream.getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.enabled = !videoTrack.enabled;
-                cameraBtn.innerHTML = videoTrack.enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+                elements.cameraBtn.innerHTML = videoTrack.enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
             }
         });
 
-        copyLinkBtn.addEventListener('click', () => {
+        elements.copyLinkBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(window.location.href).then(() => {
                 showNotification('Meeting link copied to clipboard!');
             }, (err) => {
@@ -271,12 +287,12 @@ if (window.appInitialized) {
             });
         });
 
-        endCallBtn.addEventListener('click', () => {
+        elements.endCallBtn.addEventListener('click', () => {
             webrtc.leaveRoom();
         });
 
-        chatBtn.addEventListener('click', () => chatPanel.classList.toggle('hidden'));
-        closeChatBtn.addEventListener('click', () => chatPanel.classList.add('hidden'));
+        elements.chatBtn.addEventListener('click', () => elements.chatPanel.classList.toggle('hidden'));
+        elements.closeChatBtn.addEventListener('click', () => elements.chatPanel.classList.add('hidden'));
         setupVideoResizing();
     }
 
@@ -301,22 +317,23 @@ if (window.appInitialized) {
         const { socketId, stream } = e.detail;
         console.log(`New user connected: ${socketId}`);
         
-        remoteVideoContainer.innerHTML = '';
+        elements.remoteVideoContainer.innerHTML = '';
         const remoteVideo = document.createElement('video');
         remoteVideo.srcObject = stream;
         remoteVideo.autoplay = true;
         remoteVideo.playsinline = true;
         remoteVideo.id = `remote-video-${socketId}`;
         
-        remoteVideoContainer.appendChild(remoteVideo);
+        elements.remoteVideoContainer.appendChild(remoteVideo);
         const remoteUserRole = userRole === 'volunteer' ? 'student' : 'volunteer';
-        remoteVideoContainer.appendChild(createUserInfoOverlay(remoteUserRole, socketId));
+        elements.remoteVideoContainer.appendChild(createUserInfoOverlay(remoteUserRole, socketId));
         
         startTimer();
     });
 
     webrtc.addEventListener('removeUser', (e) => {
         console.log(`User disconnected: ${e.detail.socketId}`);
+        elements.remoteVideoContainer.innerHTML = '';
         remoteVideoContainer.innerHTML = '';
         stopTimer();
         showNotification('The other participant has left the call.');

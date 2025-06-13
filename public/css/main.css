@@ -1,148 +1,47 @@
 /* General Styles */
 :root {
-    --brand-gradient: linear-gradient(90deg, #9b59b6, #e94e77);
-    --primary-color: #4A90E2;
-    --secondary-color: #50E3C2;
-    --danger-color: #D0021B;
-    --light-grey: #F5F5F5;
-    --dark-grey: #4A4A4A;
-    --dark-bg: #1a1a1a;
-    --light-bg: #2a2a2a;
-    --control-bg: #4f4f4f;
-    --control-hover-bg: #666;
-    --border-color: #333;
+    --page-gradient: linear-gradient(120deg, rgb(225, 242, 254), rgb(243, 233, 255));
+    --logo-gradient: linear-gradient(90deg, #2463EB, #9332E9);
+    --button-gradient-1: linear-gradient(90deg, #EC4A94, #F9711B);
+    --button-gradient-2: linear-gradient(90deg, #3B7FF5, #4F47E4);
+    --white-opaque: rgba(255, 255, 255, 0.5);
     --white: #FFFFFF;
     --black: #000000;
-    --red: #D0021B;
+    --dark-grey: #333;
+    --light-grey: #f0f0f0;
+    --danger-color: #D0021B;
 }
 
 body, html {
     height: 100%;
     margin: 0;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: var(--light-grey);
+    background: var(--page-gradient);
     color: var(--dark-grey);
     overflow: hidden;
+    transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Landing Page */
-#landing-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    text-align: center;
-}
-
-.landing-card {
-    background: var(--white);
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+/* Navbar */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 400px;
-}
-
-.landing-card h1 {
-    font-size: 24px;
-    margin-bottom: 10px;
-}
-
-.landing-card p {
-    margin-bottom: 30px;
-    color: #666;
-}
-
-#user-selection h2 {
-    font-size: 18px;
-    margin-bottom: 15px;
-    font-weight: normal;
-}
-
-.role-btn {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    border: 1px solid var(--primary-color);
-    background-color: var(--white);
-    color: var(--primary-color);
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.role-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-#start-meeting-btn {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 20px;
-    transition: background-color 0.3s;
-}
-
-#start-meeting-btn:hover {
-    background-color: #357ABD;
-}
-
-.join-group {
     display: flex;
-}
-
-#room-input {
-    flex-grow: 1;
-    padding: 12px;
-    border: 1px solid #DDD;
-    border-radius: 4px 0 0 4px;
-    font-size: 16px;
-}
-
-#join-btn {
-    padding: 12px 20px;
-    border: 1px solid var(--primary-color);
-    background-color: var(--white);
-    color: var(--primary-color);
-    border-left: none;
-    border-radius: 0 4px 4px 0;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-#join-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-/* Call Screen */
-#call-screen {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: var(--dark-bg);
-    color: var(--white);
-}
-
-#call-header {
-    display: flex;
-    justify-content: flex-start; /* Group items to the left */
+    justify-content: space-between;
     align-items: center;
     padding: 15px 30px;
-    background-color: var(--light-bg);
-    border-bottom: 1px solid var(--border-color);
+    background: var(--white-opaque);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 1000;
+    transition: background-color 0.3s ease;
 }
 
 #logo-container {
@@ -153,7 +52,7 @@ body, html {
 
 #logo-container i {
     font-size: 28px;
-    background: var(--brand-gradient);
+    background: var(--logo-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -162,10 +61,133 @@ body, html {
 .logo-text {
     font-size: 24px;
     font-weight: bold;
-    background: var(--brand-gradient);
+    background: var(--logo-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+/* Splash Page & Landing Page */
+#splash-page, #landing-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    padding-top: 70px; /* Offset for fixed navbar */
+}
+
+#splash-page .landing-card h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+#splash-page .landing-card p {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+#get-started-btn {
+    padding: 18px;
+    font-size: 18px;
+}
+
+.landing-card {
+    background: var(--white-opaque);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    width: 100%;
+    max-width: 450px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.landing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+}
+
+.landing-card h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+    color: var(--dark-grey);
+}
+
+.landing-card p {
+    margin-bottom: 30px;
+    color: #555;
+}
+
+#user-selection h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    font-weight: 300;
+}
+
+.role-btn, .action-btn {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-filled {
+    background: var(--button-gradient-2);
+    color: var(--white);
+    border: none;
+}
+
+.btn-filled:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #3B7FF5;
+    color: #3B7FF5;
+}
+
+.btn-outline:hover {
+    background: #3B7FF5;
+    color: var(--white);
+}
+
+.input-field {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #DDD;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #3B7FF5;
+    box-shadow: 0 0 0 3px rgba(59, 127, 245, 0.3);
+}
+
+/* Call Screen */
+#call-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding-top: 70px; /* Offset for fixed navbar */
+    box-sizing: border-box;
 }
 
 #timer-container {

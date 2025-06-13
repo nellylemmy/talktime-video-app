@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Talk Time - Volunteer & Student Video Chat</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
+    <link rel="stylesheet" href="css/main.css" />
+    <!-- Font Awesome for Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+</head>
+<body>
+    <!-- Persistent Navbar -->
+    <nav class="navbar">
+        <div id="logo-container">
+            <i class="fas fa-comment-dots"></i>
+            <span class="logo-text">TALKTIME</span>
+        </div>
+        <div id="timer-container" class="hidden">
+            <i class="fas fa-clock"></i>
+            <span id="timer">40:00</span>
+        </div>
+    </nav>
+
+    <!-- Splash Page -->
+    <section id="splash-page">
+        <div class="landing-card">
+            <h1 style="font-size: 36px; margin-bottom: 20px;">Where communication meets compassion.</h1>
+            <p style="font-size: 18px; line-height: 1.6; margin-bottom: 30px;">A seamless and secure video conferencing platform designed for volunteers to connect with students. Empower learning, one conversation at a time.</p>
+            <button id="get-started-btn" class="action-btn btn-filled" style="padding: 18px; font-size: 18px;">Get Started Today</button>
+        </div>
+    </section>
+
+    <!-- Landing Page (Role Selection) -->
+    <section id="landing-page" class="hidden">
+        <div class="landing-card">
+            <h1>Talk Time</h1>
+            <p>Connecting volunteers with students for remote learning.</p>
+            
+            <div id="user-selection">
+                <h2>Are you a...</h2>
+                <button id="volunteer-btn" class="role-btn btn-filled">Volunteer</button>
+                <button id="student-btn" class="role-btn btn-outline">Student</button>
+            </div>
+
+            <!-- Volunteer Actions -->
+            <div id="volunteer-actions" class="hidden">
+                <input type="text" id="student-name-input" class="input-field" placeholder="Enter Student's Name" autocomplete="off">
+                <button id="start-instant-meeting-btn" class="action-btn btn-filled">Start Instant Meeting</button>
+                <button id="schedule-meeting-btn" class="action-btn btn-outline" disabled title="Coming Soon!">Schedule Meeting</button>
+            </div>
+
+            <!-- Student Actions -->
+            <div id="student-actions" class="hidden">
+                <input type="text" id="meeting-link-input" class="input-field" placeholder="Enter Meeting Link or ID" autocomplete="off">
+                <input type="text" id="volunteer-name-input" class="input-field" placeholder="Enter Volunteer's Name" autocomplete="off">
+                <button id="join-meeting-btn" class="action-btn btn-filled">Join Meeting</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call Screen -->
+    <main id="call-screen" class="hidden">
+        <!-- The old #call-header is removed, replaced by the persistent navbar -->
+        <div id="videos-container">
+            <div id="remote-video-container" class="video-player-main">
+                <!-- Remote video will be injected here -->
+            </div>
+            <div id="local-video-container" class="video-player-pip">
+                <!-- Local video will be injected here -->
+            </div>
+        </div>
+
+        <div id="call-controls">
+            <button id="mic-btn" class="control-btn" title="Mute/Unmute"><i class="fas fa-microphone"></i></button>
+            <button id="camera-btn" class="control-btn" title="Turn Camera On/Off"><i class="fas fa-video"></i></button>
+            <button id="copy-link-btn" class="control-btn" title="Copy Meeting Link"><i class="fas fa-copy"></i></button>
+            <button id="chat-btn" class="control-btn" title="Open Chat"><i class="fas fa-comment"></i></button>
+            <button id="end-call-btn" class="control-btn end-call" title="End Call"><i class="fas fa-phone-slash"></i></button>
+        </div>
+    </main>
+
+    <!-- Chat Panel -->
+    <aside id="chat-panel" class="hidden">
+        <div class="chat-header">
+            <span>Chat</span>
+            <button id="close-chat-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-messages">
+            <!-- Messages will be injected here -->
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </aside>
+
+    <div id="notification"></div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="js/webrtc.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
