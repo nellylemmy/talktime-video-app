@@ -1,0 +1,64 @@
+{
+  "users": {
+    "volunteers": [
+      {
+        "id": "vol-001",
+        "name": "John Smith",
+        "email": "john.smith@example.com",
+        "phone": "+1234567890",
+        "country": "United States",
+        "age": 35,
+        "gender": "male",
+        "profilePicture": "https://example.com/profiles/john-smith.jpg",
+        "isVerified": true,
+        "verificationStatus": "email",
+        "isStudent": false,
+        "bio": "Experienced educator with 10 years of teaching experience",
+        "timeZone": "America/New_York",
+        "availableTimes": [
+          { "day": "Monday", "hours": ["14:00", "18:00"] },
+          { "day": "Wednesday", "hours": ["10:00", "12:00"] }
+        ]
+      }
+    ],
+    "students": [
+      {
+        "id": "stu-001",
+        "name": "Amina Hassan",
+        "country": "Kenya",
+        "age": 16,
+        "gender": "female",
+        "profilePicture": "https://example.com/profiles/amina-hassan.jpg",
+        "bio": "High school student interested in science and technology",
+        "timeZone": "Africa/Nairobi",
+        "availableTimes": [
+          { "day": "Tuesday", "hours": ["14:00", "16:00"] },
+          { "day": "Thursday", "hours": ["16:00", "18:00"] }
+        ]
+      }
+    ]
+  },
+  "meetings": [
+    {
+      "id": "meet-001",
+      "volunteerId": "vol-001",
+      "studentId": "stu-001",
+      "status": "scheduled",
+      "scheduledTime": "2025-06-15T14:00:00+03:00",
+      "duration": 60,
+      "topic": "Mathematics tutoring",
+      "roomCode": "MATH101",
+      "notes": "Focus on algebra concepts"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-001",
+      "userId": "stu-001",
+      "type": "meeting_scheduled",
+      "message": "You have a scheduled meeting with John Smith tomorrow at 2:00 PM",
+      "timestamp": "2025-06-14T10:00:00+03:00",
+      "read": false
+    }
+  ]
+}

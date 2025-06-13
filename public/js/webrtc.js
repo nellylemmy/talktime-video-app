@@ -165,7 +165,6 @@ class Webrtc extends EventTarget {
         // Joined the room
         this.socket.on('joined', (room, socketId) => {
             this.log('joined: ' + room);
-
             this.room = room;
             this.isReady = true;
             this._myId = socketId;

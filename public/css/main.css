@@ -1,48 +1,375 @@
-h1 {
+/* General Styles */
+:root {
+    --brand-gradient: linear-gradient(90deg, #9b59b6, #e94e77);
+    --primary-color: #4A90E2;
+    --secondary-color: #50E3C2;
+    --danger-color: #D0021B;
+    --light-grey: #F5F5F5;
+    --dark-grey: #4A4A4A;
+    --dark-bg: #1a1a1a;
+    --light-bg: #2a2a2a;
+    --control-bg: #4f4f4f;
+    --control-hover-bg: #666;
+    --border-color: #333;
+    --white: #FFFFFF;
+    --black: #000000;
+    --red: #D0021B;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: var(--light-grey);
+    color: var(--dark-grey);
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Landing Page */
+#landing-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
     text-align: center;
 }
 
-.grid-container {
-    display: grid;
-    grid-template-columns: auto auto auto;
-    /* padding: 10px; */
+.landing-card {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
 }
-.grid-item {
-    padding: 10px;
+
+.landing-card h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.landing-card p {
+    margin-bottom: 30px;
+    color: #666;
+}
+
+#user-selection h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-weight: normal;
+}
+
+.role-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid var(--primary-color);
+    background-color: var(--white);
+    color: var(--primary-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.role-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+#start-meeting-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.3s;
+}
+
+#start-meeting-btn:hover {
+    background-color: #357ABD;
+}
+
+.join-group {
+    display: flex;
+}
+
+#room-input {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid #DDD;
+    border-radius: 4px 0 0 4px;
+    font-size: 16px;
+}
+
+#join-btn {
+    padding: 12px 20px;
+    border: 1px solid var(--primary-color);
+    background-color: var(--white);
+    color: var(--primary-color);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#join-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+/* Call Screen */
+#call-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: var(--dark-bg);
+    color: var(--white);
+}
+
+#call-header {
+    display: flex;
+    justify-content: flex-start; /* Group items to the left */
+    align-items: center;
+    padding: 15px 30px;
+    background-color: var(--light-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+#logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#logo-container i {
+    font-size: 28px;
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: bold;
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#timer-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    background-color: var(--light-bg);
+    padding: 10px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    margin-left: 20px;
+}
+
+#timer-container i {
+    color: var(--secondary-color);
+}
+
+#videos-container {
+    flex-grow: 1;
     position: relative;
-    width: fit-content;
-    height: fit-content;
-    /* border: 1px solid rgba(0, 0, 0, 0.8); */
-}
-.grid-item p {
-    font-size: 20px;
-    margin: 0;
-    position: absolute;
-    color: white;
-    font-weight: bold;
-}
-.grid-item video {
-    max-height: 300px;
-    max-width: 100%;
-    box-shadow: -2px -2px 15px #888888;
-}
-.grid-item .kick_btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    font-weight: bold;
-    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
 }
 
-#localVideo-container {
-    height: 250px;
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    box-shadow: -2px -2px 15px #888888;
-}
-
-#localVideo-container video {
+.video-player-main {
     width: 100%;
     height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-player-main video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-player-pip {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 25%;
+    max-width: 320px;
+    min-width: 150px;
+    aspect-ratio: 16 / 9;
+    border: 2px solid var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.video-player-pip video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 8px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    color: var(--white);
+    font-size: 14px;
+    text-align: left;
+}
+
+.user-info .name {
+    font-weight: bold;
+}
+
+.user-info .country {
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.kick-btn {
+    background-color: var(--danger-color);
+    color: var(--white);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.kick-btn:hover {
+    opacity: 1;
+}
+
+.kick-btn i {
+    margin-right: 5px;
+}
+
+#call-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    background-color: rgba(42, 42, 42, 0.9);
+    padding: 15px 30px;
+    border-radius: 50px;
+    z-index: 20;
+}
+
+.control-btn {
+    background-color: var(--control-bg);
+    color: var(--white);
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+.control-btn:hover {
+    background-color: var(--control-hover-bg);
+}
+
+#end-call-btn {
+    background-color: var(--danger-color);
+}
+
+#end-call-btn:hover {
+    background-color: #A00014;
+}
+
+/* Chat Panel */
+#chat-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background-color: var(--white);
+    box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+#chat-panel:not(.hidden) {
+    transform: translateX(0);
+}
+
+.chat-header {
+    padding: 16px;
+    font-weight: bold;
+    border-bottom: 1px solid var(--light-grey);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#close-chat-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.chat-input-container {
+    padding: 16px;
+    border-top: 1px solid var(--light-grey);
+    display: flex;
+}
+
+#chat-input {
+    flex-grow: 1;
+    border: 1px solid #DDD;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+#send-chat-btn {
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    padding: 0 16px;
+    margin-left: 8px;
+    cursor: pointer;
 }
