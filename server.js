@@ -1,128 +1,75 @@
-const path = require('path');
+// server.js
 const express = require('express');
-const app = express();
+const http = require('http');
 const socketIO = require('socket.io');
 
-const port = process.env.PORT || 5051;
-const env = process.env.NODE_ENV || 'development';
+const app = express();
+const server = http.createServer(app);
+const io = new socketIO.Server(server);
 
-// Redirect to https
-app.get('*', (req, res, next) => {
-    if (req.headers['x-forwarded-proto'] !== 'https' && env !== 'development') {
-        return res.redirect(['https://', req.get('Host'), req.url].join(''));
-    }
-    next();
+const PORT = process.env.PORT || 3000;
+
+// Serve static files from "public" folder
+app.use(express.static('public'));
+
+io.on('connection', socket => {
+  console.log(`Client connected [id=${socket.id}]`);
+  socket.emit('log', [`Connected as ${socket.id}`]);
+
+  socket.on('join', roomId => {
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const clientsInRoom = room ? Array.from(room) : [];
+
+    // Notify the new user about everyone already in the room.
+    clientsInRoom.forEach(clientId => {
+        socket.emit('newUser', clientId);
+    });
+
+    // Join the room
+    socket.join(roomId);
+    socket.emit('createdRoom', clientsInRoom.length === 0);
+    socket.emit('joinedRoom', clientsInRoom.length > 0);
+    io.to(roomId).emit('log', [`${socket.id} joined room ${roomId}`]);
+
+    // Notify all OTHER peers in room of new user
+    socket.to(roomId).emit('newUser', socket.id);
+  });
+
+  socket.on('offer', (offer, toId) => {
+    io.to(toId).emit('offer', offer, socket.id);
+    io.to(toId).emit('log', [`Forwarded offer from ${socket.id} to ${toId}`]);
+  });
+
+  socket.on('answer', (answer, toId) => {
+    io.to(toId).emit('answer', answer, socket.id);
+    io.to(toId).emit('log', [`Forwarded answer from ${socket.id} to ${toId}`]);
+  });
+
+  socket.on('iceCandidate', (candidate, toId) => {
+    io.to(toId).emit('iceCandidate', candidate, socket.id);
+    io.to(toId).emit('log', [`Forwarded ICE candidate from ${socket.id} to ${toId}`]);
+  });
+
+  socket.on('kickUser', userId => {
+    io.to(userId).emit('removeUser', socket.id);
+    io.to(userId).emit('log', [`${socket.id} kicked ${userId}`]);
+  });
+
+  socket.on('disconnecting', () => {
+    const rooms = socket.rooms;
+    rooms.forEach(roomId => {
+      if (roomId !== socket.id) {
+        socket.to(roomId).emit('removeUser', socket.id);
+        io.to(roomId).emit('log', [`${socket.id} is leaving room ${roomId}`]);
+      }
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected [id=${socket.id}]`);
+  });
 });
 
-// Disable caching for development
-app.use((req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    next();
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'node_modules')));
-
-const server = require('http').createServer(app);
-server.listen(port, () => {
-    console.log(`listening on port ${port}`);
-});
-
-/**
- * Socket.io events
- */
-const io = socketIO(server);
-const roomAdmins = {}; // Using robust, multi-room admin tracking
-
-io.sockets.on('connection', function (socket) {
-    /**
-     * Log actions to the client
-     */
-    function log() {
-        const array = ['Server:'];
-        array.push.apply(array, arguments);
-        socket.emit('log', array);
-    }
-
-    /**
-     * Handle message from a client (from reference repo)
-     */
-    socket.on('message', (message, toId = null, room = null) => {
-        log('Client ' + socket.id + ' said: ', message);
-
-        if (toId) {
-            io.to(toId).emit('message', message, socket.id);
-        } else if (room) {
-            socket.broadcast.to(room).emit('message', message, socket.id);
-        } else {
-            socket.broadcast.emit('message', message, socket.id);
-        }
-    });
-
-    /**
-     * When room gets created or someone joins it (from reference repo)
-     */
-    socket.on('create or join', (room) => {
-        log('Create or Join room: ' + room);
-
-        const clientsInRoom = io.sockets.adapter.rooms.get(room);
-        let numClients = clientsInRoom ? clientsInRoom.size : 0;
-        log('Room ' + room + ' has ' + numClients + ' client(s)');
-
-        if (numClients === 0) {
-            // Create room
-            socket.join(room);
-            roomAdmins[room] = socket.id; // Store admin for this room
-            socket.emit('created', room, socket.id);
-        } else {
-            log('Client ' + socket.id + ' joined room ' + room);
-
-            // Join room
-            io.sockets.in(room).emit('join', room); // Notify users in room
-            socket.join(room);
-            io.to(socket.id).emit('joined', room, socket.id); // Notify client that they joined a room
-            io.sockets.in(room).emit('ready', socket.id); // Room is ready for creating connections
-        }
-    });
-
-    /**
-     * Kick participant from a call (from reference repo, adapted for multi-room admin)
-     */
-    socket.on('kickout', (socketId, room) => {
-        if (socket.id === roomAdmins[room]) {
-            log(`Admin ${socket.id} kicking ${socketId} from room ${room}`);
-            socket.broadcast.to(room).emit('kickout', socketId);
-            const kickedSocket = io.sockets.sockets.get(socketId);
-            if (kickedSocket) {
-                kickedSocket.leave(room);
-            }
-        } else {
-            log(`Unauthorized kick attempt by ${socket.id} in room ${room}`);
-        }
-    });
-
-    // participant leaves room (from reference repo)
-    socket.on('leave room', (room) => {
-        socket.leave(room);
-        socket.emit('left room', room);
-        socket.broadcast.to(room).emit('message', { type: 'leave' }, socket.id);
-    });
-
-    /**
-     * When participant leaves, notify other participants (from reference repo)
-     */
-    socket.on('disconnecting', () => {
-        socket.rooms.forEach((room) => {
-            if (room === socket.id) return;
-
-            // Clean up admin mapping if the admin is the one disconnecting
-            if (roomAdmins[room] && socket.id === roomAdmins[room]) {
-                delete roomAdmins[room];
-            }
-
-            socket.broadcast
-                .to(room)
-                .emit('message', { type: 'leave' }, socket.id);
-        });
-    });
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
