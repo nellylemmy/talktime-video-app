@@ -15,8 +15,128 @@
     
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Main Styles -->
-    <link rel="stylesheet" href="css/main.css" />
+    
+    <style>
+        /* Custom styles for the page */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4ff; /* Fallback color */
+            overflow-x: hidden;
+        }
+
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* UPDATED: New light blue to light purple gradient */
+        .gradient-bg {
+            background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+        }
+
+        /* Glassmorphism Effect for Feature Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.3); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Scrolled Navbar Style with smooth transition */
+        #main-header {
+            transition: background-color 0.5s ease, backdrop-filter 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        #main-header.scrolled {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Decorative Background Blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        /* Animation classes */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Button pulse animation */
+        .pulse-zoom {
+            animation: pulseZoom 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseZoom {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .section-heading {
+             background-image: linear-gradient(to right, #ec4899, #8b5cf6);
+             -webkit-background-clip: text;
+             background-clip: text;
+             color: transparent;
+        }
+
+        /* Modal specific glass effect */
+        .modal-glass-bg {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Modal transition styles */
+        #coming-soon-modal {
+            transition: opacity 300ms ease-in-out;
+        }
+        #coming-soon-modal .modal-content {
+            transition: transform 300ms ease-in-out;
+        }
+
+    </style>
 </head>
 <body class="gradient-bg text-gray-800">
     <!-- Background Blobs -->
@@ -25,7 +145,7 @@
     <div class="blob w-72 h-72 bg-pink-300 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
 
     <!-- Header -->
-    <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
+    <header id="main-header" class="fixed top-0 left-0 right-0 p-4 md:p-6 z-20">
         <nav class="container mx-auto flex justify-between items-center">
             <a href="#" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
@@ -39,8 +159,9 @@
                 </svg>
                 <span class="gradient-text">TALK TIME</span>
             </a>
-            <div class="flex items-center space-x-4">
-                <a href="#" class="coming-soon-trigger px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors">Login</a>
+            <div class="hidden md:flex items-center space-x-4">
+                <!-- UPDATED: Login Button Styling -->
+                <a href="#" class="coming-soon-trigger px-4 py-2 text-blue-600 border border-blue-600 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-all">Login</a>
                 <a href="#" class="coming-soon-trigger bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-all">Sign Up</a>
             </div>
             <div class="md:hidden">
@@ -52,25 +173,25 @@
     </header>
 
     <div class="relative min-h-screen w-full flex flex-col items-center justify-center px-4 z-10 pt-24">
-        <main class="w-full max-w-6xl mx-auto text-center py-20">
+        <main class="w-full max-w-6xl mx-auto text-center py-10 md:py-20">
             <!-- Hero Section -->
             <section class="flex flex-col items-center">
                 <h1 class="font-poppins text-5xl md:text-7xl font-extrabold leading-tight fade-in-up bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent" style="animation-delay: 0.1s;">
                     TalkTime
                 </h1>
-                <p class="mt-4 max-w-2xl text-lg leading-relaxed text-gray-700 fade-in-up" style="animation-delay: 0.2s;">
-                    TalkTime connects global volunteers with Maasai students in Rombo, Kenya, for free English practice chats. Powered by the ADEA Foundation, it builds confidence and skills through one-on-one conversations, opening doors to brighter futures.
+                <p class="mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 fade-in-up" style="animation-delay: 0.2s;">
+                    Welcome to TalkTime, a heartfelt initiative designed to connect volunteers worldwide with Maasai students in Rombo, Kenya, helping them build English fluency and confidence through friendly, one-on-one video calls.
                 </p>
 
                 <div class="mt-8 flex flex-col sm:flex-row items-stretch justify-center gap-4 w-full max-w-lg fade-in-up" style="animation-delay: 0.3s;">
-                    <a href="volunteer.html" class="flex-1 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-2xl px-5 py-4 text-center transition-all shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+                    <a href="app.html" class="flex-1 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-2xl px-5 py-4 text-center transition-all shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
                         <div class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                            <i class="fas fa-user mr-2"></i>
                             <span class="text-lg font-semibold">Signup as Volunteer</span>
                         </div>
                         <p class="text-xs text-blue-100 mt-1">For professionals, retirees, and anyone wanting to help.</p>
                     </a>
-                    <a href="#" class="flex-1 text-gray-800 bg-white/50 hover:bg-white/80 font-medium rounded-2xl px-5 py-4 text-center transition-all shadow-md flex flex-col items-center justify-center">
+                    <a href="app.html" class="flex-1 text-gray-800 bg-white/50 hover:bg-white/80 font-medium rounded-2xl px-5 py-4 text-center transition-all shadow-md flex flex-col items-center justify-center">
                          <div class="flex items-center">
                             <i class="fas fa-user-graduate mr-2"></i>
                             <span class="text-lg font-semibold">Student Volunteer</span>
@@ -79,15 +200,18 @@
                     </a>
                 </div>
                 <div class="mt-6 fade-in-up" style="animation-delay: 0.4s;">
-                    <a href="#" class="coming-soon-trigger inline-block glass-bg text-gray-800 font-semibold px-6 py-2 rounded-lg hover:shadow-lg transition-shadow">
-                       Have an account? <span class="text-orange-600">Login</span>
-                   </a>
-               </div>
+                     <a href="#" class="coming-soon-trigger inline-block glass-bg text-gray-800 font-semibold px-6 py-2 rounded-lg hover:shadow-lg transition-shadow">
+                        Have an account? <span class="text-orange-600">Login</span>
+                    </a>
+                </div>
             </section>
             
-
             <!-- Features Section -->
-            <section class="mt-20 w-full fade-in-up" style="animation-delay: 0.5s;">
+            <section class="mt-20 md:mt-28 w-full fade-in-up text-center" style="animation-delay: 0.5s;">
+                <h2 class="text-3xl md:text-4xl font-bold font-poppins mb-4 section-heading">Make an Impact Today</h2>
+                 <p class="max-w-3xl mx-auto text-lg leading-relaxed text-gray-700 mb-12">
+                    For Maasai students, mastering English is a key that unlocks a brighter future. TalkTime provides a safe, supportive space to practice speaking English, building fluency and confidence for higher education and better opportunities. Your conversation inspires them to pursue their dreams.
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Card 1: The Mission -->
                     <div class="glass-card rounded-2xl p-8">
@@ -119,7 +243,7 @@
                            <i class="fas fa-magic text-3xl text-yellow-600"></i>
                         </div>
                         <h3 class="text-xl font-bold mt-6 text-gray-900">Simple & Free</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">Our platform makes scheduling and joining calls a breeze. TalkTime is completely free for both volunteers and students, forever.</p>
+                        <p class="mt-2 text-base leading-relaxed text-gray-700">Our intuitive platform makes scheduling and joining calls a breeze. TalkTime is completely free for both volunteers and students, forever.</p>
                     </div>
                     <!-- Card 5: Be a Mentor -->
                     <div class="glass-card rounded-2xl p-8">
@@ -141,10 +265,10 @@
             </section>
             
             <!-- Final CTA -->
-            <section class="mt-20 fade-in-up" style="animation-delay: 0.6s;">
-                <a href="volunteer.html" class="pulse-zoom inline-flex items-center bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
+            <section class="mt-20 md:mt-24 fade-in-up" style="animation-delay: 0.8s;">
+                <a href="app.html" class="pulse-zoom inline-flex items-center bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Get Started Today
+                    Start a Conversation Today
                 </a>
             </section>
 
@@ -152,14 +276,7 @@
             <section class="mt-16 w-full fade-in-up" style="animation-delay: 0.9s;">
                 <h3 class="text-sm font-semibold text-gray-600 tracking-wider uppercase">Our Valued Partners</h3>
                 <div class="mt-4 flex justify-center items-center gap-8">
-                    <a href="#" class="flex items-center gap-2 text-lg font-bold text-gray-700 hover:text-blue-600 transition-colors">
-                        <img 
-                            src="https://adeafoundation.org/wp-content/uploads/pmd-logo.jpg" 
-                            alt="PMD-Rombo Logo" 
-                            class="h-6 w-auto object-contain" 
-                        />
-                        <span>PMD-Rombo</span>
-                    </a>
+                    <p class="text-lg font-bold text-gray-700">PMD-Rombo</p>
                     <!-- More partner logos or names can be added here -->
                 </div>
             </section>
@@ -167,7 +284,7 @@
         </main>
         
         <!-- Footer -->
-        <footer class="w-full text-center p-6 text-gray-600 fade-in-up" style="animation-delay: 0.7s;">
+        <footer class="w-full text-center p-6 text-gray-600 fade-in-up" style="animation-delay: 1s;">
             <p class="text-base">Built by Your Friends at ADEA Foundation for Maasai Students © 2025 TalkTime</p>
             <p class="text-base">Empowering Through Conversation</p>
         </footer>
@@ -176,14 +293,11 @@
     <!-- Modal -->
     <div id="coming-soon-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm opacity-0">
         <div class="modal-content modal-glass-bg w-full max-w-sm rounded-2xl p-8 text-center transform scale-95">
-            <!-- Icon -->
             <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
                 <svg class="h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <!-- Content -->
             <h3 class="text-2xl font-bold mb-2 text-gray-900">Coming Soon!</h3>
             <p class="mb-6 text-base leading-relaxed text-gray-700">We're working hard to bring this feature to life. Please check back later!</p>
-            <!-- Close Button -->
             <button id="close-modal-btn" class="bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
                 OK
             </button>
@@ -191,6 +305,57 @@
     </div>
 
     <!-- Index Page Scripts -->
-    <script src="js/index.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('main-header');
+            const modal = document.getElementById('coming-soon-modal');
+            const modalContent = modal.querySelector('.modal-content');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const openModalTriggers = document.querySelectorAll('.coming-soon-trigger');
+
+            // --- Header Scroll Logic ---
+            const handleScroll = () => {
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            };
+            window.addEventListener('scroll', handleScroll);
+
+            // --- Modal Logic ---
+            const openModal = (e) => {
+                e.preventDefault();
+                modal.classList.remove('hidden');
+                setTimeout(() => { // Allow display property to apply before starting transition
+                    modal.classList.add('opacity-100');
+                    modalContent.classList.add('scale-100');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modal.classList.remove('opacity-100');
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => { // Wait for transition to finish before hiding
+                    modal.classList.add('hidden');
+                }, 300); 
+            };
+            
+            // Only attach modal logic to buttons that aren't for main app flow
+            openModalTriggers.forEach(trigger => {
+                trigger.addEventListener('click', openModal);
+            });
+
+            closeModalBtn.addEventListener('click', closeModal);
+            // Close modal by clicking on the overlay
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Volunteer Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <style>
+        /* Base styles matching the landing page */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4ff;
+            overflow-x: hidden;
+        }
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
+        }
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal-glass-bg {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .section-heading {
+             background-image: linear-gradient(to right, #ec4899, #8b5cf6);
+             -webkit-background-clip: text;
+             background-clip: text;
+             color: transparent;
+        }
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* Page Transition */
+        .page, .tab-pane {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .page-hidden, .tab-pane-hidden {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transform: translateY(10px);
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        
+        /* Calendar Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-day {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .calendar-day.other-month {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .calendar-day:not(.other-month):hover {
+            background-color: rgba(139, 92, 246, 0.2);
+        }
+        .calendar-day.selected {
+            background-color: #8b5cf6;
+            color: white;
+            font-weight: bold;
+        }
+        .calendar-day.fully-booked::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #ef4444;
+        }
+         .calendar-day.fully-booked {
+            cursor: not-allowed;
+            color: #9ca3af;
+            background-color: transparent !important;
+        }
+
+        /* Time Input Styles */
+        .custom-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            background-color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            transition: opacity 300ms ease-in-out;
+        }
+        .modal .modal-content {
+            transition: transform 300ms ease-in-out;
+        }
+        .profile-dropdown, .options-menu {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Star Rating */
+        .star-rating .fa-star {
+            color: #d1d5db; /* gray-300 */
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .star-rating:hover .fa-star {
+            color: #f59e0b; /* yellow-500 */
+        }
+        .star-rating .fa-star:hover ~ .fa-star {
+            color: #d1d5db;
+        }
+        .star-rating .fa-star.selected,
+        .star-rating .fa-star.selected ~ .fa-star {
+             color: #d1d5db;
+        }
+        .star-rating .fa-star.selected {
+             color: #f59e0b;
+        }
+
+        /* Live Pulse Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .live-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .upcoming-badge {
+            position: absolute;
+            top: 0.25rem; /* Adjusted position */
+            right: 0.25rem; /* Adjusted position */
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body class="gradient-bg text-gray-800">
+    <!-- Background Blobs -->
+    <div class="blob w-96 h-96 bg-purple-200 top-[-10rem] left-[-10rem]"></div>
+    <div class="blob w-96 h-96 bg-blue-200 bottom-[-5rem] right-[-10rem]"></div>
+    <div class="blob w-72 h-72 bg-pink-200 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
+
+    <!-- Header -->
+    <header id="main-header" class="sticky top-0 p-4 z-30 glass-bg shadow-sm">
+        <nav class="container mx-auto flex justify-between items-center">
+            <a href="index.html" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                    <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"/><stop offset="100%" style="stop-color:#a855f7;"/></linearGradient></defs>
+                    <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="gradient-text">TALK TIME</span>
+            </a>
+            <div class="relative">
+                <button id="profile-btn" class="flex items-center gap-2">
+                    <span class="font-semibold hidden sm:inline">Welcome, Volunteer!</span>
+                    <img src="https://placehold.co/40x40/4f46e5/ffffff?text=V" class="w-10 h-10 rounded-full border-2 border-white object-cover">
+                </button>
+                <div id="profile-dropdown" class="profile-dropdown absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl p-2 hidden opacity-0 transform -translate-y-2">
+                    <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">My Account</a>
+                    <a href="index.html" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">Logout</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sticky Sub-Navigation Bar -->
+    <div id="page-nav-sticky" class="sticky top-[72px] md:top-[80px] z-20 mb-6 hidden">
+        <div class="container mx-auto p-4 glass-bg rounded-b-2xl shadow-md">
+            <div id="page-nav-content" class="flex justify-between items-center">
+                <!-- JS will populate this -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Volunteer Dashboard -->
+    <main class="container mx-auto p-4 md:p-8 relative min-h-[calc(100vh-180px)]">
+        
+        <!-- Page 1: Main Dashboard -->
+        <div id="page-dashboard" class="page w-full">
+            <h1 class="text-3xl md:text-4xl font-bold font-poppins mb-2 section-heading text-center">Volunteer Dashboard</h1>
+            <p class="text-center text-lg text-gray-700 max-w-2xl mx-auto mb-8">Browse student profiles, learn their stories, and schedule a call to make a difference.</p>
+            
+            <!-- Dashboard Tabs -->
+            <div class="mb-8 border-b-2 border-white/50 flex justify-center">
+                <button data-tab="dashboard-main" class="tab-btn px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600">Dashboard</button>
+                <button data-tab="dashboard-upcoming" class="tab-btn px-6 py-3 font-semibold text-gray-500 border-b-2 border-transparent relative">
+                    Upcoming
+                    <span id="upcoming-badge" class="upcoming-badge hidden"></span>
+                </button>
+                <button data-tab="dashboard-history" class="tab-btn px-6 py-3 font-semibold text-gray-500 border-b-2 border-transparent">Call History</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="relative max-w-3xl mx-auto">
+                <div id="dashboard-main" class="tab-pane">
+                     <div class="space-y-8">
+                        <div>
+                            <h2 class="text-xl font-bold mb-4 text-gray-800">Available Students</h2>
+                            <div id="student-list-available" class="space-y-4"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold mt-8 text-gray-800">Unavailable Students</h2>
+                            <div id="student-list-unavailable" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="dashboard-upcoming" class="tab-pane tab-pane-hidden">
+                     <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Upcoming Meetings</h2>
+                     <div id="upcoming-meetings" class="space-y-4"></div>
+                </div>
+                <div id="dashboard-history" class="tab-pane tab-pane-hidden">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Call History & Feedback</h2>
+                    <div id="call-history" class="space-y-6"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 2: Student Profile -->
+        <div id="page-profile" class="page page-hidden w-full">
+             <!-- JS will populate this -->
+        </div>
+
+        <!-- Page 3: Scheduler -->
+        <div id="page-scheduler" class="page page-hidden w-full">
+             <!-- JS will populate this -->
+        </div>
+    </main>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div class="modal-content modal-glass-bg w-full max-w-md transform scale-95">
+            <div class="mx-auto bg-blue-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
+                <i class="far fa-calendar-check text-3xl text-blue-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2 text-gray-900">Confirm Your Session</h3>
+            <p id="confirm-details" class="mb-6 text-lg leading-relaxed text-gray-700"></p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-cancel-btn" class="px-8 py-2 rounded-lg font-semibold bg-gray-200 hover:bg-gray-300">Cancel</button>
+                <button id="confirm-book-btn" class="px-8 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700">Book Now</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const pageDashboard = document.getElementById('page-dashboard');
+        const pageProfile = document.getElementById('page-profile');
+        const pageScheduler = document.getElementById('page-scheduler');
+        const availableStudentsContainer = document.getElementById('student-list-available');
+        const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
+        const upcomingMeetingsContainer = document.getElementById('upcoming-meetings');
+        const callHistoryContainer = document.getElementById('call-history');
+        const backButtonContainer = document.getElementById('page-nav-sticky');
+        const pageNavContent = document.getElementById('page-nav-content');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmDetailsEl = document.getElementById('confirm-details');
+        const confirmBookBtn = document.getElementById('confirm-book-btn');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const notificationEl = document.getElementById('notification');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        const upcomingBadge = document.getElementById('upcoming-badge');
+
+        // --- State ---
+        let students = [];
+        let bookedSlots = {
+            "1-2025-07-22": ["14:00"],
+            "2-2025-07-24": ["10:00"]
+        }; 
+        let currentDate = new Date();
+        let selectedStudent = null;
+        let selectedDate = null;
+        let selectedTime = null;
+        let selectedTimezone = '';
+
+        // --- Mock Data ---
+        const mockStudents = [
+            { id: 1, name: 'Lekishon', interests: 'Soccer, Animals', available: true, profileImage: 'https://placehold.co/400x400/a855f7/ffffff?text=L', gallery: ['https://placehold.co/600x400/a78bfa/ffffff?text=Village+Life', 'https://placehold.co/600x400/818cf8/ffffff?text=Friends', 'https://placehold.co/600x400/facc15/ffffff?text=Soccer+Ball'], bio: "Lekishon is a bright and curious 14-year-old from a small village in Rombo. He dreams of becoming a veterinarian to care for his family's cattle. He loves playing soccer with his friends but is often shy when speaking English, though he is eager to learn and share stories about his culture." },
+            { id: 2, name: 'Naserian', interests: 'Reading, Music', available: true, profileImage: 'https://placehold.co/400x400/ec4899/ffffff?text=N', gallery: ['https://placehold.co/600x400/f472b6/ffffff?text=Study+Time', 'https://placehold.co/600x400/fb923c/ffffff?text=Sunset'], bio: "Naserian, 16, is a passionate reader who walks over an hour to get to school each day. She faces challenges accessing books but hopes to become a teacher to inspire other girls in her community. She would love to practice her conversational skills to gain confidence in class discussions." },
+            { id: 3, name: 'Sankale', interests: 'Art, Nature', available: true, profileImage: 'https://placehold.co/400x400/22c55e/ffffff?text=S', gallery: ['https://placehold.co/600x400/4ade80/ffffff?text=Drawing', 'https://placehold.co/600x400/34d399/ffffff?text=Favorite+Tree'], bio: "Sankale is 15 and has a remarkable talent for drawing the wildlife around his home. He struggles to afford art supplies and wants to improve his English to one day sell his art and share the beauty of his homeland with the world. He is friendly but needs encouragement to speak." },
+            { id: 4, name: 'Tepilit', interests: 'Games, Science', available: false, status: 'On a call', profileImage: 'https://placehold.co/400x400/64748b/ffffff?text=T', bio: "Tepilit, 17, is fascinated by science and technology but has limited access to resources. He is currently booked for sessions but is looking forward to future conversations. Improving his English is his top priority for pursuing a science degree." },
+            { id: 5, name: 'Kaelo', interests: 'Storytelling', available: false, status: 'Booked for today', profileImage: 'https://placehold.co/400x400/f59e0b/ffffff?text=K', bio: "Kaelo is a natural storyteller who loves sharing tales passed down through generations. He is currently booked but is excited to share his stories in future calls." },
+        ];
+        
+        const timezones = [
+            {group: 'US/Canada', zones: [ { label: 'Eastern (ET)', value: 'America/New_York' }, { label: 'Central (CT)', value: 'America/Chicago' }, { label: 'Mountain (MT)', value: 'America/Denver' }, { label: 'Pacific (PT)', value: 'America/Los_Angeles' }, { label: 'Alaska (AKT)', value: 'America/Anchorage' }, { label: 'Hawaii (HST)', value: 'Pacific/Honolulu' } ]},
+            {group: 'Europe', zones: [ { label: 'London (GMT)', value: 'Europe/London' }, { label: 'Paris (CET)', value: 'Europe/Paris' }, { label: 'Moscow (MSK)', value: 'Europe/Moscow' } ]},
+            {group: 'Asia/Oceania', zones: [ { label: 'Dubai (GST)', value: 'Asia/Dubai' }, { label: 'India (IST)', value: 'Asia/Kolkata' }, { label: 'Tokyo (JST)', value: 'Asia/Tokyo' }, { label: 'Sydney (AEST)', value: 'Australia/Sydney' } ]}
+        ];
+
+        // --- Navigation ---
+        function switchPage(pageId, studentId = null) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('page-hidden'));
+            const pageToShow = document.getElementById(pageId);
+            if(pageToShow) pageToShow.classList.remove('page-hidden');
+            updateStickyNav(pageId, studentId);
+            window.scrollTo(0, 0);
+        }
+
+        function updateStickyNav(pageId, studentId) {
+            let navHTML = '';
+            if (pageId === 'page-profile') {
+                navHTML = `
+                    <button data-target="page-dashboard" class="page-nav-btn font-semibold flex items-center hover:text-blue-600"><i class="fas fa-arrow-left mr-2"></i>Back to Dashboard</button>
+                    <button data-student-id="${studentId}" class="schedule-btn-sticky px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-semibold flex items-center"><i class="far fa-calendar-alt mr-2"></i>Schedule a Call</button>
+                `;
+            } else if (pageId === 'page-scheduler') {
+                navHTML = `<button data-target="page-profile" class="page-nav-btn font-semibold flex items-center hover:text-blue-600"><i class="fas fa-arrow-left mr-2"></i>Back to Profile</button>`;
+            }
+            pageNavContent.innerHTML = navHTML;
+            backButtonContainer.classList.toggle('hidden', pageId === 'page-dashboard');
+        }
+
+        // --- Page Renderers ---
+        function renderDashboard() {
+            availableStudentsContainer.innerHTML = '';
+            unavailableStudentsContainer.innerHTML = '';
+            students.forEach(student => {
+                const studentCard = document.createElement('a');
+                studentCard.href = student.available ? "#" : "javascript:void(0);";
+                studentCard.className = `glass-bg p-4 rounded-xl flex items-center gap-4 transition-all hover:shadow-lg ${student.available ? 'cursor-pointer hover:-translate-y-1' : 'opacity-50 cursor-not-allowed'}`;
+                studentCard.dataset.studentId = student.id;
+                
+                let statusIcon = student.available ? '<i class="fas fa-chevron-right text-gray-400"></i>' : '<i class="fas fa-lock text-gray-400"></i>';
+                let statusText = student.interests;
+                if (!student.available) {
+                    statusText = student.status === 'On a call' 
+                        ? `<span class="text-red-500 font-semibold">${student.status}</span>`
+                        : `<span class="text-yellow-600 font-semibold">${student.status}</span>`;
+                }
+
+                studentCard.innerHTML = `
+                    <img src="${student.profileImage}" class="w-12 h-12 rounded-full object-cover border-2 border-white/50">
+                    <div class="flex-1">
+                        <p class="font-semibold">${student.name}</p>
+                        <p class="text-xs text-gray-600">${statusText}</p>
+                    </div>
+                    ${statusIcon}
+                `;
+                if(student.available) {
+                    availableStudentsContainer.appendChild(studentCard);
+                } else {
+                    unavailableStudentsContainer.appendChild(studentCard);
+                }
+            });
+            
+            // Mock Upcoming Meetings
+            const meetings = [
+                { studentName: 'Lekishon', studentImg: 'https://placehold.co/48x48/a855f7/ffffff?text=L', time: '2025-06-16T10:00:00+03:00' },
+                { studentName: 'Sankale', studentImg: 'https://placehold.co/48x48/22c55e/ffffff?text=S', time: '2025-06-17T15:00:00+03:00' }
+            ];
+            
+            upcomingMeetingsContainer.innerHTML = meetings.map(meet => `
+                 <div class="glass-bg p-4 rounded-xl flex items-center gap-4 border-2 border-green-400/50 relative">
+                    <img src="${meet.studentImg}" class="w-12 h-12 rounded-full object-cover">
+                    <div class="flex-1">
+                        <p class="font-semibold">Call with ${meet.studentName}</p>
+                        <p class="text-sm text-gray-600">Starts in: <span class="font-bold text-green-600" data-countdown="${meet.time}"></span></p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center w-10 h-10 bg-green-100/50 rounded-full">
+                           <div class="w-3 h-3 bg-green-500 rounded-full live-indicator"></div>
+                        </div>
+                        <div class="relative">
+                            <button class="options-btn p-2 h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-200/50">
+                                <i class="fas fa-ellipsis-v text-gray-600"></i>
+                            </button>
+                            <div class="options-menu absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-xl p-1 hidden">
+                                <a href="#" class="block px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded">Edit</a>
+                                <a href="#" class="block px-3 py-1 text-sm text-red-500 hover:bg-red-100 rounded">Cancel</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>`).join('');
+            
+            upcomingBadge.textContent = meetings.length;
+            upcomingBadge.classList.remove('hidden');
+
+            // Mock Call History
+            callHistoryContainer.innerHTML = `
+                 <div class="glass-bg p-6 rounded-xl">
+                    <div class="flex items-center gap-4">
+                        <img src="https://placehold.co/48x48/ec4899/ffffff?text=N" class="w-12 h-12 rounded-full object-cover">
+                        <div class="flex-1">
+                            <p class="font-semibold">Call with Naserian</p>
+                            <p class="text-sm text-gray-600">Completed on June 12, 2025</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-white/40">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">How was your experience? Your feedback helps us track student progress.</p>
+                        <div class="star-rating text-2xl mb-2 flex flex-row-reverse justify-end">
+                            <i class="fas fa-star" data-value="5" title="Excellent fluency!"></i><i class="fas fa-star" data-value="4" title="Good progress"></i><i class="fas fa-star" data-value="3" title="Average"></i><i class="fas fa-star" data-value="2" title="A bit shy"></i><i class="fas fa-star" data-value="1" title="Needs practice"></i>
+                        </div>
+                        <div class="text-xs text-gray-500 mb-4">1: Needs practice, 5: Excellent fluency!</div>
+                        <div class="flex items-center gap-2">
+                             <textarea class="w-full p-2 rounded-lg border border-gray-300 bg-white/80 max-h-24" rows="2" placeholder="Leave a message..."></textarea>
+                             <button class="w-12 h-12 flex-shrink-0 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center" title="Record voice note">
+                                <i class="fas fa-microphone"></i>
+                             </button>
+                        </div>
+                         <div class="text-right mt-2">
+                             <button class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Submit Feedback</button>
+                        </div>
+                    </div>
+                 </div>
+            `;
+            startUpcomingMeetingTimers();
+        }
+        
+        function renderStudentProfile(student) {
+            pageProfile.innerHTML = `
+                <div class="glass-bg rounded-2xl overflow-hidden">
+                    <div class="h-48 md:h-64 bg-cover bg-center" style="background-image: url('${student.gallery[0]}')"></div>
+                    <div class="p-6 md:p-8 relative">
+                         <div class="md:flex items-end -mt-24 md:-mt-16">
+                             <img src="${student.profileImage}" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg">
+                             <div class="md:ml-6 mt-4 md:mt-0 flex-1">
+                                 <h2 class="text-4xl font-bold font-poppins section-heading">${student.name}</h2>
+                                 <p class="text-lg text-gray-600 font-semibold">${student.interests}</p>
+                             </div>
+                        </div>
+                         <div class="mt-6 text-left border-t border-white/30 pt-6">
+                            <h3 class="font-bold text-xl mb-2 text-gray-800">About ${student.name}</h3>
+                            <p class="text-base text-gray-700 leading-relaxed">${student.bio}</p>
+                         </div>
+                         <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                             <img src="${student.gallery[1]}" class="rounded-lg w-full h-40 object-cover">
+                             <img src="${student.gallery[2]}" class="rounded-lg w-full h-40 object-cover">
+                         </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderScheduler(student) {
+            pageScheduler.innerHTML = `
+                <div class="glass-bg p-6 rounded-2xl">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold font-poppins mb-2 section-heading">Schedule a Call</h2>
+                        <p class="text-lg text-gray-700">with <span class="font-bold">${student.name}</span></p>
+                    </div>
+                    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1">
+                            <h3 class="font-bold text-lg mb-4 text-gray-800">1. Select a Date</h3>
+                            <div id="calendar-container" class="p-4 bg-white/50 rounded-xl">
+                                <div class="flex justify-between items-center mb-4">
+                                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200/50"><i class="fas fa-chevron-left"></i></button>
+                                    <h3 id="month-year" class="font-bold text-lg"></h3>
+                                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200/50"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                                <div class="grid grid-cols-7 text-center text-xs text-gray-500 mb-2">
+                                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                                </div>
+                                <div id="calendar-grid" class="calendar-grid"></div>
+                            </div>
+                        </div>
+                        <div id="time-selection-column" class="lg:col-span-2 space-y-6 hidden">
+                            <div>
+                                <h3 class="font-bold text-lg mb-4 text-gray-800">2. Select Your Timezone & Time</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                     <select id="timezone-select" class="custom-select"></select>
+                                     <div class="grid grid-cols-3 gap-2">
+                                        <select id="time-hour" class="custom-select"></select>
+                                        <select id="time-minute" class="custom-select"></select>
+                                        <select id="time-ampm" class="custom-select"></select>
+                                     </div>
+                                </div>
+                            </div>
+                            <div id="conversion-result" class="hidden">
+                                <h3 class="font-bold text-lg mb-2 text-gray-800">3. Check Availability</h3>
+                                <div class="p-2 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Students are available from <strong>9:00 AM to 4:00 PM</strong> in Kenya (EAT), 7 days a week.
+                                </div>
+                                <div id="kenya-time-display" class="mt-4 p-4 bg-white/50 rounded-lg text-center space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+            document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+            document.getElementById('timezone-select').addEventListener('change', handleTimeChange);
+            document.getElementById('time-hour').addEventListener('change', handleTimeChange);
+            document.getElementById('time-minute').addEventListener('change', handleTimeChange);
+            document.getElementById('time-ampm').addEventListener('change', handleTimeChange);
+            
+            populateTimezoneSelect();
+            populateTimePicker();
+            renderCalendar();
+        }
+        
+        function populateTimezoneSelect() {
+            const selectEl = document.getElementById('timezone-select');
+            timezones.forEach(group => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = group.group;
+                group.zones.forEach(tz => {
+                    const option = document.createElement('option');
+                    option.value = tz.value;
+                    option.textContent = tz.label;
+                    optgroup.appendChild(option);
+                });
+                selectEl.appendChild(optgroup);
+            });
+            const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (selectEl.querySelector(`option[value="${userTz}"]`)) {
+                selectEl.value = userTz;
+            }
+            selectedTimezone = selectEl.value;
+        }
+
+        function populateTimePicker() {
+            const hourEl = document.getElementById('time-hour');
+            const minuteEl = document.getElementById('time-minute');
+            const ampmEl = document.getElementById('time-ampm');
+            for(let i=1; i<=12; i++) hourEl.add(new Option(String(i).padStart(2,'0'), i));
+            for(let i=0; i<60; i+=15) minuteEl.add(new Option(String(i).padStart(2,'0'), i));
+            ampmEl.add(new Option('AM', 'AM'));
+            ampmEl.add(new Option('PM', 'PM'));
+        }
+
+        function renderCalendar() {
+            const calendarGrid = document.getElementById('calendar-grid');
+            const monthYearEl = document.getElementById('month-year');
+            if(!calendarGrid || !monthYearEl) return;
+            calendarGrid.innerHTML = '';
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            
+            monthYearEl.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+            
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            for (let i = 0; i < firstDayOfMonth; i++) calendarGrid.innerHTML += `<div></div>`;
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                dayEl.textContent = day;
+                const dayDate = new Date(year, month, day);
+                const dateKey = `${selectedStudent.id}-${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                
+                if (dayDate < new Date().setHours(0,0,0,0)) {
+                    dayEl.classList.add('other-month');
+                } else if (bookedSlots[dateKey] && bookedSlots[dateKey].length >= 7) {
+                    dayEl.classList.add('fully-booked');
+                } else {
+                     dayEl.addEventListener('click', () => selectDate(dayDate));
+                }
+                if (selectedDate && dayDate.toDateString() === selectedDate.toDateString()) {
+                     dayEl.classList.add('selected');
+                }
+                calendarGrid.appendChild(dayEl);
+            }
+        }
+        
+        function selectDate(date) {
+            selectedDate = date;
+            renderCalendar();
+            document.getElementById('time-selection-column').classList.remove('hidden');
+            handleTimeChange();
+        }
+
+        function handleTimeChange() {
+            const tzSelect = document.getElementById('timezone-select');
+            const hourSelect = document.getElementById('time-hour');
+            const minuteSelect = document.getElementById('time-minute');
+            const ampmSelect = document.getElementById('time-ampm');
+            if(!tzSelect || !hourSelect) return;
+
+            selectedTimezone = tzSelect.value;
+            let hour24 = parseInt(hourSelect.value);
+            if(ampmSelect.value === 'PM' && hour24 < 12) hour24 += 12;
+            if(ampmSelect.value === 'AM' && hour24 === 12) hour24 = 0;
+            
+            selectedTime = `${String(hour24).padStart(2,'0')}:${minuteSelect.value.padStart(2,'0')}`;
+
+            const conversionResultEl = document.getElementById('conversion-result');
+            if (!selectedDate || !selectedTimezone || !selectedTime) {
+                conversionResultEl.classList.add('hidden');
+                return;
+            }
+
+            const volunteerDate = new Date(selectedDate);
+            volunteerDate.setHours(hour24, parseInt(minuteSelect.value));
+
+            const kenyaFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Nairobi', weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: true });
+            const volunteerFormatter = new Intl.DateTimeFormat('en-US', { timeZone: selectedTimezone, hour: 'numeric', minute: 'numeric', hour12: true });
+
+            const kenyaTime = kenyaFormatter.format(volunteerDate);
+            const volunteerDisplayTime = volunteerFormatter.format(volunteerDate);
+            
+            const kenyaHour = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Nairobi', hour: 'numeric', hourCycle: 'h23' }).format(volunteerDate));
+            
+            const isAvailableTime = kenyaHour >= 9 && kenyaHour < 16;
+            
+            const displayEl = document.getElementById('kenya-time-display');
+            let statusHTML = `<div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <p class="text-sm font-semibold text-gray-600">Your Time</p>
+                                    <p class="font-bold text-xl text-blue-600">${volunteerDisplayTime}</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-sm font-semibold text-gray-600">Student's Time</p>
+                                    <p class="font-bold text-xl text-purple-600">${kenyaTime}</p>
+                                </div>
+                              </div>`;
+            if (isAvailableTime) {
+                statusHTML += `<div class="mt-4 p-3 bg-green-100 text-green-800 rounded-lg"><i class="fas fa-check-circle mr-2"></i>Great! The student is available at this time.</div>
+                               <button id="initiate-booking-btn" class="mt-4 w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Confirm & Book This Time</button>`;
+            } else {
+                statusHTML += `<div class="mt-4 p-3 bg-red-100 text-red-800 rounded-lg"><i class="fas fa-times-circle mr-2"></i>The student is unavailable. Please choose a time that converts to between 9 AM and 4 PM in Kenya.</div>`;
+            }
+            displayEl.innerHTML = statusHTML;
+            conversionResultEl.classList.remove('hidden');
+        }
+
+        function bookCall() {
+            const dateKey = `${selectedStudent.id}-${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+            if (!bookedSlots[dateKey]) bookedSlots[dateKey] = [];
+            
+            bookedSlots[dateKey].push(selectedTime);
+
+            showNotification(`Call with ${selectedStudent.name} booked!`);
+            closeModal();
+            
+            // Redirect to dashboard and show upcoming tab
+            renderDashboard();
+            switchPage('page-dashboard');
+            document.querySelector('[data-tab="dashboard-upcoming"]').click();
+        }
+        
+        function showNotification(message) {
+            notificationEl.textContent = message;
+            notificationEl.classList.remove('hidden');
+            setTimeout(() => {
+                 notificationEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        function closeModal() {
+             confirmModal.classList.add('hidden');
+        }
+        
+        function startUpcomingMeetingTimers() {
+            document.querySelectorAll('[data-countdown]').forEach(el => {
+                const targetTime = new Date(el.dataset.countdown).getTime();
+                const intervalId = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = targetTime - now;
+                    if(distance < 0) {
+                        el.textContent = "Started!";
+                        clearInterval(intervalId);
+                        return;
+                    }
+                    const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((distance % (1000 * 60)) / 1000);
+                    el.textContent = `${d}d ${h}h ${m}m ${s}s`;
+                }, 1000);
+            });
+        }
+
+
+        // --- Event Listeners ---
+        document.body.addEventListener('click', (e) => {
+             const studentCard = e.target.closest('#student-list-available a');
+            if (studentCard) {
+                e.preventDefault();
+                const studentId = parseInt(studentCard.dataset.studentId);
+                selectedStudent = students.find(s => s.id === studentId);
+                if (selectedStudent) {
+                    renderStudentProfile(selectedStudent);
+                    switchPage('page-profile', studentId);
+                }
+            }
+            const navBtn = e.target.closest('.page-nav-btn');
+            if (navBtn) {
+                 const targetPage = navBtn.dataset.target;
+                 if(targetPage === 'page-dashboard') {
+                    selectedStudent = null;
+                 } else if (targetPage === 'page-profile') {
+                    renderStudentProfile(selectedStudent);
+                 }
+                 switchPage(targetPage, selectedStudent ? selectedStudent.id : null);
+            }
+            
+            const scheduleBtn = e.target.closest('.schedule-btn-sticky');
+            if (scheduleBtn) {
+                const studentId = parseInt(scheduleBtn.dataset.studentId);
+                selectedStudent = students.find(s => s.id === studentId);
+                renderScheduler(selectedStudent);
+                switchPage('page-scheduler', studentId);
+            }
+
+            const initiateBookingBtn = e.target.closest('#initiate-booking-btn');
+            if(initiateBookingBtn) {
+                const formattedDate = selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const volunteerTime = new Date(selectedDate).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', timeZone: selectedTimezone, hour12: true});
+                confirmDetailsEl.textContent = `You are booking a call with ${selectedStudent.name} on ${formattedDate} at ${volunteerTime}.`;
+                confirmModal.classList.remove('hidden');
+            }
+            
+            const star = e.target.closest('.star-rating .fa-star');
+            if(star) {
+                star.classList.add('selected');
+                let sibling = star.nextElementSibling;
+                while(sibling) {
+                    sibling.classList.remove('selected');
+                    sibling = sibling.nextElementSibling;
+                }
+            }
+
+            const tabBtn = e.target.closest('.tab-btn');
+            if(tabBtn) {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('text-blue-600', 'border-blue-600');
+                    btn.classList.add('text-gray-500', 'border-transparent');
+                });
+                tabBtn.classList.add('text-blue-600', 'border-blue-600');
+                tabBtn.classList.remove('text-gray-500', 'border-transparent');
+                
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('tab-pane-hidden'));
+                document.getElementById(tabBtn.dataset.tab).classList.remove('tab-pane-hidden');
+            }
+
+            const optionsBtn = e.target.closest('.options-btn');
+            if (optionsBtn) {
+                e.preventDefault();
+                const menu = optionsBtn.nextElementSibling;
+                const isHidden = menu.classList.contains('hidden');
+                document.querySelectorAll('.options-menu').forEach(m => m.classList.add('hidden'));
+                if (isHidden) {
+                    menu.classList.remove('hidden');
+                }
+            } else if (!e.target.closest('.options-menu')) {
+                document.querySelectorAll('.options-menu').forEach(m => m.classList.add('hidden'));
+            }
+        });
+        
+        confirmBookBtn.addEventListener('click', bookCall);
+        confirmCancelBtn.addEventListener('click', closeModal);
+
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('hidden');
+            profileDropdown.classList.toggle('opacity-0');
+            profileDropdown.classList.toggle('-translate-y-2');
+        });
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                 profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
+            }
+        });
+
+        // --- Initial Load ---
+        students = mockStudents;
+        renderDashboard();
+    });
+    </script>
+
+</body>
+</html>
