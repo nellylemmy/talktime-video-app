@@ -176,6 +176,10 @@
         .live-indicator {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        /* Ensure dropdown appears above other elements */
+        .meeting-card {
+            position: relative;
+        }
         .upcoming-badge {
             position: absolute;
             top: 0.25rem; /* Adjusted position */
@@ -270,7 +274,21 @@
                 </div>
                 <div id="dashboard-history" class="tab-pane tab-pane-hidden">
                     <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">Call History & Feedback</h2>
-                    <div id="call-history" class="space-y-6"></div>
+                     <div id="call-history" class="space-y-10">
+                        <div id="feedback-container"></div>
+                        <div class="bg-white/60 p-6 rounded-xl shadow-sm">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-phone-slash text-orange-500 mr-2"></i>Missed Meetings</h4>
+                            <div id="history-missed" class="space-y-4"></div>
+                        </div>
+                        <div class="bg-white/60 p-6 rounded-xl shadow-sm">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-ban text-red-500 mr-2"></i>Cancelled Meetings</h4>
+                            <div id="history-cancelled" class="space-y-4"></div>
+                        </div>
+                        <div class="bg-white/60 p-6 rounded-xl shadow-sm">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Successfully Attended</h4>
+                            <div id="history-successful" class="space-y-4"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -313,7 +331,10 @@
         const availableStudentsContainer = document.getElementById('student-list-available');
         const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
         const upcomingMeetingsContainer = document.getElementById('upcoming-meetings');
-        const callHistoryContainer = document.getElementById('call-history');
+        const historySuccessfulContainer = document.getElementById('history-successful');
+        const historyMissedContainer = document.getElementById('history-missed');
+        const historyCancelledContainer = document.getElementById('history-cancelled');
+        const feedbackContainer = document.getElementById('feedback-container');
         const backButtonContainer = document.getElementById('page-nav-sticky');
         const pageNavContent = document.getElementById('page-nav-content');
         const confirmModal = document.getElementById('confirm-modal');
@@ -401,66 +422,165 @@
             });
             
             const meetings = [
-                { studentId: 1, time: '2025-06-16T10:00:00+03:00' },
-                { studentId: 3, time: '2025-06-17T15:00:00+03:00' }
+                { studentId: 1, time: '2025-06-20T19:30:00+03:00' }, // In progress
+                { studentId: 3, time: '2025-06-22T15:00:00+03:00' }  // In a few days
             ];
             
-            upcomingMeetingsContainer.innerHTML = meetings.map(meet => {
+            upcomingMeetingsContainer.innerHTML = meetings.map((meet, index) => {
                 const student = students.find(s => s.id === meet.studentId);
+                if (!student) return ''; // Don't render if student not found
+
+                const isStarted = new Date(meet.time) < new Date();
+                const countdownId = `countdown-timer-${index}`;
+                const startTimeAttribute = `data-start-time="${meet.time}"`;
+                
+                const joinButtonHTML = index === 0 ? `
+                    <a href="call.html" class="bg-green-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold hover:bg-green-600 transition-all shadow-md flex items-center gap-2">
+                        <i class="fas fa-video"></i>
+                        Join Meeting
+                    </a>` : '';
+
                 return `
-                 <div class="glass-bg p-4 rounded-xl flex items-center gap-4 border-2 border-green-400/50 relative">
-                    <img src="${student.profileImage}" class="w-12 h-12 rounded-full object-cover">
-                    <div class="flex-1">
-                        <p class="font-semibold">Call with ${student.name}</p>
-                        <p class="text-sm text-gray-600">Starts in: <span class="font-bold text-green-600" data-countdown="${meet.time}"></span></p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex items-center justify-center w-10 h-10 bg-green-100/50 rounded-full">
-                           <div class="w-3 h-3 bg-green-500 rounded-full live-indicator"></div>
-                        </div>
-                        <div class="relative">
-                            <button class="options-btn p-2 h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-200/50">
-                                <i class="fas fa-ellipsis-v text-gray-600"></i>
-                            </button>
-                            <div class="options-menu absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-xl p-1 hidden">
-                                <a href="#" class="block px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded">Edit</a>
-                                <a href="#" class="block px-3 py-1 text-sm text-red-500 hover:bg-red-100 rounded">Cancel</a>
+                    <div class="bg-white/60 p-4 rounded-2xl shadow-sm flex items-center gap-4 meeting-card">
+                        <img src="${student.profileImage}" alt="${student.name}" class="w-16 h-16 rounded-full border-2 border-white object-cover">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-800">${student.name}</h3>
+                                    <p class="text-sm text-gray-600">${new Date(meet.time).toLocaleString('en-US', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                                </div>
+                                <div class="relative">
+                                    <button class="options-btn text-gray-500 hover:text-gray-800 w-8 h-8 rounded-full hover:bg-gray-200/50 flex items-center justify-center">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="options-menu hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-20 py-1">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Reschedule</a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Cancel</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2 border-t border-gray-200/80 flex justify-between items-center">
+                                <div class="text-sm text-gray-500">
+                                    <i class="far fa-clock mr-1"></i>
+                                    Starts in: <span id="${countdownId}" ${startTimeAttribute} class="font-semibold ${isStarted ? 'text-red-500' : 'text-green-600'}">${isStarted ? 'Started!' : 'Calculating...'}</span>
+                                </div>
+                                ${joinButtonHTML}
                             </div>
                         </div>
                     </div>
-                </div>`;
+                `;
             }).join('');
             
             upcomingBadge.textContent = meetings.length;
-            upcomingBadge.classList.remove('hidden');
+            if (meetings.length > 0) {
+                upcomingBadge.classList.remove('hidden');
+            }
 
-            callHistoryContainer.innerHTML = `
-                 <div class="glass-bg p-6 rounded-xl">
-                    <div class="flex items-center gap-4">
-                        <img src="https://placehold.co/48x48/ec4899/ffffff?text=N" class="w-12 h-12 rounded-full object-cover">
+            const history = {
+                successful: [
+                    { studentId: 2, time: '2025-06-11T10:00:00+03:00', feedback: { rating: 4, comment: 'Sankale was very engaging and has improved a lot since our last call. Great progress!' } }
+                ],
+                missed: [
+                    { studentId: 4, time: '2025-06-10T14:00:00+03:00' }
+                ],
+                cancelled: [
+                    { studentId: 5, time: '2025-06-09T11:30:00+03:00' }
+                ]
+            };
+
+            historySuccessfulContainer.innerHTML = history.successful.map(call => {
+                const student = students.find(s => s.id === call.studentId);
+                return `
+                    <div class="bg-white/60 p-6 rounded-xl shadow-sm">
+                        <div class="flex items-start gap-4">
+                            <img src="${student.profileImage}" class="w-16 h-16 rounded-full object-cover">
+                            <div class="flex-1">
+                                <p class="font-bold text-lg">Call with ${student.name}</p>
+                                <p class="text-sm text-gray-600">${new Date(call.time).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</p>
+                                <div class="mt-4">
+                                    <p class="font-semibold mb-2">Your Feedback:</p>
+                                    <div class="flex items-center gap-2 text-yellow-400 text-xl">
+                                        ${[...Array(5)].map((_, i) => `<i class="${i < call.feedback.rating ? 'fas' : 'far'} fa-star"></i>`).join('')}
+                                    </div>
+                                    <p class="text-sm text-gray-700 mt-2 italic bg-gray-100/50 p-3 rounded-lg">"${call.feedback.comment}"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyMissedContainer.innerHTML = history.missed.map(call => {
+                const student = students.find(s => s.id === call.studentId);
+                return `
+                    <div class="bg-white/60 p-4 rounded-xl shadow-sm flex items-center gap-4">
+                        <img src="${student.profileImage}" class="w-12 h-12 rounded-full object-cover">
                         <div class="flex-1">
-                            <p class="font-semibold">Call with Naserian</p>
-                            <p class="text-sm text-gray-600">Completed on June 12, 2025</p>
+                            <p class="font-semibold">Call with ${student.name}</p>
+                            <p class="text-sm text-gray-500">${new Date(call.time).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-orange-500">
+                            <i class="fas fa-phone-slash"></i>
+                            <span class="font-semibold text-sm">Missed</span>
                         </div>
                     </div>
-                    <div class="mt-4 pt-4 border-t border-white/40">
-                        <p class="text-sm font-semibold text-gray-700 mb-2">How was your experience? Your feedback helps us track student progress.</p>
-                        <div class="star-rating text-2xl mb-2 flex flex-row-reverse justify-end">
-                            <i class="fas fa-star" data-value="5" title="Excellent fluency!"></i><i class="fas fa-star" data-value="4" title="Good progress"></i><i class="fas fa-star" data-value="3" title="Average"></i><i class="fas fa-star" data-value="2" title="A bit shy"></i><i class="fas fa-star" data-value="1" title="Needs practice"></i>
+                `;
+            }).join('');
+
+            historyCancelledContainer.innerHTML = history.cancelled.map(call => {
+                const student = students.find(s => s.id === call.studentId);
+                return `
+                    <div class="bg-white/60 p-4 rounded-xl shadow-sm flex items-center gap-4">
+                        <img src="${student.profileImage}" class="w-12 h-12 rounded-full object-cover">
+                        <div class="flex-1">
+                            <p class="font-semibold">Call with ${student.name}</p>
+                            <p class="text-sm text-gray-500">${new Date(call.time).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                         </div>
-                        <div class="text-xs text-gray-500 mb-4">1: Needs practice, 5: Excellent fluency!</div>
-                        <div class="flex items-center gap-2">
-                             <textarea class="w-full p-2 rounded-lg border border-gray-300 bg-white/80 max-h-24" rows="2" placeholder="Leave a message..."></textarea>
-                             <button class="w-12 h-12 flex-shrink-0 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center" title="Record voice note">
-                                <i class="fas fa-microphone"></i>
-                             </button>
-                        </div>
-                         <div class="text-right mt-2">
-                             <button class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Submit Feedback</button>
+                        <div class="flex items-center gap-2 text-red-500">
+                            <i class="fas fa-ban"></i>
+                            <span class="font-semibold text-sm">Cancelled</span>
                         </div>
                     </div>
-                 </div>
+                `;
+            }).join('');
+
+            const feedbackStudent = students.find(s => s.id === 2);
+            feedbackContainer.innerHTML = `
+                <div class="bg-white/60 p-6 rounded-xl shadow-sm mt-6">
+                     <div class="flex items-start gap-4">
+                        <img src="${feedbackStudent.profileImage}" class="w-16 h-16 rounded-full object-cover">
+                        <div class="flex-1">
+                            <p class="font-bold text-lg">Rate your experience with ${feedbackStudent.name}</p>
+                             <p class="text-sm text-gray-600">Help us track student progress by providing feedback.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200/80">
+                         <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-2xl text-gray-400 star-rating">
+                                <i class="far fa-star hover:text-yellow-400 transition-colors cursor-pointer" data-value="1"></i>
+                                <i class="far fa-star hover:text-yellow-400 transition-colors cursor-pointer" data-value="2"></i>
+                                <i class="far fa-star hover:text-yellow-400 transition-colors cursor-pointer" data-value="3"></i>
+                                <i class="far fa-star hover:text-yellow-400 transition-colors cursor-pointer" data-value="4"></i>
+                                <i class="far fa-star hover:text-yellow-400 transition-colors cursor-pointer" data-value="5"></i>
+                            </div>
+                            <div class="text-xs text-gray-500">1: Needs practice, 5: Excellent!</div>
+                         </div>
+                         <div class="flex items-center gap-3 mt-3">
+                             <textarea class="w-full p-3 rounded-lg border border-gray-300 bg-white/80 resize-none h-24" placeholder="Leave a detailed comment..."></textarea>
+                             <div class="flex flex-col gap-2">
+                                <button class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center hover:bg-green-600 shadow-md" title="Send Feedback"><i class="fas fa-paper-plane"></i></button>
+                                <button class="w-12 h-12 bg-purple-500 text-white rounded-lg flex items-center justify-center hover:bg-purple-600 shadow-md" title="Record voice note"><i class="fas fa-microphone"></i></button>
+                             </div>
+                         </div>
+                    </div>
+                </div>
             `;
+
+            // Initialize countdowns after rendering
+            meetings.forEach((meet, index) => {
+                const showDays = index !== 0;
+                initializeCountdown(`countdown-timer-${index}`, showDays);
+            });
             startUpcomingMeetingTimers();
         }
         
@@ -826,6 +946,51 @@
                  profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
             }
         });
+
+        // --- Countdown Timer Logic ---
+        function initializeCountdown(elementId, showDays) {
+            const countdownElement = document.getElementById(elementId);
+            if (!countdownElement) return;
+
+            const startTime = new Date(countdownElement.dataset.startTime).getTime();
+            let countdownInterval;
+
+            const updateCountdown = () => {
+                const now = new Date().getTime();
+                const distance = startTime - now;
+
+                if (distance < 0) {
+                    if (elementId === 'countdown-timer-0') {
+                        // For the first meeting, show "Meeting in progress"
+                        const parentDiv = countdownElement.parentElement;
+                        if (parentDiv) {
+                            parentDiv.innerHTML = `<i class="far fa-check-circle mr-1 text-green-500"></i> <span class="font-semibold text-green-600">Meeting started <span class="text-gray-600 text-sm font-normal italic ml-2">(03 minutes ago)</span></span>`;
+                        }
+                    } else {
+                        countdownElement.textContent = "Started!";
+                        countdownElement.classList.remove('text-green-600', 'text-gray-600');
+                        countdownElement.classList.add('text-red-500');
+                    }
+                    if (countdownInterval) clearInterval(countdownInterval);
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                let timerString = "";
+                if (showDays && days > 0) timerString += `${days}d `;
+                if (hours > 0 || (showDays && days > 0)) timerString += `${hours}h `;
+                timerString += `${minutes}m ${seconds}s`;
+                
+                countdownElement.textContent = timerString.trim();
+            };
+
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown();
+        }
 
         // --- Initial Load ---
         fetch('data.json')

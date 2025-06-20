@@ -299,6 +299,39 @@
                 height: 100%;
                 overflow: hidden;
             }
+
+            /* Position wrapper top-left and stack items vertically */
+            #wrapper {
+                top: 1rem;
+                left: 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            /* Smaller timer */
+            #timer-container {
+                width: 100px;
+                height: 25px;
+                border-radius: 1rem;
+            }
+            #timer-inner-bg {
+                padding: 0 0.5rem;
+            }
+            #timer-icon { font-size: 0.8rem; }
+            #timer-main { font-size: 0.8rem; }
+            #timer-ms { font-size: 0.5rem; }
+
+            /* Smaller status icons */
+            #status-left-container {
+                padding: 0.35rem 0.6rem;
+                border-radius: 0.75rem;
+                gap: 0.4rem;
+            }
+            .status-icon {
+                font-size: 1rem;
+            }
+
             #video-grid-container {
                 position: absolute;
                 top: 0;
@@ -306,8 +339,7 @@
                 right: 0;
                 bottom: 0;
                 overflow: hidden;
-                padding: 0.5rem 0.25rem;
-                box-sizing: border-box;
+                padding: 0;
             }
             #video-grid {
                 display: flex !important;
