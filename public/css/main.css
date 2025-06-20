@@ -181,3 +181,40 @@ body {
 #remote-video-container {
     border: 3px solid yellow !important;
 }
+
+.video-participant.hidden-by-max {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .video-participant {
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .participant-name {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        bottom: 6px;
+        left: 6px;
+    }
+
+    .action-icon-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.875rem;
+    }
+
+    #call-controls {
+        flex-wrap: wrap;
+        bottom: 1rem;
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .control-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 1rem;
+    }
+}

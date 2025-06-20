@@ -1,0 +1,2 @@
+the link to the repo that my project relies on. TalkTime was build on top of this repo, so make sure you refer any functionalities that you mess up from this repo but still keep the business logic and design the same as my project needs. here is the repository
+https://github.com/avoup/webrtc-video-conference.git

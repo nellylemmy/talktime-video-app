@@ -297,8 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Remote Peer Events ---
     webrtc.addEventListener('newUser', e => {
-        // Assuming the first user to join a volunteer is the student
-        const name = sessionStorage.getItem('studentToCall') || studentName || 'Student';
+        let name = 'Student';
+        if (userRole === 'volunteer') {
+            name = sessionStorage.getItem('studentToCall') || studentName || 'Student';
+        } else if (userRole === 'student') {
+            name = 'Volunteer';
+        }
         addParticipant(e.detail.socketId, name, e.detail.stream);
         toast(`${name} joined`);
         playConnectionSound();

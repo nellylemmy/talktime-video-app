@@ -95,7 +95,7 @@ if (window.appInitialized) {
             });
         }
         const icon = el.querySelector('.maximize-btn i');
-        if (icon) icon.className = isMax ? 'fas fa-expand-arrows-alt' : 'fas fa-compress-arrows-alt';
+        if (icon) icon.className = isMax ? 'fas fa-expand' : 'fas fa-compress';
     }
 
     // --- Data Loading ---
@@ -162,23 +162,25 @@ if (window.appInitialized) {
     function createUserInfoOverlay(localUserRole, remoteSocketId) {
         const overlay = document.createElement('div');
         overlay.className = 'participant-overlay';
-
+    
         const participantName = document.createElement('div');
         participantName.className = 'participant-name';
-
+    
         if (remoteSocketId === 'local') {
             participantName.textContent = localUserRole === 'volunteer' ? 'Volunteer (You)' : 'Student (You)';
         } else {
-            participantName.textContent = localUserRole === 'volunteer' ? 'Student' : 'Volunteer';
+            const name = sessionStorage.getItem('studentToCall') || 'Participant';
+            participantName.textContent = localUserRole === 'volunteer' ? name : 'Volunteer';
         }
+    
         overlay.appendChild(participantName);
-
+    
         const maximizeBtn = document.createElement('button');
         maximizeBtn.className = 'action-icon-btn maximize-btn';
         maximizeBtn.title = 'Maximize / Minimize';
         maximizeBtn.innerHTML = '<i class="fas fa-expand"></i>';
         overlay.appendChild(maximizeBtn);
-
+    
         if (localUserRole === 'volunteer' && remoteSocketId !== 'local') {
             const kickBtn = document.createElement('button');
             kickBtn.className = 'action-icon-btn kick-btn';
@@ -186,7 +188,7 @@ if (window.appInitialized) {
             kickBtn.innerHTML = '<i class="fas fa-user-slash"></i>';
             overlay.appendChild(kickBtn);
         }
-
+    
         return overlay;
     }
 

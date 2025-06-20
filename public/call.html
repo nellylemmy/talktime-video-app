@@ -291,6 +291,61 @@
             0%,100% { opacity:0; }
             50% { opacity:0.15; }
         }
+
+        @media (max-width: 768px) {
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+            #video-grid-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow: hidden;
+                padding: 0.5rem 0.25rem;
+                box-sizing: border-box;
+            }
+            #video-grid {
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                height: 100%;
+                width: 100%;
+                overflow-y: auto;
+                padding-bottom: 4rem;
+                gap: 0.5rem;
+            }
+            .video-participant {
+                width: 98vw;
+                height: calc(50vh - 0.5rem);
+                max-width: 100%;
+                border-radius: 0.5rem;
+                background: black;
+            }
+            .video-participant video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                background: black;
+            }
+            #call-controls {
+                bottom: 0.75rem;
+                gap: 0.5rem;
+                padding: 0.5rem 1rem;
+                border-radius: 1.5rem;
+                transform: translateX(-50%) scale(0.85);
+            }
+            .control-btn {
+                width: 3.5rem;
+                height: 3.5rem;
+                font-size: 1.3rem;
+            }
+        }
     </style>
 </head>
 <body class="gradient-bg">
@@ -330,6 +385,9 @@
         </button>
         <button id="camera-btn" class="control-btn active" title="Start/Stop Camera">
             <i class="fas fa-video"></i>
+        </button>
+        <button id="switch-camera-btn" class="control-btn hidden md:hidden" title="Switch Camera">
+            <i class="fas fa-sync-alt"></i>
         </button>
         <button id="chat-btn" class="control-btn" title="Open Chat">
             <i class="fas fa-comment"></i>
@@ -427,6 +485,132 @@
             let callTimerInterval, toastTimer, confirmCallback = null;
             let warningBeepPlayed = false, synth, uiHideTimeout;
             const names = ["Aisha","David","Fatima","Chen","Maria","Kwame","Yuki","Jose","Nia","Omar","Sofia","Liam"];
+
+            const switchCameraBtn = document.getElementById('switch-camera-btn');
+
+            function isMobileDevice() {
+        return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    if (isMobileDevice()) {
+        switchCameraBtn.classList.remove('hidden');
+
+        let currentFacingMode = localStorage.getItem('facingMode') || "user";
+
+        async function getInitialCameraStream() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { exact: currentFacingMode } },
+                    audio: true
+                });
+                window.localStream = stream;
+                const localVideo = document.querySelector('.video-participant video');
+                if (localVideo) {
+                    localVideo.srcObject = stream;
+                }
+
+                // replace video track to peer connections
+                if (window.webrtc?.pcs) {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    Object.values(window.webrtc.pcs).forEach(pc => {
+                        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) {
+                            sender.replaceTrack(videoTrack).catch(err => console.warn("Track replace failed on init:", err));
+                        }
+                    });
+                }
+
+            } catch (err) {
+                console.warn("Exact facingMode failed, falling back...");
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                window.localStream = fallbackStream;
+                const localVideo = document.querySelector('.video-participant video');
+                if (localVideo) {
+                    localVideo.srcObject = fallbackStream;
+                }
+            }
+        }
+
+        getInitialCameraStream();
+
+        async function switchCamera() {
+            try {
+                const oldStream = window.localStream;
+                if (!oldStream) {
+                    showActionToast("No active video stream", "off");
+                    return;
+                }
+
+                oldStream.getTracks().forEach(track => track.stop());
+
+                currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+                localStorage.setItem('facingMode', currentFacingMode);
+
+                let newStream;
+                try {
+                    newStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { exact: currentFacingMode } },
+                        audio: true
+                    });
+                } catch (err) {
+                    console.warn("Exact facingMode failed, falling back...");
+                    newStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                }
+
+                const newVideoTrack = newStream.getVideoTracks()[0];
+                window.localStream = newStream;
+
+                const localVideo = document.querySelector('.video-participant video');
+                if (localVideo) {
+                    localVideo.srcObject = newStream;
+                }
+
+                if (window.webrtc?.localStream && window.webrtc?.pcs) {
+                    Object.values(window.webrtc.pcs).forEach(pc => {
+                        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) {
+                            sender.replaceTrack(newVideoTrack).catch(err => console.warn("Track replace failed:", err));
+                        }
+                    });
+                    window.webrtc._localStream = newStream;
+                }
+
+                const cameraLabel = currentFacingMode === 'user' ? 'front' : 'back';
+                showActionToast(`Switched to ${cameraLabel} camera`, "info");
+
+            } catch (error) {
+                console.error("Camera switch error:", error);
+                showActionToast("Camera switch failed", "off");
+            }
+        }
+
+        switchCameraBtn.addEventListener('click', switchCamera);
+    }
+
+     // Double tap/click maximize toggle
+     document.addEventListener('dblclick', e => {
+        const vp = e.target.closest('.video-participant');
+        if (vp) vp.classList.toggle('maximized');
+    });
+
+    // Fixed double tap for touch devices
+    let tapTimeout = null;
+    document.addEventListener('touchstart', (e) => {
+        if (tapTimeout !== null) {
+            clearTimeout(tapTimeout);
+            tapTimeout = null;
+            const vp = e.target.closest('.video-participant');
+            if (vp) vp.classList.toggle('maximized');
+        } else {
+            tapTimeout = setTimeout(() => {
+                clearTimeout(tapTimeout);
+                tapTimeout = null;
+            }, 300);
+        }
+    });
 
             function updateTimerDisplay(ms) {
                 const totalSec = Math.floor(ms/1000);
