@@ -1,0 +1,288 @@
+/* TalkTime Volunteer Dashboard Polishing Styles
+   Scope: Students Dashboard UI tweaks (non-breaking)
+*/
+
+/* Smooth greeting transitions */
+.greeting-fade {
+  transition: opacity 1200ms ease, transform 1200ms ease;
+}
+.greeting-fade.enter {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.greeting-fade.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Buttons */
+.tt-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #4f46e5; /* indigo-600 */
+  color: #fff;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: background-color .2s ease, box-shadow .2s ease, transform .05s ease;
+}
+
+/* --- Sticky bar alignment and heading color --- */
+/* Make the sticky bar arrange controls: date group left, time window right */
+#page-nav-sticky {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Target the inner grid that actually lays out the three regions */
+#page-nav-sticky #page-nav-content > .w-full.grid.grid-cols-3.items-center {
+  display: grid !important; /* enforce grid */
+  grid-template-columns: 1fr 1fr 1fr !important; /* equal distribution */
+  align-items: center !important;
+  gap: 3rem !important; /* increased spacing between sections */
+  padding: 0 2rem !important; /* add horizontal padding */
+}
+
+/* Left cell: Kenya time window (swapped) - target by order */
+#page-nav-sticky #page-nav-content .w-full.grid.grid-cols-3.items-center > :nth-child(3) {
+  order: 1 !important;
+  justify-self: start !important;
+}
+
+/* Center cell: tabs nav - keep in center */
+#page-nav-sticky #page-nav-content .w-full.grid.grid-cols-3.items-center > nav {
+  order: 2 !important;
+  justify-self: center !important;
+}
+
+/* Right cell: date controls (swapped) - move to right */
+#page-nav-sticky #page-nav-content .w-full.grid.grid-cols-3.items-center > :first-child {
+  order: 3 !important;
+  justify-self: end !important;
+}
+
+/* Left group: the date controls container */
+#page-nav-sticky .flex.items-center.gap-3 {
+  margin-right: auto;
+}
+
+/* Right group: Kenya time window */
+#page-nav-sticky .hidden.md\:flex.justify-end.text-sm.text-gray-600 {
+  margin-left: auto;
+  color: #111827; /* text-black equivalent */
+}
+
+/* Section heading text should be black */
+#page-dashboard #dashboard-students .section-heading {
+  color: #000 !important;
+}
+
+/* Intro paragraph smaller to match feature item size */
+#page-dashboard #dashboard-students p.text-lg.text-gray-600.max-w-2xl.mx-auto.leading-relaxed {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+  margin-top: -1.25rem; /* pull into the card area visually */
+}
+
+/* Give features card extra bottom space so the paragraph can sit visually at its bottom */
+#page-dashboard #dashboard-students .bg-gradient-to-r.from-blue-50.to-purple-50.rounded-2xl.p-6.border.border-blue-100 {
+  position: relative;
+  padding-bottom: 3rem;
+}
+.tt-btn-primary:hover { background-color: #4338ca; }
+.tt-btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.5), 0 0 0 4px rgba(255,255,255,1);
+}
+
+/* Inputs */
+.tt-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.tt-input:focus {
+  border-color: #6366f1; /* indigo-500 */
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.35);
+  outline: none;
+}
+
+/* Sticky controls container inherits existing glass styles from page */
+#page-nav-sticky {
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+
+/* Sticky top tabs (smaller footprint) */
+.tab-btn {
+  line-height: 1.25rem; /* tighten */
+}
+.tab-btn svg { width: 1rem; height: 1rem; }
+.tab-btn span { font-size: 0.875rem; }
+
+/* Upcoming count indicator (green badge) */
+.upcoming-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 9999px;
+  background-color: #22c55e; /* green-500 */
+  color: #fff;
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(34,197,94,0.4);
+}
+
+/* Student card subtle elevation and consistent spacing */
+.student-card {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.student-card:hover,
+.student-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Avatar sizing within cards; ensure circular look when images are square */
+.student-card img {
+  object-fit: cover;
+  background-color: #f3f4f6; /* gray-100 fallback */
+}
+
+/* Availability/status chip look */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 600;
+}
+.badge-success { background-color: #dcfce7; color: #15803d; }
+.badge-warning { background-color: #fde68a; color: #92400e; }
+.badge-muted { background-color: #f3f4f6; color: #4b5563; }
+
+/* Tag chips */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #eef2ff; /* indigo-50 */
+  color: #4338ca; /* indigo-700 */
+}
+.tags-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+
+/* CTA area */
+.card-cta { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+
+/* Grid enhancements */
+.students-grid { display: grid; gap: 1.25rem; }
+@media (min-width: 640px) { .students-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .students-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .students-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Sidebar */
+.sidebar { display: none; width: 100%; }
+@media (min-width: 1024px) { .sidebar { display: block; width: 20rem; } }
+@media (min-width: 1280px) { .sidebar { width: 24rem; } }
+.sidebar-card { border-radius: 0.75rem; padding: 1rem; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.4); backdrop-filter: blur(12px); }
+
+/* Skeleton loaders */
+.student-skeleton { border-radius: 0.75rem; height: 142px; }
+
+/* Skeleton loader (optional utility, non-invasive) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Layout: Narrow main content on large screens */
+@media (min-width: 1024px) {
+  /* Only the students dashboard main container */
+  main.container #page-dashboard > .max-w-6xl {
+    max-width: none; /* override Tailwind max width */
+    width: 55%;
+    margin-left: auto;
+    margin-right: auto; /* keep centered */
+  }
+}
+
+/* Force key blocks to span 100% within their parents */
+/* Student card items inside the students grids */
+#page-dashboard #student-list-available .student-card,
+#page-dashboard #student-list-unavailable .student-card {
+  width: 100%;
+}
+#page-dashboard #student-list-available > *,
+#page-dashboard #student-list-unavailable > * {
+  /* Span across all grid columns so each item takes full grid width */
+  grid-column: 1 / -1;
+}
+#page-dashboard #student-list-available .student-card > .flex,
+#page-dashboard #student-list-unavailable .student-card > .flex {
+  width: 100%;
+}
+
+/* Sidebar cards should occupy full sidebar width */
+#page-dashboard .sidebar .sidebar-card {
+  width: 100%;
+}
+#page-dashboard .sidebar > .sidebar-card,
+#page-dashboard .sidebar > .mt-4.sidebar-card {
+  /* Span across all grid columns similar to student list items */
+  grid-column: 1 / -1;
+}
+
+/* Upcoming list anchor should span full width for better hit area */
+#page-dashboard #sidebar-upcoming a {
+  width: 100%;
+  display: flex;
+}
+
+/* Empty state text rows (centered message) */
+#page-dashboard .text-center.py-8 {
+  width: 100%;
+}
+
+/* Make selected blocks take 100% of #dashboard-students grid width */
+#page-dashboard #dashboard-students .sidebar {
+  /* Sidebar row spans across all columns of the surrounding grid */
+  grid-column: 1 / -1;
+}
+#page-dashboard #dashboard-students .sidebar .sidebar-card {
+  width: 100%;
+}
+
+/* Student lists should also occupy full grid width of #dashboard-students */
+#page-dashboard #dashboard-students #student-list-available,
+#page-dashboard #dashboard-students #student-list-unavailable {
+  grid-column: 1 / -1;
+  width: 100%;
+}

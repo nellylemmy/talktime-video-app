@@ -1,0 +1,1491 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TalkTime API",
+    "description": "API documentation for the TalkTime platform",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ADEA Foundation",
+      "url": "https://adeafoundation.org"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "API v1"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "description": "Authenticates a user and creates a session",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user",
+        "description": "Creates a new user account",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "email", "password"],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "description": "User's full name"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "User email address"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "User password"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["volunteer", "student", "admin"],
+                    "default": "volunteer",
+                    "description": "User role"
+                  },
+                  "age": {
+                    "type": "integer",
+                    "description": "User age (required for student volunteers)"
+                  },
+                  "parentEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Parent email (required for users under 18)"
+                  },
+                  "parentPhone": {
+                    "type": "string",
+                    "description": "Parent phone number (required for users under 18)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Registration successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already in use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current user",
+        "description": "Returns the currently authenticated user's information",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout user",
+        "description": "Destroys the user's session",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Logout successful"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/volunteers/dashboard-data": {
+      "get": {
+        "summary": "Get volunteer dashboard data",
+        "description": "Returns volunteer information and their upcoming/past meetings",
+        "tags": ["Volunteers"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "volunteer": {
+                      "$ref": "#/components/schemas/VolunteerInfo"
+                    },
+                    "meetings": {
+                      "type": "object",
+                      "properties": {
+                        "upcoming": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Meeting"
+                          }
+                        },
+                        "past": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Meeting"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Volunteer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/volunteers/students/cards": {
+      "get": {
+        "summary": "Get available student cards",
+        "description": "Returns HTML content for available student cards",
+        "tags": ["Volunteers"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students": {
+      "get": {
+        "summary": "Get all students",
+        "description": "Returns a list of all students",
+        "tags": ["Students"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "students": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{id}": {
+      "get": {
+        "summary": "Get student by ID",
+        "description": "Returns a student by ID",
+        "tags": ["Students"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Student ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "student": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/available": {
+      "get": {
+        "summary": "Get available students",
+        "description": "Returns a list of available students",
+        "tags": ["Students"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "students": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings": {
+      "get": {
+        "summary": "Get all meetings",
+        "description": "Returns a list of all meetings",
+        "tags": ["Meetings"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meetings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Meeting"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new meeting",
+        "description": "Creates a new meeting",
+        "tags": ["Meetings"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentId", "scheduledTime"],
+                "properties": {
+                  "studentId": {
+                    "type": "string",
+                    "description": "Student ID"
+                  },
+                  "scheduledTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Scheduled meeting time"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "description": "Meeting duration in minutes",
+                    "default": 40
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Meeting created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meeting": {
+                      "$ref": "#/components/schemas/Meeting"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Meeting scheduled successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student or volunteer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings/{id}": {
+      "get": {
+        "summary": "Get meeting by ID",
+        "description": "Returns a meeting by ID",
+        "tags": ["Meetings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Meeting ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meeting": {
+                      "$ref": "#/components/schemas/Meeting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update meeting",
+        "description": "Updates an existing meeting",
+        "tags": ["Meetings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Meeting ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scheduledTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Scheduled meeting time"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "description": "Meeting duration in minutes"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["scheduled", "completed", "cancelled"],
+                    "description": "Meeting status"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Meeting updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meeting": {
+                      "$ref": "#/components/schemas/Meeting"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Meeting updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel meeting",
+        "description": "Cancels an existing meeting",
+        "tags": ["Meetings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Meeting ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meeting cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Meeting cancelled successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings/{id}/join": {
+      "get": {
+        "summary": "Join meeting",
+        "description": "Returns meeting details with room info for joining",
+        "tags": ["Meetings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Meeting ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meeting": {
+                      "$ref": "#/components/schemas/Meeting"
+                    },
+                    "roomInfo": {
+                      "type": "object",
+                      "properties": {
+                        "roomId": {
+                          "type": "string",
+                          "description": "Unique room ID for the meeting"
+                        },
+                        "userRole": {
+                          "type": "string",
+                          "enum": ["volunteer", "student", "admin"],
+                          "description": "User role"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "description": "User ID"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "Get user notifications",
+        "description": "Returns a list of notifications for the current user",
+        "tags": ["Notifications"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Send notification",
+        "description": "Sends a notification to a user (admin only)",
+        "tags": ["Notifications"],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "type", "message"],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "User ID to send notification to"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["meeting_scheduled", "meeting_updated", "meeting_cancelled", "meeting_reminder", "system"],
+                    "description": "Notification type"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Notification message"
+                  },
+                  "relatedId": {
+                    "type": "string",
+                    "description": "Related entity ID (e.g., meeting ID)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notification sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notification": {
+                      "$ref": "#/components/schemas/Notification"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Notification sent successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "put": {
+        "summary": "Mark notification as read",
+        "description": "Marks a notification as read",
+        "tags": ["Notifications"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Notification ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Notification marked as read"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "User ID"
+          },
+          "fullName": {
+            "type": "string",
+            "description": "User's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User's email address"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["volunteer", "student", "admin"],
+            "description": "User role"
+          },
+          "isApproved": {
+            "type": "boolean",
+            "description": "Whether the user is approved (for under-18 volunteers)"
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Student ID"
+          },
+          "fullName": {
+            "type": "string",
+            "description": "Student's full name"
+          },
+          "admissionNumber": {
+            "type": "string",
+            "description": "Student's admission number"
+          },
+          "age": {
+            "type": "integer",
+            "description": "Student's age"
+          },
+          "gender": {
+            "type": "string",
+            "enum": ["male", "female", "other"],
+            "description": "Student's gender"
+          },
+          "bio": {
+            "type": "string",
+            "description": "Student's biography"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "description": "URL to student's photo"
+            },
+            "description": "Student's photos"
+          },
+          "isAvailable": {
+            "type": "boolean",
+            "description": "Whether the student is available for meetings"
+          }
+        }
+      },
+      "VolunteerInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Volunteer ID"
+          },
+          "fullName": {
+            "type": "string",
+            "description": "Volunteer's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Volunteer's email address"
+          }
+        }
+      },
+      "Meeting": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Meeting ID"
+          },
+          "studentId": {
+            "type": "string",
+            "description": "Student ID"
+          },
+          "studentName": {
+            "type": "string",
+            "description": "Student's full name"
+          },
+          "scheduledTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled meeting time"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["scheduled", "completed", "cancelled"],
+            "description": "Meeting status"
+          },
+          "roomId": {
+            "type": "string",
+            "description": "Unique room ID for the meeting"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid",
+        "description": "Session-based authentication"
+      }
+    }
+  }
+}

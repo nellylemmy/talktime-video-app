@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # Development Nginx - Single domain with path-based routing
+  nginx:
+    image: nginx:alpine
+    container_name: talktime_nginx_dev
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx/development.conf:/etc/nginx/conf.d/default.conf
+      - ./frontends/volunteer/public:/var/www/frontend
+      - ./frontends/admin/public:/var/www/frontend/admin
+      - ./frontends/student/public:/var/www/frontend/student
+      - ./frontends/call:/var/www/frontend/call
+      - ./frontends/shared:/var/www/frontend/shared
+    depends_on:
+      - backend
+    networks:
+      - talktime-net
+    restart: unless-stopped
+
+  # Backend Service (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: talktime_backend_dev
+    ports:
+      - '3001:3001'  # Expose for direct access
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: db
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_DATABASE: talktimedb_dev
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: dev-secret-key
+      # Development URLs
+      FRONTEND_URL: http://localhost
+      CORS_ORIGINS: "http://localhost,http://localhost:3000,http://localhost:3001,http://localhost:3002"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - talktime-net
+    restart: unless-stopped
+
+  # Database Service (Development)
+  db:
+    image: postgres:13-alpine
+    container_name: talktime_db_dev
+    ports:
+      - '5432:5432'  # Expose for direct access
+    environment:
+      POSTGRES_DB: talktimedb_dev
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - talktime-net
+    restart: unless-stopped
+
+  # Redis Service (Development)
+  redis:
+    image: redis:7-alpine
+    container_name: talktime_redis_dev
+    ports:
+      - '6379:6379'  # Expose for direct access
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - talktime-net
+    restart: unless-stopped
+
+  # Optional: Hot-reload development servers for each frontend
+  volunteer-dev:
+    build:
+      context: ./frontends/volunteer
+      dockerfile: Dockerfile.dev
+    container_name: talktime_volunteer_dev
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontends/volunteer:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - talktime-net
+    profiles: ["dev-servers"]
+
+  admin-dev:
+    build:
+      context: ./frontends/admin
+      dockerfile: Dockerfile.dev
+    container_name: talktime_admin_dev
+    ports:
+      - '3002:3000'
+    volumes:
+      - ./frontends/admin:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - talktime-net
+    profiles: ["dev-servers"]
+
+  student-dev:
+    build:
+      context: ./frontends/student
+      dockerfile: Dockerfile.dev
+    container_name: talktime_student_dev
+    ports:
+      - '3003:3000'
+    volumes:
+      - ./frontends/student:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - talktime-net
+    profiles: ["dev-servers"]
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+networks:
+  talktime-net:
+    driver: bridge

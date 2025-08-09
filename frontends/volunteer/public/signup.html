@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Volunteer Signup</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- JWT Authentication -->
+    <script src="/volunteer/js/jwt-auth.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+
+    <style>
+        /* Base styles from the brand identity */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4ff; /* Fallback */
+            overflow-x: hidden;
+        }
+
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+        }
+
+        /* Glassmorphism Effect for the card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animated Blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+            z-index: -1;
+            animation: move 20s infinite alternate;
+        }
+
+        .blob-1 {
+             width: 24rem;
+             height: 24rem;
+             top: -5rem;
+             left: -10rem;
+             background-color: #a855f7;
+        }
+
+        .blob-2 {
+            width: 20rem;
+            height: 20rem;
+            bottom: -5rem;
+            right: -8rem;
+            background-color: #4f46e5;
+            animation-delay: -10s;
+        }
+        
+        /* Gradient Text for the logo */
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Keyframe animation for blobs */
+        @keyframes move {
+            from {
+                transform: translate(0, 0) scale(1);
+            }
+            to {
+                transform: translate(50px, 100px) scale(1.2);
+            }
+        }
+
+        /* Custom style for select dropdown arrows */
+        .custom-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Style for required asterisk */
+        .required-star {
+            color: #ef4444; /* red-500 */
+            margin-left: 2px;
+        }
+        
+        /* Transition for parental consent section */
+        #parental-consent-section {
+            transition: all 0.5s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        #parental-consent-section.show {
+            max-height: 500px; /* Adjust as needed */
+            opacity: 1;
+            margin-top: 1.5rem; /* Add space when it appears */
+        }
+
+        /* Transition for school info section */
+        #school-info-section {
+            transition: all 0.5s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        #school-info-section.show {
+            max-height: 500px; /* Adjust as needed */
+            opacity: 1;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+    <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
+        <nav class="container mx-auto flex items-center justify-between relative">
+            <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#4f46e5;" />
+                    <stop offset="100%" style="stop-color:#a855f7;" />
+                  </linearGradient>
+                </defs>
+                <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+              </svg>
+              <span class="gradient-text">TALK TIME</span>
+            </a>
+          
+            <!-- Back Button -->
+            <div class="hidden md:flex items-center space-x-4">
+              <a href="/" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back
+              </a>
+            </div>
+          
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+              <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+              </button>
+            </div>
+          
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
+              <a href="/" class="block text-gray-700 hover:text-orange-500 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back
+              </a>
+            </div>
+          </nav>
+    </header>
+    <!-- Background Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- Main Container -->
+    <div class="relative min-h-screen w-full flex flex-col items-center justify-center p-4">
+
+        <!-- Signup Card -->
+        <div class="w-full max-w-2xl my-10">
+            <!-- Logo -->
+            <div class="flex justify-center mb-8">
+                 <a href="/" class="flex items-center text-3xl font-bold" aria-label="TalkTime Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mr-2" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                          <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#4f46e5;" />
+                            <stop offset="100%" style="stop-color:#a855f7;" />
+                          </linearGradient>
+                        </defs>
+                        <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                    </svg>
+                    <span class="gradient-text font-poppins">TALKTIME</span>
+                </a>
+            </div>
+
+            <div class="glass-card rounded-2xl shadow-xl p-6 md:p-10">
+                <div class="text-center mb-8">
+                    <h1 class="font-poppins text-3xl font-bold text-gray-800">Become a Volunteer</h1>
+                    <p class="text-gray-600 mt-2">Excited to have you join our community!</p>
+                </div>
+
+                <!-- Signup Form -->
+                <form id="signup-form" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Full Name -->
+                        <div>
+                            <label for="full-name" class="text-sm font-medium text-gray-700">Full Name<span class="required-star">*</span></label>
+                            <input type="text" id="full-name" name="full-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="John Doe">
+                        </div>
+
+                        <!-- Email Address -->
+                        <div>
+                            <label for="email" class="text-sm font-medium text-gray-700">Email Address<span class="required-star">*</span></label>
+                            <input type="email" id="email" name="email" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="you@example.com">
+                        </div>
+                    </div>
+                    
+
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <!-- Age -->
+                        <div>
+                            <label for="age" class="text-sm font-medium text-gray-700">Age<span class="required-star">*</span></label>
+                            <input type="number" id="age" name="age" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., 17" min="10">
+                        </div>
+                        <!-- Gender -->
+                        <div>
+                            <label for="gender" class="text-sm font-medium text-gray-700">Gender<span class="required-star">*</span></label>
+                             <select id="gender" name="gender" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <option value="" disabled selected>Select your gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not_to_say">Prefer not to say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div>
+                        <label for="phone" class="text-sm font-medium text-gray-700">Phone Number<span class="required-star">*</span></label>
+                        <div class="mt-1 flex rounded-lg shadow-sm">
+                            <select id="country-code" name="country-code" required class="form-input custom-select block w-32 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <!-- Populated by JS -->
+                            </select>
+                            <input type="tel" id="phone" name="phone" required class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g. 712 345678">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <!-- Password -->
+                        <div>
+                            <label for="password" class="text-sm font-medium text-gray-700">Password<span class="required-star">*</span></label>
+                            <input type="password" id="password" name="password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Create a password">
+                        </div>
+                        <!-- Confirm Password -->
+                        <div>
+                            <label for="confirm-password" class="text-sm font-medium text-gray-700">Confirm Password<span class="required-star">*</span></label>
+                            <input type="password" id="confirm-password" name="confirm-password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Confirm your password">
+                        </div>
+                    </div>
+
+                    <!-- Parental Consent Section (Initially Hidden) -->
+                    <div id="parental-consent-section">
+                        <div class="p-4 rounded-lg bg-indigo-100/50 border border-indigo-200">
+                             <p class="text-sm text-indigo-800 text-center font-semibold mb-4">
+                                <i class="fas fa-shield-alt mr-2"></i>For your safety, volunteers under 18 require parental consent.
+                            </p>
+                            <div class="space-y-4">
+                                 <div>
+                                    <label for="parent-email" class="text-sm font-medium text-gray-700">Parent/Guardian Email<span class="required-star">*</span></label>
+                                    <input type="email" id="parent-email" name="parent-email" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="parent@example.com">
+                                </div>
+                                 <div>
+                                    <label for="parent-phone" class="text-sm font-medium text-gray-700">Parent/Guardian Phone<span class="required-star">*</span></label>
+                                    <input type="tel" id="parent-phone" name="parent-phone" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Parent's phone number">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Volunteer Type Selection -->
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700">Volunteer Type<span class="required-star">*</span></label>
+                        <div class="space-y-3">
+                            <div class="flex items-start p-4 border border-gray-200 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                                <input type="radio" id="standard-volunteer" name="volunteer-type" value="standard" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1" checked>
+                                <div class="ml-3">
+                                    <label for="standard-volunteer" class="block text-sm font-semibold text-gray-800">Standard Volunteer</label>
+                                    <p class="text-xs text-gray-600 mt-1">Help Maasai students practice English through conversation</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50/50 hover:bg-purple-50/70 transition-colors">
+                                <input type="radio" id="student-volunteer" name="volunteer-type" value="student" class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500 mt-1">
+                                <div class="ml-3">
+                                    <label for="student-volunteer" class="block text-sm font-semibold text-gray-800">Student Volunteer</label>
+                                    <p class="text-xs text-gray-600 mt-1">Get community service hours and official documentation for your volunteer work</p>
+                                    <div class="flex items-center mt-2 text-xs text-purple-700">
+                                        <i class="fas fa-star mr-1"></i>
+                                        <span>Enhanced benefits: Certificates, impact tracking, school recognition</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- School Name (Conditional) -->
+                    <div id="school-info-section">
+                        <label for="school-name" class="text-sm font-medium text-gray-700">School Name<span class="required-star">*</span></label>
+                        <input type="text" id="school-name" name="school-name" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., Maasai High School">
+                    </div>
+
+                    <!-- Availability -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Availability<span class="required-star">*</span> <span class="text-gray-500 font-normal">(Select at least one)</span></label>
+                        <div id="availability-group" class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="mon" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Monday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="tue" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Tuesday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="wed" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Wednesday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="thu" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Thursday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="fri" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Friday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="sat" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Saturday</label>
+                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="sun" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Sunday</label>
+                        </div>
+                    </div>
+
+                    <!-- Terms -->
+                    <div class="flex items-center">
+                        <input id="terms" name="terms" type="checkbox" required class="form-input h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">I agree to the <a href="/common/terms-and-conditions" class="font-semibold text-indigo-600 hover:underline">Terms and Conditions</a><span class="required-star">*</span></label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button type="submit" id="submit-button" disabled class="w-full font-bold py-3 px-4 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Login Link -->
+                <div class="text-center mt-8">
+                    <p class="text-sm text-gray-600">
+                        Already have an account? 
+                        <a href="/login" class="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- COUNTRY CODE POPULATION ---
+            const countries = [
+                { name: "Kenya", code: "+254", flag: "🇰🇪" },
+                { name: "United States", code: "+1", flag: "🇺🇸" },
+                { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
+                { name: "Canada", code: "+1", flag: "🇨🇦" },
+                { name: "Australia", code: "+61", flag: "🇦🇺" },
+                { name: "Germany", code: "+49", flag: "🇩🇪" },
+                { name: "France", code: "+33", flag: "🇫🇷" },
+                { name: "India", code: "+91", flag: "🇮🇳" },
+                { name: "China", code: "+86", flag: "🇨🇳" },
+                { name: "Japan", code: "+81", flag: "🇯🇵" },
+                { name: "Brazil", code: "+55", flag: "🇧🇷" },
+                { name: "South Africa", code: "+27", flag: "🇿🇦" },
+                { name: "Nigeria", code: "+234", flag: "🇳🇬" },
+                { name: "Afghanistan", code: "+93", flag: "🇦🇫" },
+                { name: "Albania", code: "+355", flag: "🇦🇱" },
+                { name: "Algeria", code: "+213", flag: "🇩🇿" },
+                { name: "Argentina", code: "+54", flag: "🇦🇷" },
+                { name: "Austria", code: "+43", flag: "🇦🇹" },
+                { name: "Bangladesh", code: "+880", flag: "🇧🇩" },
+                { name: "Belgium", code: "+32", flag: "🇧🇪" },
+                { name: "Colombia", code: "+57", flag: "🇨🇴" },
+                { name: "Egypt", code: "+20", flag: "🇪🇬" },
+                { name: "Ethiopia", code: "+251", flag: "🇪🇹" },
+                { name: "Ghana", code: "+233", flag: "🇬🇭" },
+                { name: "Greece", code: "+30", flag: "🇬🇷" },
+                { name: "Indonesia", code: "+62", flag: "🇮🇩" },
+                { name: "Iran", code: "+98", flag: "🇮🇷" },
+                { name: "Iraq", code: "+964", flag: "🇮🇶" },
+                { name: "Ireland", code: "+353", flag: "🇮🇪" },
+                { name: "Israel", code: "+972", flag: "🇮🇱" },
+                { name: "Italy", code: "+39", flag: "🇮🇹" },
+                { name: "Mexico", code: "+52", flag: "🇲🇽" },
+                { name: "Netherlands", code: "+31", flag: "🇳🇱" },
+                { name: "New Zealand", code: "+64", flag: "🇳🇿" },
+                { name: "Norway", code: "+47", flag: "🇳🇴" },
+                { name: "Pakistan", code: "+92", flag: "🇵🇰" },
+                { name: "Philippines", code: "+63", flag: "🇵🇭" },
+                { name: "Poland", code: "+48", flag: "🇵🇱" },
+                { name: "Portugal", code: "+351", flag: "🇵🇹" },
+                { name: "Russia", code: "+7", flag: "🇷🇺" },
+                { name: "Saudi Arabia", code: "+966", flag: "🇸🇦" },
+                { name: "Singapore", code: "+65", flag: "🇸🇬" },
+                { name: "South Korea", code: "+82", flag: "🇰🇷" },
+                { name: "Spain", code: "+34", flag: "🇪🇸" },
+                { name: "Sweden", code: "+46", flag: "🇸🇪" },
+                { name: "Switzerland", code: "+41", flag: "🇨🇭" },
+                { name: "Tanzania", code: "+255", flag: "🇹🇿" },
+                { name: "Thailand", code: "+66", flag: "🇹🇭" },
+                { name: "Turkey", code: "+90", flag: "🇹🇷" },
+                { name: "Uganda", code: "+256", flag: "🇺🇬" },
+                { name: "Ukraine", code: "+380", flag: "🇺🇦" },
+                { name: "United Arab Emirates", code: "+971", flag: "🇦🇪" },
+                { name: "Vietnam", code: "+84", flag: "🇻🇳" }
+            ].sort((a, b) => a.name.localeCompare(b.name));
+
+            const countryCodeSelect = document.getElementById('country-code');
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.code;
+                option.textContent = `${country.flag} ${country.code}`;
+                countryCodeSelect.appendChild(option);
+            });
+            countryCodeSelect.value = "+254";
+
+            // --- FORM ELEMENTS & VALIDATION ---
+            const form = document.getElementById('signup-form');
+            const submitButton = document.getElementById('submit-button');
+            const formInputs = form.querySelectorAll('.form-input');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const availabilityGroup = document.getElementById('availability-group');
+            const ageInput = document.getElementById('age');
+            const parentalConsentSection = document.getElementById('parental-consent-section');
+            const parentEmailInput = document.getElementById('parent-email');
+            const parentPhoneInput = document.getElementById('parent-phone');
+            const standardVolunteerRadio = document.getElementById('standard-volunteer');
+            const studentVolunteerRadio = document.getElementById('student-volunteer');
+            const schoolInfoSection = document.getElementById('school-info-section');
+            const schoolNameInput = document.getElementById('school-name');
+
+            function handleVolunteerTypeChange() {
+                if (studentVolunteerRadio && studentVolunteerRadio.checked) {
+                    if (schoolInfoSection) {
+                        schoolInfoSection.classList.add('show');
+                    }
+                    if (schoolNameInput) {
+                        schoolNameInput.required = true;
+                    }
+                } else {
+                    if (schoolInfoSection) {
+                        schoolInfoSection.classList.remove('show');
+                    }
+                    if (schoolNameInput) {
+                        schoolNameInput.required = false;
+                    }
+                }
+                validateForm();
+            }
+
+            function handleAgeChange() {
+                const age = parseInt(ageInput.value, 10);
+
+                if (!isNaN(age) && age >= 10 && age < 18) {
+                    parentalConsentSection.classList.add('show');
+                    parentEmailInput.required = true;
+                    parentPhoneInput.required = true;
+                } else {
+                    parentalConsentSection.classList.remove('show');
+                    parentEmailInput.required = false;
+                    parentPhoneInput.required = false;
+                }
+                validateForm(); // Re-validate after showing/hiding fields
+            }
+
+            function validateForm() {
+                let isFormValid = true;
+
+                // Check all inputs that have the 'required' attribute
+                form.querySelectorAll('[required]').forEach(input => {
+                     if (input.type === 'checkbox') {
+                        if (!input.checked) isFormValid = false;
+                    } else if (!input.value.trim()) {
+                        isFormValid = false;
+                    }
+                });
+                
+                // Specific check for age value
+                const age = parseInt(ageInput.value, 10);
+                if(isNaN(age) || age < 10) {
+                    isFormValid = false;
+                }
+
+                // Check if passwords match
+                if (passwordInput.value !== confirmPasswordInput.value) {
+                    isFormValid = false;
+                }
+
+                // Check if at least one availability checkbox is checked
+                if (!availabilityGroup.querySelector('input[type="checkbox"]:checked')) {
+                    isFormValid = false;
+                }
+
+                // Enable or disable the submit button
+                submitButton.disabled = !isFormValid;
+            }
+
+            // Add event listeners
+            formInputs.forEach(input => {
+                input.addEventListener('input', validateForm);
+            });
+            availabilityGroup.addEventListener('change', validateForm);
+            ageInput.addEventListener('input', handleAgeChange);
+            if (standardVolunteerRadio) {
+                standardVolunteerRadio.addEventListener('change', handleVolunteerTypeChange);
+            }
+            if (studentVolunteerRadio) {
+                studentVolunteerRadio.addEventListener('change', handleVolunteerTypeChange);
+            }
+
+            // Initial validation check
+            validateForm();
+            
+            // Handle JWT-based form submission
+            const signupForm = document.getElementById('signup-form');
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('JWT Signup form submitted');
+                
+                // Collect form data
+                const formData = new FormData(signupForm);
+                const fullName = formData.get('full-name');
+                const isUnder18 = formData.get('age') === 'under-18';
+                const isStudentVolunteer = formData.get('volunteer-type') === 'student';
+                
+                const userData = {
+                    username: fullName,
+                    full_name: fullName,
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    is_under_18: isUnder18,
+                    is_student_volunteer: isStudentVolunteer,
+                    volunteer_type: isStudentVolunteer ? 'student_volunteer' : 'standard',
+                    parent_email: formData.get('parent-email') || null,
+                    parent_phone: formData.get('parent-phone') || null,
+                    school_name: formData.get('school-name') || null,
+                    phone: formData.get('phone') || null,
+                    gender: formData.get('gender') || null
+                };
+                
+                // Disable submit button during signup
+                const submitButton = signupForm.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Creating Account...';
+                
+                try {
+                    const result = await window.jwtAuth.signup(userData);
+                    
+                    if (result.success) {
+                        console.log('JWT Signup successful:', result.user);
+                        
+                        // Show success message with professional modal
+                        showNotification(
+                            'Account created successfully! Welcome to TalkTime! You will be redirected to your dashboard shortly.',
+                            'success',
+                            {
+                                title: 'Welcome to TalkTime!',
+                                duration: 3000
+                            }
+                        );
+                        
+                        // Handle post-login redirect after a short delay
+                        setTimeout(() => {
+                            window.jwtAuth.handlePostLoginRedirect();
+                        }, 2000);
+                    } else {
+                        showNotification(
+                            result.error || 'Signup failed. Please try again.',
+                            'error',
+                            {
+                                title: 'Signup Failed',
+                                autoClose: false
+                            }
+                        );
+                    }
+                } catch (error) {
+                    console.error('JWT Signup error:', error);
+                    showNotification(
+                        'An unexpected error occurred during signup. Please check your connection and try again.',
+                        'error',
+                        {
+                            title: 'Connection Error',
+                            autoClose: false
+                        }
+                    );
+                } finally {
+                    // Re-enable submit button
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

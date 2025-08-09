@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | TalkTime</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/main.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-900">ADEA Admin Login</h1>
+            <p class="mt-2 text-sm text-gray-600">Secure administrator access</p>
+        </div>
+        
+        <div id="error-message" class="hidden p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert"></div>
+        
+        <form id="admin-login-form" class="space-y-6">
+            <div>
+                <label for="email" class="text-sm font-medium text-gray-700">Email Address</label>
+                <input type="email" name="email" id="email" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div>
+                <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+                <input type="password" name="password" id="password" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" 
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+                        Remember me
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <button type="submit"
+                        class="w-full px-4 py-2 font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Sign In
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <a href="/admin/signup.html" class="text-sm text-primary-600 hover:text-primary-500">
+                    Need an account? Sign up
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('admin');
+            const form = document.getElementById('admin-login-form');
+            const errorMessage = document.getElementById('error-message');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Clear previous error messages
+                errorMessage.classList.add('hidden');
+                
+                // Get form values
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+                
+                try {
+                    const result = await window.TalkTimeAuth.login({
+                        email: email,
+                        password: password
+                    }, '/api/v1/jwt-auth/admin/login');
+                    
+                    if (result.success) {
+                        // Show success message
+                        if (window.showNotification) {
+                            window.showNotification('Login successful! Redirecting to dashboard...', 'success', {
+                                autoClose: true,
+                                duration: 2000
+                            });
+                        }
+                        
+                        // Redirect to dashboard after brief delay
+                        setTimeout(() => {
+                            window.location.href = '/admin/dashboard.html';
+                        }, 1500);
+                    } else {
+                        throw new Error(result.error || 'Invalid credentials');
+                    }
+                    
+                } catch (error) {
+                    // Hide any existing error messages
+                    errorMessage.classList.add('hidden');
+                    
+                    // Show professional modal error instead of console error
+                    if (window.showNotification) {
+                        window.showNotification(
+                            error.message || 'Login failed. Please check your credentials and try again.',
+                            'error',
+                            {
+                                title: 'Login Failed',
+                                autoClose: false,
+                                showCloseButton: true
+                            }
+                        );
+                    } else {
+                        // Fallback to inline error message if modal system fails
+                        errorMessage.textContent = error.message || 'Login failed. Please try again.';
+                        errorMessage.classList.remove('hidden');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

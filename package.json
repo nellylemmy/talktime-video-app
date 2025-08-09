@@ -1,16 +1,12 @@
 {
   "name": "talktime",
   "version": "1.0.0",
-  "description": "A video conferencing platform connecting volunteers and students, supported by the ADEA Foundation.",
+  "description": "A video conferencing platform connecting volunteers and students, supported by the ADEA Foundation in partnership with KEPAS.",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "dev": "npx nodemon server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nellylemmy/talktime-video-app.git"
   },
   "keywords": [
     "webrtc",
@@ -19,14 +15,37 @@
     "volunteer",
     "maasai",
     "kenya",
-    "talktime"
+    "talktime",
+    "kepas",
+    "adea foundation"
   ],
-  "author": "Nelson Lemein <nelsonlemmy61@gmail.com>",
+  "author": "Nelson Lemein <nelsonlemmy61@gmail.com> (https://github.com/nellylemmy)",
+  "contributors": [
+    {
+      "name": "Nelson Lemein",
+      "email": "nelsonlemmy61@gmail.com",
+      "url": "https://github.com/nellylemmy",
+      "organization": "KEPAS",
+      "role": "Founder & CEO, Lead Developer"
+    }
+  ],
+  "maintainers": [
+    "Nelson Lemein <nelsonlemmy61@gmail.com> (KEPAS)"
+  ],
+  "company": "KEPAS",
+  "kepasWebsite": "https://kepas.co.ke/",
+  "funding": {
+    "type": "organization",
+    "url": "https://adea.org"
+  },
   "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/nellylemmy/talktime-video-app/issues"
   },
-  "homepage": "https://github.com/nellylemmy/talktime-video-app#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nellylemmy/talktime-video-app.git"
+  },
   "dependencies": {
     "express": "^4.17.1",
     "socket.io": "^4.1.3"

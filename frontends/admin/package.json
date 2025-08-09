@@ -1,0 +1,39 @@
+{
+  "name": "talktime-admin-frontend",
+  "version": "1.0.0",
+  "description": "TalkTime Admin Frontend - Administrative portal for ADEA Foundation staff",
+  "main": "public/index.html",
+  "scripts": {
+    "start": "serve -s public -l 3002",
+    "build": "echo 'Static files - no build needed'",
+    "dev": "live-server public --port=3002 --host=0.0.0.0",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "talktime",
+    "admin",
+    "management",
+    "adea",
+    "foundation"
+  ],
+  "author": {
+    "name": "Nelson Lemein",
+    "email": "nelsonlemmy61@gmail.com",
+    "url": "https://kepas.co.ke/"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nellylemmy/talktime"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "homepage": "https://admin.adeatalktime.org"
+}

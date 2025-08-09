@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Signup | TalkTime</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-900">ADEA Admin Signup</h1>
+            <p class="mt-2 text-sm text-gray-600">Create a secure administrator account</p>
+        </div>
+        
+        <div id="error-message" class="hidden p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert"></div>
+        <div id="success-message" class="hidden p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert"></div>
+        
+        <form id="admin-signup-form" class="space-y-6">
+            <div>
+                <label for="fullname" class="text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" name="fullname" id="fullname" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div>
+                <label for="email" class="text-sm font-medium text-gray-700">Email Address</label>
+                <input type="email" name="email" id="email" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div>
+                <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+                <input type="password" name="password" id="password" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div>
+                <label for="confirm-password" class="text-sm font-medium text-gray-700">Confirm Password</label>
+                <input type="password" name="confirm-password" id="confirm-password" required
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <div>
+                <label for="secret-code" class="text-sm font-medium text-gray-700">6-Digit Secret Code</label>
+                <input type="text" name="secret-code" id="secret-code" required
+                       pattern="[0-9]{6}" maxlength="6" minlength="6"
+                       class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                <p class="mt-1 text-xs text-gray-500">This is the administrator secret code provided to you by ADEA Foundation.</p>
+            </div>
+            
+            <div>
+                <button type="submit"
+                        class="w-full px-4 py-2 font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Create Admin Account
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <a href="/admin/login.html" class="text-sm text-primary-600 hover:text-primary-500">
+                    Already have an account? Sign in
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('admin');
+            const form = document.getElementById('admin-signup-form');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Clear previous messages
+                errorMessage.classList.add('hidden');
+                successMessage.classList.add('hidden');
+                
+                // Get form values
+                const fullname = document.getElementById('fullname').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const secretCode = document.getElementById('secret-code').value;
+                
+                // Validate form
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = 'Passwords do not match.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                if (secretCode.length !== 6 || !/^\d{6}$/.test(secretCode)) {
+                    errorMessage.textContent = 'Secret code must be exactly 6 digits.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/v1/jwt-auth/admin/signup', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            full_name: fullname,
+                            email,
+                            password,
+                            secret_code: secretCode
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.error || 'Failed to create admin account');
+                    }
+                    
+                    // Store authentication data
+                    window.TalkTimeAuth.storeAuth(data.accessToken, data.user, data.refreshToken);
+                    
+                    // Show success message
+                    successMessage.textContent = 'Admin account created successfully! Redirecting to dashboard...';
+                    successMessage.classList.remove('hidden');
+                    
+                    // Clear form
+                    form.reset();
+                    
+                    // Redirect to dashboard after a delay
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard.html';
+                    }, 2000);
+                    
+                } catch (error) {
+                    errorMessage.textContent = error.message;
+                    errorMessage.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

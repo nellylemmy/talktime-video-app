@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Student Profiles | Volunteer Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Browse Maasai student profiles, learn their stories, and schedule English language practice sessions as a TalkTime volunteer.">
+    <link rel="canonical" href="/volunteer/dashboard/students">
+    <meta name="robots" content="index, follow">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Dashboard Polishing Styles -->
+    <link rel="stylesheet" href="/css/dashboard.css">
+    
+    <!-- Navigation Loader -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+    
+    <!-- Approval Status Component -->
+    <script src="/volunteer/components/approval-status.js"></script>
+    
+    <!-- JWT Authentication Utility -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    
+    <style>
+        /* Base styles matching the landing page */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4ff;
+            overflow-x: hidden;
+        }
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
+        }
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal-glass-bg {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .section-heading {
+             background-image: linear-gradient(to right, #ec4899, #8b5cf6);
+             -webkit-background-clip: text;
+             background-clip: text;
+             color: transparent;
+        }
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* Page Transition */
+        .page, .tab-pane {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .page-hidden, .tab-pane-hidden {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transform: translateY(10px);
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        
+        /* Calendar Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-day {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .calendar-day.other-month {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .calendar-day:not(.other-month):hover {
+            background-color: rgba(139, 92, 246, 0.2);
+        }
+        .calendar-day.selected {
+            background-color: #8b5cf6;
+            color: white;
+            font-weight: bold;
+        }
+        .calendar-day.fully-booked::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #ef4444;
+        }
+         .calendar-day.fully-booked {
+            cursor: not-allowed;
+            color: #9ca3af;
+            background-color: transparent !important;
+        }
+
+        /* Time Input Styles */
+        .custom-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            background-color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            transition: opacity 300ms ease-in-out;
+        }
+        .modal .modal-content {
+            transition: transform 300ms ease-in-out;
+        }
+        .profile-dropdown, .options-menu {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Star Rating */
+        .star-rating .fa-star {
+            color: #d1d5db; /* gray-300 */
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .star-rating:hover .fa-star {
+            color: #f59e0b; /* yellow-500 */
+        }
+        .star-rating .fa-star:hover ~ .fa-star {
+            color: #d1d5db;
+        }
+        .star-rating .fa-star.selected,
+        .star-rating .fa-star.selected ~ .fa-star {
+             color: #d1d5db;
+        }
+        .star-rating .fa-star.selected {
+             color: #f59e0b;
+        }
+
+        /* Live Pulse Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .live-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        /* Ensure dropdown appears above other elements */
+        .meeting-card {
+            position: relative;
+        }
+        .upcoming-badge {
+            position: absolute;
+            top: 0.25rem; /* Adjusted position */
+            right: 0.25rem; /* Adjusted position */
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            border: 2px solid white;
+        }
+        .green-border {
+            border-color: #22c55e !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Blobs -->
+    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+    
+    <!-- Navigation Container -->
+    <div id="nav-container">
+        <!-- Navigation will be loaded dynamically -->
+    </div>
+
+    <!-- Sticky Navigation Bar (only shows on profile and scheduler pages) -->
+    <div id="page-nav-sticky" class="hidden sticky top-16 z-30 glass-bg border-b border-white/20 shadow-sm">
+        <div class="container mx-auto px-4 py-3">
+            <div id="page-nav-content" class="flex justify-between items-center">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Dashboard Page -->
+        <div id="page-dashboard" class="page w-full">
+            <!-- Header Section -->
+            <div class="text-center mb-3">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 font-poppins text-gray-900 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl px-4 py-2 border border-blue-100 inline-block">Volunteer Dashboard</h1>
+            </div>
+
+            <!-- Main Content Container -->
+            <div class="max-w-6xl mx-auto">
+                <!-- Sticky tabs are rendered in #page-nav-sticky -->
+                <div id="dashboard-students" class="tab-pane">
+                    <!-- Features Overview -->
+                    <div class="mb-8">
+                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                            <div class="flex items-center mb-4">
+                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                                    <!-- Info/Tips icon -->
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20a8 8 0 100-16 8 8 0 000 16z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-900">Scheduling Tip</h3>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-700">
+                                <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22a10 10 0 110-20 10 10 0 010 20z"/>
+                                </svg>
+                                All times sync to Kenya (EAT). Book between 9:00 and 17:00 EAT.
+                            </div>
+                            <div class="mt-4 border-t border-gray-200" role="separator" aria-hidden="true"></div>
+                            <div class="mt-4 text-sm text-gray-700 text-center">
+                                Connect with students, share knowledge, and make a meaningful impact through personalized English conversation sessions.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Selection Section removed per request -->
+                    
+                    <!-- Students Grid -->
+                    <div class="space-y-8">
+                        <!-- Available Students Section -->
+                        <section class="mb-12">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-2xl font-bold section-heading">Available Students</h2>
+                                <div class="flex items-center gap-3">
+                                    <label for="sticky-student-date" class="text-sm text-gray-600 whitespace-nowrap shrink-0">Select date</label>
+                                    <input id="sticky-student-date" type="date" class="tt-input">
+                                    <button id="sticky-apply-date" class="tt-btn-primary">
+                                        <span class="hidden md:inline">Apply</span>
+                                        <span class="md:hidden">Go</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="student-list-available" class="students-grid">
+                                <!-- Cards injected by JS -->
+                            </div>
+                        </section>
+
+                        <!-- Unavailable/Scheduled Students Section -->
+                        <section class="mb-12">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-2xl font-bold text-gray-800">Scheduled / Unavailable</h2>
+                            </div>
+                            <div id="student-list-unavailable" class="students-grid">
+                                <!-- Cards injected by JS -->
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Optional Right Sidebar (desktop) -->
+                    <div class="sidebar mx-auto lg:mx-0 mt-6 lg:mt-0">
+                        <div class="sidebar-card">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Your Upcoming</h3>
+                            <p class="text-sm text-gray-600 mb-3">Quick access to your next sessions.</p>
+                            <div id="sidebar-upcoming" class="space-y-3">
+                                <!-- Future: render a few upcoming items via existing data -->
+                                <div class="skeleton student-skeleton"></div>
+                                <div class="skeleton student-skeleton"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Listen for instant call notifications
+        socket.on('instant-call-notification', function(data) {
+            console.log('Received instant call notification:', data);
+            
+            if (data.type === 'incoming') {
+                // Show notification for incoming call
+                showNotification(`Incoming call from ${data.senderName || 'a volunteer'}. Redirecting...`, 'info');
+                
+                // Store sender name if available
+                if (data.senderName) {
+                    sessionStorage.setItem('callerName', data.senderName);
+                }
+
+                // (Removed) runtime mount for date controls — controls are now in static HTML
+                
+                // Redirect to call page after a short delay
+                setTimeout(() => {
+                    window.location.href = `/call.html?room=${data.meetingId}&role=student&instant=true`;
+                }, 2000);
+            }
+        });
+        
+        // Connect event - log when successfully connected to socket server
+        socket.on('connect', function() {
+            console.log('Connected to socket server with ID:', socket.id);
+        });
+        
+        // Error handling
+        socket.on('connect_error', function(error) {
+            console.error('Socket connection error:', error);
+        });
+        
+        // --- DOM Elements ---
+        const pageDashboard = document.getElementById('page-dashboard');
+        const availableStudentsContainer = document.getElementById('student-list-available');
+        const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
+        const backButtonContainer = document.getElementById('page-nav-sticky');
+        const pageNavContent = document.getElementById('page-nav-content');
+        const notificationEl = document.getElementById('notification');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        let upcomingBadge = null;
+
+        // --- Global Variables ---
+        let students = [];
+        let selectedStudent = null;
+        let bookedSlots = {};
+
+        // --- Sticky Controls Bar (Tabs only; date controls removed per request) ---
+        if (pageNavContent && backButtonContainer) {
+            pageNavContent.innerHTML = `
+                <div class="w-full grid grid-cols-1 items-center">
+                    <!-- Center: Tabs navigation -->
+                    <nav class="flex justify-center space-x-4">
+                        <a href="/volunteer/dashboard/students" class="tab-btn py-1 px-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600 bg-blue-50/40 rounded-t">
+                            <div class="flex items-center space-x-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                                <span>Students</span>
+                            </div>
+                        </a>
+                        <a href="/volunteer/dashboard/upcoming" class="tab-btn py-1 px-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 transition-all relative">
+                            <div class="flex items-center space-x-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Upcoming</span>
+                                <span id="upcoming-badge" class="upcoming-badge hidden"></span>
+                            </div>
+                        </a>
+                        <a href="/volunteer/dashboard/history" class="tab-btn py-1 px-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 transition-all">
+                            <div class="flex items-center space-x-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Call History</span>
+                            </div>
+                        </a>
+                    </nav>
+
+                    <!-- Right: EAT window hint -->
+                    <div class="hidden md:flex justify-end text-sm text-gray-600">
+                        Kenya time window: 9:00–17:00 EAT
+                    </div>
+                </div>
+            `;
+            backButtonContainer.classList.remove('hidden');
+
+            // Re-query the badge now that the sticky nav has been rendered
+            upcomingBadge = document.getElementById('upcoming-badge');
+
+            // Sync sticky date with main selector and initial value
+            const mainDateEl = document.getElementById('student-date-selector');
+            const stickyDateEl = document.getElementById('sticky-student-date');
+            const stickyApplyBtn = document.getElementById('sticky-apply-date');
+
+            const today = new Date().toISOString().split('T')[0];
+            if (mainDateEl) {
+                if (!mainDateEl.value) mainDateEl.value = today;
+                stickyDateEl.value = mainDateEl.value;
+            } else {
+                stickyDateEl.value = today;
+            }
+
+            stickyDateEl.addEventListener('change', () => {
+                if (mainDateEl) mainDateEl.value = stickyDateEl.value;
+                loadDashboardData(stickyDateEl.value);
+            });
+            stickyApplyBtn.addEventListener('click', () => {
+                if (mainDateEl) mainDateEl.value = stickyDateEl.value;
+                loadDashboardData(stickyDateEl.value);
+            });
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('click', e => {
+            // Profile dropdown toggle
+            if (profileBtn && profileBtn.contains(e.target)) {
+                e.stopPropagation();
+                if (profileDropdown) {
+                    profileDropdown.classList.toggle('hidden');
+                }
+            } else if (profileDropdown && !profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+            }
+            
+            // Student card click
+            if (e.target.closest('.student-card')) {
+                const studentCard = e.target.closest('.student-card');
+                const studentId = studentCard.dataset.studentId;
+                const studentAdmission = studentCard.dataset.studentAdmission;
+                const studentName = studentCard.querySelector('h3').textContent;
+                
+                // Navigate to student detail page with parameters
+                window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
+            }
+            
+            // Date filter button click
+            if (e.target.closest('#apply-date-filter')) {
+                const dateSelector = document.getElementById('student-date-selector');
+                const selectedDate = dateSelector ? dateSelector.value : '';
+                if (selectedDate) {
+                    loadDashboardData(selectedDate);
+                    showNotification(`Showing students for ${new Date(selectedDate).toLocaleDateString()}`, 'success');
+                } else {
+                    // Fallback to sticky date if present
+                    const stickyEl = document.getElementById('sticky-student-date');
+                    const fallbackDate = stickyEl ? stickyEl.value : '';
+                    if (fallbackDate) {
+                        loadDashboardData(fallbackDate);
+                        showNotification(`Showing students for ${new Date(fallbackDate).toLocaleDateString()}`, 'success');
+                    } else {
+                        showNotification('Please select a date first', 'error');
+                    }
+                }
+            }
+        });
+        
+        // Date selector enter key press
+        (function(){
+            const mainDateInput = document.getElementById('student-date-selector');
+            if (!mainDateInput) return;
+            mainDateInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    const selectedDate = this.value;
+                    if (selectedDate) {
+                        loadDashboardData(selectedDate);
+                        showNotification(`Showing students for ${new Date(selectedDate).toLocaleDateString()}`, 'success');
+                    } else {
+                        showNotification('Please select a date first', 'error');
+                    }
+                }
+            });
+        })();
+
+        // --- Utility Functions ---
+        function showNotification(message, type = 'success') {
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notificationEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notificationEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        // --- Data Loading ---
+        function loadDashboardData(selectedDate = null) {
+            // Set date selector to today if not already set
+            if (!selectedDate) {
+                const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                const mainDate = document.getElementById('student-date-selector');
+                if (mainDate) mainDate.value = today;
+                selectedDate = today;
+            }
+            
+            // Debug JWT token details
+            const token = window.TalkTimeAuth.getAccessToken();
+            const user = window.TalkTimeAuth.getUser();
+            console.log('=== JWT DEBUG INFO ===');
+            console.log('Token available:', !!token);
+            console.log('Token length:', token ? token.length : 0);
+            console.log('Token preview:', token ? token.substring(0, 50) + '...' : 'No token');
+            console.log('User info:', user);
+            console.log('Is authenticated:', window.TalkTimeAuth.isAuthenticated());
+            // Update dashboard header to "Welcome, [Volunteer Name]" using available auth data
+            try {
+                const headerEl = document.querySelector('#page-dashboard h1');
+
+                // Multilingual greeting rotation state
+                const greetings = [
+                    'Hello',            // English
+                    'Bonjour',          // French
+                    'Hallo',            // German
+                    'Hola',             // Spanish
+                    'Ciao',             // Italian
+                    'Olá',              // Portuguese
+                    'Habari',           // Swahili
+                    'नमस्ते',             // Hindi (Namaste)
+                    '你好',                // Chinese (Simplified)
+                    'Здравствуйте',     // Russian (formal)
+                    'こんにちは',            // Japanese
+                    'مرحبًا'               // Arabic
+                ];
+                let greetingIndex = 0;
+                let greetingInterval = null;
+
+                function ensureGreetingAnimationSetup(header) {
+                    if (!header) return;
+                    header.classList.add('greeting-fade', 'show');
+                }
+
+                function animateGreetingChange(header, nextText) {
+                    if (!header) return;
+                    header.classList.remove('show');
+                    header.classList.add('enter');
+                    setTimeout(() => {
+                        header.textContent = nextText;
+                        header.classList.remove('enter');
+                        header.classList.add('show');
+                    }, 400);
+                }
+
+                function startGreetingRotation(name) {
+                    if (!name) return; // Need a name to rotate with
+                    // Prevent multiple intervals
+                    if (greetingInterval) return;
+                    const header = document.querySelector('#page-dashboard .text-center h1') || document.querySelector('#page-dashboard h1');
+                    if (!header) return;
+                    // Ensure animation classes exist initially
+                    ensureGreetingAnimationSetup(header);
+                    greetingInterval = setInterval(() => {
+                        greetingIndex = (greetingIndex + 1) % greetings.length;
+                        const nextGreeting = greetings[greetingIndex];
+                        animateGreetingChange(header, `${nextGreeting}, ${name}`);
+                    }, 4000);
+                    // Clear on unload
+                    window.addEventListener('beforeunload', () => {
+                        if (greetingInterval) clearInterval(greetingInterval);
+                    });
+                }
+
+                // Ensure date picker defaults to current date in EAT (Africa/Nairobi)
+                function getTodayInEATISODate() {
+                    // Returns YYYY-MM-DD for Africa/Nairobi
+                    const now = new Date();
+                    const parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'Africa/Nairobi',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }).formatToParts(now);
+                    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+                    return `${map.year}-${map.month}-${map.day}`;
+                }
+
+                function syncDateInputToEATToday() {
+                    const dateEl = document.getElementById('sticky-student-date');
+                    if (!dateEl) return;
+                    const eatToday = getTodayInEATISODate();
+                    // If empty or behind EAT day rollover, set to EAT today
+                    if (!dateEl.value || dateEl.value !== eatToday) {
+                        dateEl.value = eatToday;
+                        if (typeof selectedDate !== 'undefined') {
+                            selectedDate = eatToday;
+                        }
+                    }
+                }
+
+                // Compute ms until next midnight in EAT (UTC+3, no DST)
+                function msUntilNextEATMidnight() {
+                    const now = new Date();
+                    const parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'Africa/Nairobi',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                    }).formatToParts(now);
+                    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+                    const y = Number(map.year);
+                    const m = Number(map.month);
+                    const d = Number(map.day);
+                    // EAT midnight next day => UTC time is previous day 21:00 (UTC) or Date.UTC with hour -3
+                    const nextEatMidnightUTC = Date.UTC(y, m - 1, d + 1, -3, 0, 0);
+                    const diff = nextEatMidnightUTC - now.getTime();
+                    return diff > 0 ? diff : 0;
+                }
+
+                function scheduleEATMidnightRollover() {
+                    try { if (window.__eatMidnightTimer) clearTimeout(window.__eatMidnightTimer); } catch (_) {}
+                    const delay = msUntilNextEATMidnight();
+                    window.__eatMidnightTimer = setTimeout(() => {
+                        // Update the date input to EAT today and reload data
+                        try { syncDateInputToEATToday(); } catch (_) {}
+                        try { if (typeof loadDashboardData === 'function') loadDashboardData(); } catch (_) {}
+                        // Reschedule for the following midnight
+                        scheduleEATMidnightRollover();
+                    }, delay);
+                }
+
+                // Ensure we apply EAT date at load
+                document.addEventListener('DOMContentLoaded', () => {
+                    try { syncDateInputToEATToday(); } catch (_) {}
+                    try { scheduleEATMidnightRollover(); } catch (_) {}
+                    // Remove duplicate date controls (e.g., any in the nav) and keep the one inside Available Students header
+                    try {
+                        // Find the Available Students header row
+                        const heading = Array.from(document.querySelectorAll('h2.section-heading'))
+                            .find(h => h.textContent.trim().toLowerCase() === 'available students');
+                        const headerRow = heading ? heading.closest('div.flex.items-center.justify-between') : null;
+                        if (headerRow) {
+                            const keepContainer = headerRow.querySelector('.flex.items-center.gap-3') || headerRow;
+                            // Remove any matching controls not within the keepContainer
+                            document.querySelectorAll('#sticky-student-date, #sticky-apply-date, label[for="sticky-student-date"]').forEach(el => {
+                                if (!keepContainer.contains(el)) {
+                                    const flexWrap = el.closest('.flex');
+                                    if (flexWrap) flexWrap.remove(); else el.remove();
+                                }
+                            });
+                        }
+                        // Re-sync the surviving header input to EAT today if empty
+                        const headerInput = headerRow ? headerRow.querySelector('#sticky-student-date') : null;
+                        if (headerInput && !headerInput.value) {
+                            try { headerInput.value = getTodayInEATISODate(); } catch (_) {}
+                        }
+                    } catch (_) {}
+                    // Bind Apply/Go button to reload data for chosen date
+                    try {
+                        const btn = document.getElementById('sticky-apply-date');
+                        const dateEl = document.getElementById('sticky-student-date');
+                        if (btn) {
+                            btn.addEventListener('click', () => {
+                                const value = dateEl ? dateEl.value : '';
+                                if (typeof loadDashboardData === 'function') {
+                                    if (value) {
+                                        loadDashboardData(value);
+                                    } else {
+                                        loadDashboardData();
+                                    }
+                                }
+                            });
+                        }
+                        if (dateEl) {
+                            dateEl.addEventListener('change', () => {
+                                const value = dateEl.value;
+                                if (value && typeof loadDashboardData === 'function') {
+                                    // Optional immediate filter-on-change (keeps UI responsive). Remove if undesired.
+                                    // loadDashboardData(value);
+                                }
+                            });
+                        }
+                    } catch (_) {}
+                });
+
+                function setWelcomeHeader(fromUser) {
+                    // Try multiple header selectors for resiliency
+                    let header = headerEl || document.querySelector('#page-dashboard .text-center h1') || document.querySelector('#page-dashboard h1');
+                    if (!header || !fromUser) return false;
+                    let volunteerName = fromUser.fullName || fromUser.full_name || fromUser.name || fromUser.firstName || fromUser.given_name || fromUser.username || fromUser.email || null;
+                    if (!volunteerName || typeof volunteerName !== 'string') return false;
+                    let displayName = volunteerName;
+                    if (displayName.includes(' ')) displayName = displayName.split(' ')[0];
+                    else if (displayName.includes('@')) displayName = displayName.split('@')[0];
+                    const newText = `Welcome, ${displayName}`;
+                    if (header.textContent !== newText) {
+                        header.textContent = newText;
+                        console.log('[Dashboard Header] Set to:', newText);
+                    }
+                    // Initialize animation classes for smooth transitions
+                    ensureGreetingAnimationSetup(header);
+                    // Start multilingual rotation with the resolved display name
+                    startGreetingRotation(displayName);
+                    return true;
+                }
+
+                // 1) Try immediate JWT user
+                if (!setWelcomeHeader(user)) {
+                    // 2) Try nav loader user (may be set shortly)
+                    const navUser = (window.VolunteerNavLoader && window.VolunteerNavLoader.userInfo) || null;
+                    if (!setWelcomeHeader(navUser)) {
+                        // 3) Verify via API to fetch canonical user
+                        window.TalkTimeAuth.authenticatedRequest('/api/v1/jwt-auth/verify', { method: 'GET' })
+                          .then(r => r.ok ? r.json() : null)
+                          .then(v => {
+                              if (v && v.user) setWelcomeHeader(v.user);
+                          })
+                          .catch(() => {});
+
+                        // 4) Retry after nav initialization (timing-safe)
+                        setTimeout(() => {
+                            const lateNavUser = (window.VolunteerNavLoader && window.VolunteerNavLoader.userInfo) || null;
+                            setWelcomeHeader(lateNavUser);
+                        }, 600);
+
+                        // 5) Short-lived retry loop to handle late DOM/user
+                        let attempts = 0;
+                        const maxAttempts = 10; // ~5 seconds if 500ms interval
+                        const retryTimer = setInterval(() => {
+                            attempts++;
+                            const tryUser = window.TalkTimeAuth.getUser() || (window.VolunteerNavLoader && window.VolunteerNavLoader.userInfo) || null;
+                            if (setWelcomeHeader(tryUser) || attempts >= maxAttempts) {
+                                clearInterval(retryTimer);
+                                if (attempts >= maxAttempts) {
+                                    console.log('[Dashboard Header] Gave up after retries.');
+                                }
+                            }
+                        }, 500);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to personalize dashboard header:', e);
+            }
+            
+            // Show loading state
+            if (availableStudentsContainer) {
+                availableStudentsContainer.innerHTML = '<div class="text-center py-4"><p class="text-gray-500">Loading available students...</p></div>';
+            }
+            if (document.getElementById('student-list-unavailable')) {
+                document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-4"><p class="text-gray-500">Loading unavailable students...</p></div>';
+            }
+            
+            // First, get volunteer dashboard data
+            window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/dashboard-data', {
+                method: 'GET'
+            })
+            .then(response => {
+                console.log('Dashboard API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Failed to load dashboard data: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dashboard data loaded:', data);
+                
+                // Show badge on upcoming tab if there are upcoming meetings
+                if (upcomingBadge && data.meetings && data.meetings.upcoming && data.meetings.upcoming.length > 0) {
+                    upcomingBadge.textContent = data.meetings.upcoming.length;
+                    upcomingBadge.classList.remove('hidden');
+                }
+                
+                // Render real upcoming meetings in the sidebar (max 3)
+                const sidebarUpcoming = document.getElementById('sidebar-upcoming');
+                if (sidebarUpcoming) {
+                    const upcoming = (data.meetings && data.meetings.upcoming) ? data.meetings.upcoming.slice(0, 3) : [];
+                    if (!upcoming.length) {
+                        if (sidebarUpcoming) {
+                          sidebarUpcoming.innerHTML = '<p class="text-gray-500 text-sm">No upcoming sessions.</p>';
+                        }
+                    } else {
+                        const items = upcoming.map(item => {
+                            const when = new Date(item.time || item.start_time || item.scheduled_for || item.meeting_time || Date.now());
+                            const localTime = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            const localDate = when.toLocaleDateString();
+                            const studentName = (item.student && (item.student.full_name || item.student.name)) || item.student_name || 'Student';
+                            const avatar = (item.student && item.student.photo_url) || item.student_photo_url || '';
+                            return `
+                                <a href="/volunteer/dashboard/upcoming" class="flex items-center gap-4 p-3 rounded-xl border border-white/40 bg-white/40 hover:bg-white/60 shadow-sm transition" aria-label="Upcoming session with ${studentName} on ${localDate} at ${localTime}">
+                                    <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-100 ring-2 ring-blue-100 flex items-center justify-center">
+                                        <img src="${avatar || '/images/default-profile.svg'}" alt="${studentName}" loading="lazy" class="w-full h-full object-cover upc-avatar-img" />
+                                        <svg class="w-6 h-6 text-blue-500 ${avatar ? 'hidden' : ''} upc-avatar-fallback" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 16a8 8 0 1116 0v1H2v-1z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-gray-800 truncate">${studentName}</p>
+                                        <p class="text-xs text-gray-500">${localDate} • ${localTime}</p>
+                                    </div>
+                                    <div class="shrink-0 text-gray-400"><i class="fas fa-video"></i></div>
+                                </a>
+                            `;
+                        }).join('');
+                        if (sidebarUpcoming) {
+                          sidebarUpcoming.innerHTML = items;
+                          // Attach avatar fallback handlers (sidebar)
+                          sidebarUpcoming.querySelectorAll('.upc-avatar-img').forEach(img => {
+                              img.addEventListener('error', function () {
+                                  this.classList.add('hidden');
+                                  const fallback = this.parentElement.querySelector('.upc-avatar-fallback');
+                                  if (fallback) fallback.classList.remove('hidden');
+                              }, { once: true });
+                          });
+                        }
+
+                        // Remove the legacy sidebar block entirely to avoid duplicate UI
+                        const sidebarCard = document.querySelector('#sidebar-upcoming')?.closest('.sidebar-card');
+                        if (sidebarCard) sidebarCard.remove();
+
+                        // Floating mini-widget (FAB) for Upcoming
+                        // Create container once
+                        let fabRoot = document.getElementById('upcoming-fab');
+                        if (!fabRoot) {
+                            fabRoot = document.createElement('div');
+                            fabRoot.id = 'upcoming-fab';
+                            fabRoot.className = 'fixed bottom-6 right-6 z-40';
+                            fabRoot.innerHTML = `
+                              <div class="relative">
+                                <button id="upcoming-fab-btn" aria-label="Open upcoming sessions" aria-expanded="false"
+                                  class="group flex items-center gap-2 rounded-full px-4 h-12 shadow-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition">
+                                  <i class="fas fa-calendar-check"></i>
+                                  <span class="text-sm font-semibold">Upcoming</span>
+                                  <span id="upcoming-fab-count" class="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-xs">0</span>
+                                </button>
+                                <div id="upcoming-fab-panel" role="dialog" aria-label="Upcoming sessions"
+                                  class="absolute bottom-16 right-0 w-80 max-w-[90vw] rounded-xl border border-white/40 bg-white/70 backdrop-blur shadow-xl p-3 opacity-0 scale-95 pointer-events-none transition duration-200">
+                                  <div class="flex items-center justify-between px-1 pb-2">
+                                    <h4 class="text-sm font-semibold text-gray-800">Your Upcoming</h4>
+                                    <button id="upcoming-fab-close" aria-label="Close" class="text-gray-500 hover:text-gray-700">
+                                      <i class="fas fa-times"></i>
+                                    </button>
+                                  </div>
+                                  <div id="upcoming-fab-list" class="space-y-2 max-h-72 overflow-auto pr-1"></div>
+                                  <div class="pt-2 flex justify-end">
+                                    <a href="/volunteer/dashboard/upcoming" class="text-xs font-medium text-indigo-700 hover:text-indigo-900">View all</a>
+                                  </div>
+                                </div>
+                              </div>`;
+                            document.body.appendChild(fabRoot);
+
+                            // Toggle logic
+                            const btn = document.getElementById('upcoming-fab-btn');
+                            const panel = document.getElementById('upcoming-fab-panel');
+                            const closeBtn = document.getElementById('upcoming-fab-close');
+                            function openPanel() {
+                              panel.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+                              btn.setAttribute('aria-expanded', 'true');
+                            }
+                            function closePanel() {
+                              panel.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+                              btn.setAttribute('aria-expanded', 'false');
+                            }
+                            btn.addEventListener('click', () => {
+                              const expanded = btn.getAttribute('aria-expanded') === 'true';
+                              if (expanded) closePanel(); else openPanel();
+                            });
+                            closeBtn.addEventListener('click', closePanel);
+                            document.addEventListener('keydown', (e) => {
+                              if (e.key === 'Escape') closePanel();
+                            });
+                            document.addEventListener('click', (e) => {
+                              const within = fabRoot.contains(e.target);
+                              const panelEl = document.getElementById('upcoming-fab-panel');
+                              if (!within && panelEl && !panelEl.classList.contains('pointer-events-none')) closePanel();
+                            });
+                        }
+
+                        // Render list into FAB
+                        const fabCount = document.getElementById('upcoming-fab-count');
+                        if (fabCount) fabCount.textContent = String(upcoming.length);
+                        const fabList = document.getElementById('upcoming-fab-list');
+                        if (fabList) {
+                          const fabItems = upcoming.map(item => {
+                            const when = new Date(item.time || item.start_time || item.scheduled_for || item.meeting_time || Date.now());
+                            const localTime = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            const localDate = when.toLocaleDateString();
+                            const studentName = (item.student && (item.student.full_name || item.student.name)) || item.student_name || 'Student';
+                            const avatar = (item.student && item.student.photo_url) || item.student_photo_url || '';
+                            return `
+                              <a href="/volunteer/dashboard/upcoming" class="flex items-center gap-3 p-2 rounded-lg border border-white/40 bg-white/60 hover:bg-white/80 transition" aria-label="Upcoming session with ${studentName} on ${localDate} at ${localTime}">
+                                <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-100 ring-2 ring-blue-100 flex items-center justify-center">
+                                  <img src="${avatar || '/images/default-profile.svg'}" alt="${studentName}" loading="lazy" class="w-full h-full object-cover upc-avatar-img" />
+                                  <svg class="w-5 h-5 text-blue-500 ${avatar ? 'hidden' : ''} upc-avatar-fallback" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 16a8 8 0 1116 0v1H2v-1z" />
+                                  </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-sm font-semibold text-gray-800 truncate">${studentName}</p>
+                                  <p class="text-xs text-gray-500">${localDate} • ${localTime}</p>
+                                </div>
+                                <div class="shrink-0 text-gray-400"><i class="fas fa-video"></i></div>
+                              </a>`;
+                          }).join('');
+                          fabList.innerHTML = fabItems || '<p class="text-xs text-gray-500 px-1">No upcoming sessions.</p>';
+                          // Attach avatar fallback handlers (FAB)
+                          fabList.querySelectorAll('.upc-avatar-img').forEach(img => {
+                              img.addEventListener('error', function () {
+                                  this.classList.add('hidden');
+                                  const fallback = this.parentElement.querySelector('.upc-avatar-fallback');
+                                  if (fallback) fallback.classList.remove('hidden');
+                              }, { once: true });
+                          });
+                        }
+                    }
+                }
+                console.log('Making student cards API call...');
+                return window.TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/cards?date=${selectedDate}`, {
+                    method: 'GET'
+                });
+            })
+            .then(response => {
+                console.log('Student cards API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Failed to load students: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Student cards data loaded:', data);
+                
+                // Update the available students section
+                if (availableStudentsContainer) {
+                    // Backend returns data in data.available format
+                    const availableStudents = data.data?.available || [];
+                    if (!availableStudents || availableStudents.length === 0) {
+                        // Check if this is an empty database vs no students for this date
+                        const emptyMessage = data.isEmpty ? 
+                            '<div class="text-center py-8"><div class="bg-blue-50 border border-blue-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full"><svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><h3 class="text-lg font-semibold text-blue-900 mb-2">No Students Found</h3><p class="text-blue-700 mb-4">The database appears to be empty. Please contact an administrator to add student profiles.</p><p class="text-sm text-blue-600">Once students are added, they will appear here for scheduling.</p></div></div>' :
+                            '<div class="text-center py-8"><p class="text-gray-500">No students available for this date.</p></div>';
+                        availableStudentsContainer.innerHTML = emptyMessage;
+                    } else {
+                        // Generate HTML for student cards from JSON data
+                        const studentCardsHtml = availableStudents.map(student => {
+                            const photoUrl = student.photo_url || '/images/default-profile.svg';
+                            const studentName = student.full_name || 'Student';
+                            const studentBio = student.interests || 'English conversation practice';
+                            return `
+                            <div class="student-card glass-bg p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden">
+                                        ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover">` : 
+                                        `<span class="text-lg font-semibold text-indigo-600">${student.initial || studentName.charAt(0)}</span>`}
+                                    </div>
+                                    <div class="flex-grow">
+                                        <h3 class="font-semibold">${studentName}</h3>
+                                        <p class="text-sm text-gray-500">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
+                                    </div>
+
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                        availableStudentsContainer.innerHTML = studentCardsHtml;
+                    }
+                }
+
+                // Toggle visibility of the 'Scheduled / Unavailable' section based on real data
+                const unavailableContainer = document.getElementById('student-list-unavailable');
+                const unavailableSection = unavailableContainer ? unavailableContainer.closest('section') : null;
+                const unavailableStudents = (data.data && Array.isArray(data.data.unavailable)) ? data.data.unavailable : [];
+                if (unavailableSection) {
+                    if (!unavailableStudents || unavailableStudents.length === 0) {
+                        // Hide section entirely if truly empty
+                        unavailableSection.classList.add('hidden');
+                        unavailableSection.setAttribute('aria-hidden', 'true');
+                    } else {
+                        // Ensure visible when data exists
+                        unavailableSection.classList.remove('hidden');
+                        unavailableSection.removeAttribute('aria-hidden');
+                    }
+                }
+                
+                // Update the unavailable students section
+                const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
+                if (unavailableStudentsContainer) {
+                    // Backend returns data in data.unavailable format
+                    const unavailableStudents = data.data?.unavailable || [];
+                    if (!unavailableStudents || unavailableStudents.length === 0) {
+                        unavailableStudentsContainer.innerHTML = '<div class="text-center py-8"><p class="text-gray-500">No unavailable students for this date.</p></div>';
+                    } else {
+                        // Generate HTML for unavailable student cards with owner-specific UI
+                        const unavailableCardsHtml = unavailableStudents.map(student => {
+                            const photoUrl = student.photo_url || '/images/default-profile.svg';
+                            const studentName = student.full_name || 'Student';
+                            const studentBio = student.interests || 'English conversation practice';
+                            const isOwner = student.meeting && student.meeting.isOwner;
+                            const meetingTime = student.meeting ? new Date(student.meeting.time) : null;
+                            
+                            if (isOwner) {
+                                // Owner UI: Green background with countdown timer
+                                const timeUntilMeeting = meetingTime ? Math.max(0, meetingTime.getTime() - Date.now()) : 0;
+                                const hoursUntil = Math.floor(timeUntilMeeting / (1000 * 60 * 60));
+                                const minutesUntil = Math.floor((timeUntilMeeting % (1000 * 60 * 60)) / (1000 * 60));
+                                
+                                return `
+                                <div class="student-card bg-green-50 border-2 border-green-200 p-4 rounded-xl shadow-sm" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
+                                            ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover">` : 
+                                            `<span class="text-lg font-semibold text-green-600">${student.initial || studentName.charAt(0)}</span>`}
+                                        </div>
+                                        <div class="flex-grow">
+                                            <h3 class="font-semibold text-green-800">${studentName}</h3>
+                                            <p class="text-sm text-green-600">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
+                                            <p class="text-xs text-green-700 mt-1 font-medium">
+                                                <i class="fas fa-clock mr-1"></i>Your Meeting: ${hoursUntil}h ${minutesUntil}m
+                                            </p>
+                                        </div>
+                                        <div class="text-green-600">
+                                            <i class="fas fa-video text-lg"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            } else {
+                                // Non-owner UI: Standard unavailable styling
+                                return `
+                                <div class="student-card glass-bg p-4 rounded-xl shadow-sm opacity-60" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                            ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover grayscale">` : 
+                                            `<span class="text-lg font-semibold text-gray-400">${student.initial || studentName.charAt(0)}</span>`}
+                                        </div>
+                                        <div class="flex-grow">
+                                            <h3 class="font-semibold text-gray-600">${studentName}</h3>
+                                            <p class="text-sm text-gray-400">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
+                                            <p class="text-xs text-red-500 mt-1">Unavailable for selected date</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            }
+                        }).join('');
+                        unavailableStudentsContainer.innerHTML = unavailableCardsHtml;
+                        
+                        // Start countdown timers for owner meetings
+                        startCountdownTimers();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading dashboard data:', error);
+                
+                // Only show error notification for real errors (not 404 which might be empty database)
+                if (!error.message.includes('404')) {
+                    showNotification('Failed to load student data: ' + error.message, 'error');
+                }
+                
+                // Show user-friendly empty state messages instead of error messages
+                if (availableStudentsContainer) {
+                    availableStudentsContainer.innerHTML = '<div class="text-center py-8"><div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full"><svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div><h3 class="text-lg font-semibold text-yellow-900 mb-2">Unable to Load Students</h3><p class="text-yellow-700 mb-4">There might be a connection issue or the database is empty.</p><button onclick="loadDashboardData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">Try Again</button></div></div>';
+                }
+                if (document.getElementById('student-list-unavailable')) {
+                    document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-8"><p class="text-gray-500">Unable to load unavailable students.</p></div>';
+                }
+            });
+        }
+
+        // Function to start and update countdown timers for owner meetings
+        function startCountdownTimers() {
+            // Clear any existing timers
+            if (window.countdownInterval) {
+                clearInterval(window.countdownInterval);
+            }
+            
+            // Update timers every minute
+            window.countdownInterval = setInterval(() => {
+                const ownerCards = document.querySelectorAll('.student-card.bg-green-50');
+                ownerCards.forEach(card => {
+                    const timerElement = card.querySelector('.text-green-700');
+                    if (timerElement && timerElement.textContent.includes('Your Meeting:')) {
+                        // Extract meeting time from data attributes or re-calculate
+                        // For now, we'll refresh the entire section when timers need updating
+                        // This ensures accuracy and prevents drift
+                    }
+                });
+            }, 60000); // Update every minute
+        }
+
+        // Clear timers when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (window.countdownInterval) {
+                clearInterval(window.countdownInterval);
+            }
+        });
+        
+        // Function to handle instant call button clicks
+        function setupEventListeners() {
+            // Event delegation for student cards
+            document.addEventListener('click', function(event) {
+                // Handle student card clicks (for viewing details)
+                if (event.target.closest('.student-card')) {
+                    const card = event.target.closest('.student-card');
+                    const studentId = card.dataset.studentId;
+                    const studentAdmission = card.dataset.studentAdmission;
+                    const studentName = card.querySelector('h3')?.textContent || 'Student';
+                    window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
+                }
+            });
+        }
+        
+
+        
+        // Initialize TalkTime Auth for volunteers FIRST
+        window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        
+        // --- Initial Load ---
+        loadDashboardData();
+        setupEventListeners();
+        
+        // Initialize approval status component using JWT authentication
+        async function initializeApprovalStatus() {
+            try {
+                // Use the new JWT authentication utility
+                if (!window.TalkTimeAuth.isAuthenticated()) {
+                    console.log('Volunteer not authenticated');
+                    return;
+                }
+
+                // Get user info using JWT auth utility
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/jwt-auth/verify');
+                
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    
+
+                }
+            } catch (error) {
+                console.error('Error initializing volunteer approval status:', error);
+            }
+        }
+        initializeApprovalStatus();
+    });
+    </script>
+
+    <!-- Initialize Navigation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize navigation with authentication requirement
+            await VolunteerNavLoader.init(true);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>TalkTime - Video Conference</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    
+    <title>TalkTime - Video Call</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Tone.js for notifications -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #4F46E5;
+            --primary-purple: #7C3AED;
+            --success-green: #10B981;
+            --danger-red: #EF4444;
+            --warning-orange: #F59E0B;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --dark-overlay: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* Main Container */
+        .call-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        /* Header */
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            transition: opacity 0.3s ease;
+        }
+
+        .call-header.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary-blue);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+
+        .timer-badge {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #10B981;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Video Grid */
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            min-height: 0;
+        }
+
+        .video-grid.single {
+            grid-template-columns: 1fr;
+            place-items: center;
+        }
+
+        /* Participant Card */
+        .participant-card {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            min-height: 300px;
+        }
+
+        .participant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .participant-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .participant-card.local video {
+            transform: scaleX(-1); /* Mirror local video */
+        }
+
+        /* Participant Info Overlay */
+        .participant-info {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .participant-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .participant-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-green);
+        }
+
+        .status-indicator.muted {
+            background: var(--danger-red);
+        }
+
+        /* Waiting State */
+        .participant-card.waiting {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            border: 2px dashed var(--glass-border);
+        }
+
+        .waiting-content {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .waiting-icon {
+            width: 4rem;
+            height: 4rem;
+            background: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+
+        .waiting-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .waiting-subtext {
+            font-size: 0.875rem;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Student Bio Card Styles */
+        .student-bio-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .student-bio-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .student-avatar {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .student-photo {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .student-photo:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-blue);
+        }
+
+        .student-avatar-fallback {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .student-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .student-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .student-details {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .student-bio {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 1rem;
+        }
+
+        .waiting-status {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1.5rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .default-waiting-content {
+            display: block;
+        }
+
+        /* Hide fallback when bio card is shown */
+        .student-bio-card:not([style*="display: none"]) ~ .default-waiting-content {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-panel.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 1rem 1.5rem;
+        }
+
+        .control-btn {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .control-btn.active {
+            background: var(--primary-blue);
+        }
+
+        .control-btn.inactive {
+            background: var(--danger-red);
+        }
+
+        .control-btn.end-call {
+            background: var(--danger-red);
+            width: 4rem;
+            height: 4rem;
+        }
+
+        .control-btn.end-call:hover {
+            background: #DC2626;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 200;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: white;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success-green);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning-orange);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .call-container {
+                padding: 0.5rem;
+            }
+
+            .video-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+
+            .call-header {
+                padding: 0.5rem 1rem;
+            }
+
+            .logo-section {
+                gap: 0.5rem;
+            }
+
+            .header-actions {
+                gap: 0.5rem;
+            }
+
+            .header-btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            .controls {
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .control-btn {
+                width: 3rem;
+                height: 3rem;
+                font-size: 1rem;
+            }
+
+            .control-btn.end-call {
+                width: 3.5rem;
+                height: 3.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="call-container">
+        <!-- Header -->
+        <div class="call-header" id="header">
+            <div class="logo-section">
+                <div class="logo">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <span style="font-weight: 600;">Talk Time</span>
+                <div class="timer-badge" id="timerBadge">
+                    40:00
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="header-btn" id="inviteBtn">
+                    <i class="fas fa-user-plus"></i>
+                    Send Friend Invite
+                </button>
+                <button class="header-btn" id="copyLinkBtn">
+                    <i class="fas fa-copy"></i>
+                    Copy Meeting Link
+                </button>
+            </div>
+        </div>
+
+        <!-- Video Grid -->
+        <div class="video-grid" id="videoGrid">
+            <!-- Local Video (You) -->
+            <div class="participant-card local" id="localVideo">
+                <video autoplay muted playsinline></video>
+                <div class="participant-info">
+                    <span class="participant-name">You</span>
+                    <div class="participant-status">
+                        <div class="status-indicator" id="localMicStatus"></div>
+                        <div class="status-indicator" id="localCameraStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remote Participant Waiting -->
+            <div class="participant-card waiting" id="waitingCard">
+                <div class="waiting-content">
+                    <!-- Dynamic Student Bio Card -->
+                    <div class="student-bio-card" id="studentBioCard" style="display: none;">
+                        <div class="student-avatar">
+                            <img id="studentPhoto" src="" alt="Student Photo" class="student-photo">
+                            <div class="student-avatar-fallback" id="studentAvatarFallback">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="student-info">
+                            <h3 class="student-name" id="studentName">Loading...</h3>
+                            <p class="student-details" id="studentDetails">Getting student information...</p>
+                            <div class="student-bio" id="studentBio"></div>
+                        </div>
+                        <div class="waiting-status">
+                            <div class="status-indicator">
+                                <div class="loading-spinner"></div>
+                                <span id="waitingStatus">Connecting...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Fallback Waiting Content -->
+                    <div class="default-waiting-content" id="defaultWaitingContent">
+                        <div class="waiting-icon">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="waiting-text" id="waitingText">Waiting for student to join</div>
+                        <div class="waiting-subtext">
+                            <span>Connecting</span>
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel" id="controlPanel">
+            <div class="controls">
+                <button class="control-btn active" id="micBtn" title="Toggle Microphone">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
+                <button class="control-btn active" id="cameraBtn" title="Toggle Camera">
+                    <i class="fas fa-video"></i>
+                </button>
+                
+                <button class="control-btn end-call" id="endCallBtn" title="End Call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- WebRTC Adapter -->
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    
+    <!-- WebRTC Library -->
+    <script src="js/webrtc.js"></script>
+
+    <script>
+        'use strict';
+
+        // Global variables
+        let webrtc;
+        let localStream;
+        let participantCount = 1;
+        let callTimer;
+        let timeRemaining = 40 * 60; // 40 minutes in seconds
+        let isTimerStarted = false;
+        let uiTimeout;
+
+        // DOM elements
+        const videoGrid = document.getElementById('videoGrid');
+        const localVideo = document.querySelector('#localVideo video');
+        const timerBadge = document.getElementById('timerBadge');
+        const waitingCard = document.getElementById('waitingCard');
+        const micBtn = document.getElementById('micBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const inviteBtn = document.getElementById('inviteBtn');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        const notification = document.getElementById('notification');
+        const header = document.getElementById('header');
+        const controlPanel = document.getElementById('controlPanel');
+        const localMicStatus = document.getElementById('localMicStatus');
+        const localCameraStatus = document.getElementById('localCameraStatus');
+
+        // WebRTC Configuration
+        const pcConfig = {
+            iceServers: [
+                {
+                    urls: [
+                        'stun:stun.l.google.com:19302',
+                        'stun:stun1.l.google.com:19302',
+                        'stun:stun2.l.google.com:19302'
+                    ]
+                }
+            ]
+        };
+
+        // Initialize Socket.IO
+        const socket = io();
+        
+        // Function to load and display student information
+        async function loadStudentInfo() {
+            try {
+                console.log('🔍 Loading student information for meeting...');
+                
+                // Get meeting info from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const meetingId = urlParams.get('meetingId') || urlParams.get('id');
+                const roomId = urlParams.get('roomId');
+                
+                if (!meetingId && !roomId) {
+                    console.warn('⚠️ No meeting ID or room ID found in URL');
+                    return;
+                }
+                
+                // Fetch meeting details to get student information
+                let meetingResponse;
+                if (meetingId) {
+                    meetingResponse = await fetch(`/api/v1/meetings/${meetingId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } else if (roomId) {
+                    meetingResponse = await fetch(`/api/v1/meetings/room/${roomId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                if (!meetingResponse || !meetingResponse.ok) {
+                    console.warn('⚠️ Could not fetch meeting details');
+                    return;
+                }
+                
+                const meetingData = await meetingResponse.json();
+                console.log('📋 Meeting data:', meetingData);
+                
+                // Get student information
+                const studentId = meetingData.student_id || meetingData.studentId;
+                if (!studentId) {
+                    console.warn('⚠️ No student ID found in meeting data');
+                    return;
+                }
+                
+                // Fetch detailed student information
+                const studentResponse = await fetch(`/api/v1/students/me/info`, {
+                    headers: {
+                        'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!studentResponse.ok) {
+                    console.warn('⚠️ Could not fetch student details');
+                    return;
+                }
+                
+                const studentData = await studentResponse.json();
+                console.log('👤 Student data:', studentData);
+                
+                // Update the UI with student information
+                displayStudentInfo(studentData);
+                
+            } catch (error) {
+                console.error('❌ Error loading student information:', error);
+                // Fallback to default waiting screen
+                showDefaultWaitingScreen();
+            }
+        }
+        
+        // Function to display student information in the bio card
+        function displayStudentInfo(student) {
+            try {
+                console.log('🎨 Displaying student info:', student);
+                
+                // Get DOM elements
+                const studentBioCard = document.getElementById('studentBioCard');
+                const defaultWaitingContent = document.getElementById('defaultWaitingContent');
+                const studentPhoto = document.getElementById('studentPhoto');
+                const studentAvatarFallback = document.getElementById('studentAvatarFallback');
+                const studentName = document.getElementById('studentName');
+                const studentDetails = document.getElementById('studentDetails');
+                const studentBio = document.getElementById('studentBio');
+                const waitingStatus = document.getElementById('waitingStatus');
+                const waitingText = document.getElementById('waitingText');
+                
+                if (!studentBioCard) {
+                    console.warn('⚠️ Student bio card element not found');
+                    return;
+                }
+                
+                // Update student name
+                if (studentName) {
+                    studentName.textContent = student.full_name || student.fullName || student.name || 'Student';
+                }
+                
+                // Update waiting text fallback
+                if (waitingText) {
+                    const name = student.full_name || student.fullName || student.name || 'student';
+                    waitingText.textContent = `Waiting for ${name} to join`;
+                }
+                
+                // Update student details
+                if (studentDetails) {
+                    const age = student.age ? `Age ${student.age}` : '';
+                    const gender = student.gender ? student.gender : '';
+                    const location = 'Maasai Mara, Kenya';
+                    
+                    const details = [age, gender, location].filter(Boolean).join(' • ');
+                    studentDetails.textContent = details || 'Student from Kenya';
+                }
+                
+                // Update student bio
+                if (studentBio && student.bio) {
+                    studentBio.textContent = student.bio;
+                    studentBio.style.display = 'block';
+                } else if (studentBio) {
+                    studentBio.style.display = 'none';
+                }
+                
+                // Update student photo
+                if (student.photos && student.photos.length > 0) {
+                    const photoUrl = student.profilePictureUrl || '/assets/default-avatar.png';
+                    if (studentPhoto) {
+                        studentPhoto.src = photoUrl;
+                        studentPhoto.style.display = 'block';
+                        studentPhoto.onerror = () => {
+                            studentPhoto.style.display = 'none';
+                            if (studentAvatarFallback) {
+                                studentAvatarFallback.style.display = 'flex';
+                            }
+                        };
+                    }
+                    if (studentAvatarFallback) {
+                        studentAvatarFallback.style.display = 'none';
+                    }
+                } else {
+                    if (studentPhoto) {
+                        studentPhoto.style.display = 'none';
+                    }
+                    if (studentAvatarFallback) {
+                        studentAvatarFallback.style.display = 'flex';
+                    }
+                }
+                
+                // Update waiting status
+                if (waitingStatus) {
+                    const name = student.full_name || student.fullName || student.name || 'student';
+                    waitingStatus.textContent = `Waiting for ${name}...`;
+                }
+                
+                // Show the bio card and hide default content
+                studentBioCard.style.display = 'block';
+                if (defaultWaitingContent) {
+                    defaultWaitingContent.style.display = 'none';
+                }
+                
+                console.log('✅ Student info displayed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error displaying student info:', error);
+                showDefaultWaitingScreen();
+            }
+        }
+        
+        // Function to show default waiting screen as fallback
+        function showDefaultWaitingScreen() {
+            const studentBioCard = document.getElementById('studentBioCard');
+            const defaultWaitingContent = document.getElementById('defaultWaitingContent');
+            
+            if (studentBioCard) {
+                studentBioCard.style.display = 'none';
+            }
+            if (defaultWaitingContent) {
+                defaultWaitingContent.style.display = 'block';
+            }
+        }
+        
+        // WebSocket listeners for meeting termination
+        socket.on('meeting-force-end', (data) => {
+            console.log('🚨 Meeting force-ended by other participant:', data);
+            
+            // IMMEDIATELY hide the call UI to prevent persistence
+            hideUI();
+            
+            // Show notification to user
+            showNotification(`${data.endedBy} has left the meeting. You will be redirected to your dashboard.`, 'warning');
+            
+            // Stop any timers
+            if (callTimer) {
+                clearInterval(callTimer);
+            }
+            
+            // Close WebRTC connections
+            if (webrtc) {
+                webrtc.leaveRoom();
+            }
+            
+            // Clean up session storage
+            sessionStorage.removeItem('studentDashboardRedirect');
+            sessionStorage.removeItem('isStudentMeeting');
+            // Role cleanup handled by JWT auth;
+            sessionStorage.removeItem('meetingRoomId');
+            sessionStorage.removeItem('meetingToken');
+            // User ID cleanup handled by JWT auth;
+            // User role cleanup handled by JWT auth;
+            
+            // Force redirect IMMEDIATELY to prevent UI persistence
+            setTimeout(() => {
+                window.location.href = data.redirectUrl;
+            }, 500); // Reduced from 3000ms to 500ms
+        });
+        
+        socket.on('meeting-terminated', (data) => {
+            console.log('⚠️ Meeting terminated:', data);
+            
+            // IMMEDIATELY hide the call UI to prevent persistence
+            hideUI();
+            
+            // Show notification
+            showNotification(data.message, 'error');
+            
+            // Stop any timers
+            if (callTimer) {
+                clearInterval(callTimer);
+            }
+            
+            // Close WebRTC connections
+            if (webrtc) {
+                webrtc.leaveRoom();
+            }
+            
+            // Clean up session storage
+            sessionStorage.removeItem('studentDashboardRedirect');
+            sessionStorage.removeItem('isStudentMeeting');
+            // Role cleanup handled by JWT auth;
+            sessionStorage.removeItem('meetingRoomId');
+            sessionStorage.removeItem('meetingToken');
+            // User ID cleanup handled by JWT auth;
+            // User role cleanup handled by JWT auth;
+            
+            // Use fallback redirect IMMEDIATELY
+            setTimeout(async () => {
+                await fallbackRedirect();
+            }, 500); // Reduced from 3000ms to 500ms
+        });
+
+        // Initialize WebRTC
+        webrtc = new Webrtc(socket, pcConfig, {
+            log: true,
+            warn: true,
+            error: true
+        });
+
+        // Utility Functions
+        function showNotification(message, type = 'info') {
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            timerBadge.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeRemaining <= 0) {
+                clearInterval(callTimer);
+                showNotification('Time is up! Call will end now.', 'error');
+                setTimeout(() => {
+                    // Use the same redirect logic as handleMeetingEnd
+                    handleMeetingEnd();
+                }, 3000);
+                return;
+            }
+            
+            if (timeRemaining === 300) { // 5 minutes warning
+                showNotification('5 minutes remaining in this call', 'warning');
+                playNotificationSound();
+            }
+            
+            timeRemaining--;
+        }
+
+        function startTimer() {
+            if (!isTimerStarted) {
+                isTimerStarted = true;
+                callTimer = setInterval(updateTimer, 1000);
+                showNotification('Call timer started - 40 minutes', 'info');
+            }
+        }
+
+        function playNotificationSound() {
+            if (Tone.context.state === 'running') {
+                const synth = new Tone.Synth().toDestination();
+                synth.triggerAttackRelease('C5', '8n');
+            }
+        }
+
+        function addRemoteParticipant(socketId, stream = null) {
+            // Skip if this is our own socket ID
+            if (socketId === webrtc.myId) {
+                return;
+            }
+
+            // Remove waiting card and add remote participant
+            if (waitingCard && waitingCard.parentNode) {
+                waitingCard.remove();
+            }
+
+            // Check if participant already exists
+            let participant = document.getElementById(`participant-${socketId}`);
+            
+            if (!participant) {
+                participant = document.createElement('div');
+                participant.className = 'participant-card';
+                participant.id = `participant-${socketId}`;
+                
+                // Determine participant name based on JWT authentication
+                const user = window.TalkTimeAuth ? window.TalkTimeAuth.getUser() : null;
+                const userRole = user ? user.role : 'guest';
+                let participantName = 'Participant';
+                
+                if (userRole === 'volunteer') {
+                    participantName = 'Student';
+                } else if (userRole === 'student') {
+                    participantName = 'Volunteer';
+                }
+
+                if (stream) {
+                    // Create video element
+                    const video = document.createElement('video');
+                    video.autoplay = true;
+                    video.playsInline = true;
+                    video.srcObject = stream;
+                    
+                    const participantInfo = document.createElement('div');
+                    participantInfo.className = 'participant-info';
+                    participantInfo.innerHTML = `
+                        <span class="participant-name">${participantName}</span>
+                        <div class="participant-status">
+                            <div class="status-indicator"></div>
+                        </div>
+                    `;
+                    
+                    participant.appendChild(video);
+                    participant.appendChild(participantInfo);
+                } else {
+                    // Show waiting state
+                    participant.classList.add('waiting');
+                    participant.innerHTML = `
+                        <div class="waiting-content">
+                            <div class="waiting-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="waiting-text">${participantName}</div>
+                            <div class="waiting-subtext">
+                                <span>Connecting</span>
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                videoGrid.appendChild(participant);
+                participantCount++;
+                
+                showNotification(`${participantName} joined the call`, 'success');
+                playNotificationSound();
+            } else if (stream && participant.classList.contains('waiting')) {
+                // Update waiting participant with video stream
+                participant.classList.remove('waiting');
+                participantInfo.className = 'participant-info';
+                participantInfo.innerHTML = `
+                    <span class="participant-name">${participantName}</span>
+                    <div class="participant-status">
+                        <div class="status-indicator"></div>
+                    </div>
+                `;
+                
+                participant.appendChild(video);
+                participant.appendChild(participantInfo);
+                
+                showNotification(`${participantName} is now connected`, 'success');
+            }
+        }
+
+        function removeParticipant(socketId) {
+            const participant = document.getElementById(`participant-${socketId}`);
+            if (participant) {
+                participant.remove();
+                participantCount--;
+                
+                // Add waiting card back if no remote participants
+                if (participantCount === 1) {
+                    const waitingCard = document.createElement('div');
+                    waitingCard.className = 'participant-card waiting';
+                    waitingCard.id = 'waitingCard';
+                    waitingCard.innerHTML = `
+                        <div class="waiting-content">
+                            <!-- Dynamic Student Bio Card -->
+                            <div class="student-bio-card" id="studentBioCard" style="display: none;">
+                                <div class="student-avatar">
+                                    <img id="studentPhoto" src="" alt="Student Photo" class="student-photo">
+                                    <div class="student-avatar-fallback" id="studentAvatarFallback">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                                <div class="student-info">
+                                    <h3 class="student-name" id="studentName">Loading...</h3>
+                                    <p class="student-details" id="studentDetails">Getting student information...</p>
+                                    <div class="student-bio" id="studentBio"></div>
+                                </div>
+                                <div class="waiting-status">
+                                    <div class="status-indicator">
+                                        <div class="loading-spinner"></div>
+                                        <span id="waitingStatus">Connecting...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Fallback Waiting Content -->
+                            <div class="default-waiting-content" id="defaultWaitingContent">
+                                <div class="waiting-icon">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div class="waiting-text" id="waitingText">Waiting for student to join</div>
+                                <div class="waiting-subtext">
+                                    <span>Connecting</span>
+                                    <div class="loading-spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    videoGrid.appendChild(waitingCard);
+                }
+                
+                showNotification('Participant left the call', 'info');
+            }
+        }
+
+        function toggleMicrophone() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    micBtn.classList.toggle('active', audioTrack.enabled);
+                    micBtn.classList.toggle('inactive', !audioTrack.enabled);
+                    localMicStatus.classList.toggle('muted', !audioTrack.enabled);
+                    
+                    const icon = micBtn.querySelector('i');
+                    icon.className = audioTrack.enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+                    
+                    showNotification(`Microphone ${audioTrack.enabled ? 'enabled' : 'muted'}`, audioTrack.enabled ? 'success' : 'error');
+                }
+            }
+        }
+
+        function toggleCamera() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    cameraBtn.classList.toggle('active', videoTrack.enabled);
+                    cameraBtn.classList.toggle('inactive', !videoTrack.enabled);
+                    localCameraStatus.classList.toggle('muted', !videoTrack.enabled);
+                    
+                    const icon = cameraBtn.querySelector('i');
+                    icon.className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
+                    
+                    showNotification(`Camera ${videoTrack.enabled ? 'enabled' : 'disabled'}`, videoTrack.enabled ? 'success' : 'error');
+                }
+            }
+        }
+
+        function endCall() {
+            if (confirm('Are you sure you want to end the call?')) {
+                console.log('📞 Student/Volunteer ending call - hiding UI immediately');
+                
+                // IMMEDIATELY hide the call UI to prevent persistence
+                hideUI();
+                
+                // Stop any timers
+                if (callTimer) {
+                    clearInterval(callTimer);
+                }
+                
+                // Close WebRTC connections
+                webrtc.leaveRoom();
+                
+                // Show ending notification
+                showNotification('Ending call...', 'info');
+                
+                // Call the meeting end API
+                handleMeetingEnd('manual_end_call');
+            }
+        }
+
+        function copyMeetingLink() {
+            const meetingLink = window.location.href;
+            navigator.clipboard.writeText(meetingLink).then(() => {
+                showNotification('Meeting link copied to clipboard', 'success');
+            }).catch(() => {
+                showNotification('Failed to copy meeting link', 'error');
+            });
+        }
+
+        function hideUI() {
+            header.classList.add('hidden');
+            controlPanel.classList.add('hidden');
+        }
+
+        function showUI() {
+            header.classList.remove('hidden');
+            controlPanel.classList.remove('hidden');
+            
+            clearTimeout(uiTimeout);
+            uiTimeout = setTimeout(hideUI, 3000);
+        }
+
+        // Event Listeners
+        micBtn.addEventListener('click', toggleMicrophone);
+        cameraBtn.addEventListener('click', toggleCamera);
+        endCallBtn.addEventListener('click', endCall);
+        copyLinkBtn.addEventListener('click', copyMeetingLink);
+        inviteBtn.addEventListener('click', () => showNotification('Invite feature coming soon!', 'info'));
+
+        // Mouse movement and touch events to show/hide UI
+        document.addEventListener('mousemove', showUI);
+        document.addEventListener('touchstart', showUI);
+        document.addEventListener('click', async () => {
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+        }, { once: true });
+
+        // WebRTC Event Listeners
+        webrtc.addEventListener('createdRoom', (e) => {
+            console.log('Room created:', e.detail.roomId);
+            showNotification('Waiting for others to join...', 'info');
+        });
+
+        webrtc.addEventListener('joinedRoom', (e) => {
+            console.log('Joined room:', e.detail.roomId);
+            showNotification('Connected to call', 'success');
+        });
+
+        webrtc.addEventListener('newUser', (e) => {
+            console.log('New user joined:', e.detail.socketId);
+            addRemoteParticipant(e.detail.socketId);
+            
+            // Start timer when second participant joins
+            if (participantCount >= 2 && !isTimerStarted) {
+                startTimer();
+            }
+        });
+
+        webrtc.addEventListener('stream', (e) => {
+            console.log('Stream received from:', e.detail.socketId);
+            if (e.detail.socketId !== webrtc.myId) {
+                addRemoteParticipant(e.detail.socketId, e.detail.stream);
+            }
+        });
+
+        webrtc.addEventListener('removeUser', (e) => {
+            console.log('User left:', e.detail.socketId);
+            removeParticipant(e.detail.socketId);
+        });
+
+        webrtc.addEventListener('error', (e) => {
+            console.error('WebRTC error:', e.detail.error);
+            showNotification('Connection error occurred', 'error');
+        });
+
+        // Check authentication and validate student access to meeting
+        async function checkAuthentication() {
+            try {
+                // Extract room ID and token from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const roomId = urlParams.get('room');
+                const token = urlParams.get('token');
+                
+                console.log('🔐 Checking authentication for room:', roomId, 'with token:', token ? 'present' : 'missing');
+                
+                // First, check if user is authenticated
+                const authResponse = await fetch('/api/v1/auth-check/check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!authResponse.ok) {
+                    // User is not authenticated - force student login for meeting links
+                    console.log('❌ User not authenticated, redirecting to student login');
+                    
+                    // Store the current meeting URL to redirect back after login
+                    sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                    sessionStorage.setItem('meetingRoomId', roomId);
+                    // Modern JWT authentication - token already managed by TalkTimeAuth
+                    
+                    // Show authentication required message
+                    showNotification('Please log in with your student credentials to join the meeting', 'error');
+                    
+                    // Always redirect to student login for meeting links
+                    setTimeout(() => {
+                        window.location.href = '/student/login';
+                    }, 2000);
+                    
+                    return false;
+                }
+                
+                const userData = await authResponse.json();
+                console.log('✅ User authenticated:', userData);
+                
+                // Check if this is an instant call (no validation needed)
+                if (roomId && roomId.startsWith('instant_')) {
+                    console.log('🚀 Instant call detected, skipping meeting validation');
+                    return true;
+                }
+                
+                // If user is authenticated, validate meeting access for scheduled meetings
+                if (roomId && token) {
+                    return await validateMeetingAccess(roomId, token, userData);
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                showNotification('Authentication check failed. Please log in.', 'error');
+                
+                // Redirect to student login for meeting links
+                setTimeout(() => {
+                    window.location.href = '/student/login.html';
+                }, 2000);
+                
+                return false;
+            }
+        }
+        
+        // Validate student access to specific meeting
+        async function validateMeetingAccess(roomId, token, userData) {
+            try {
+                console.log('🔍 Validating meeting access for room:', roomId);
+                
+                const response = await fetch('/api/v1/meeting-validation/validate-access', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        roomId: roomId,
+                        token: token,
+                        studentId: userData.user?.id || userData.student?.id
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    console.log('❌ Meeting access denied:', result.message);
+                    
+                    if (response.status === 403) {
+                        showNotification('Access denied: This meeting is not for you', 'error');
+                    } else if (response.status === 404) {
+                        showNotification('Meeting not found', 'error');
+                    } else if (response.status === 410) {
+                        // Only show "cancelled" for truly cancelled meetings
+                        showNotification('Meeting has been cancelled', 'error');
+                    } else {
+                        showNotification('Unable to join meeting: ' + result.message, 'error');
+                    }
+                    
+                    // Redirect to student dashboard after error
+                    setTimeout(() => {
+                        window.location.href = '/student/dashboard';
+                    }, 3000);
+                    
+                    return false;
+                }
+                
+                console.log('✅ Meeting access validated successfully');
+                
+                // Store meeting info for post-meeting redirect
+                sessionStorage.setItem('isStudentMeeting', 'true');
+                sessionStorage.setItem('studentDashboardRedirect', '/student/dashboard');
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Meeting validation failed:', error);
+                showNotification('Failed to validate meeting access', 'error');
+                
+                // Redirect to student dashboard on error
+                setTimeout(() => {
+                    window.location.href = '/student/dashboard';
+                }, 2000);
+                
+                return false;
+            }
+        }
+        
+        // Handle post-meeting redirect using universal meeting end API
+        async function handleMeetingEnd(reason = 'participant_left') {
+            console.log('📞 Meeting ended, calling universal end API...', { reason });
+            
+            try {
+                // Get meeting/room ID from URL
+                const params = new URLSearchParams(window.location.search);
+                const roomId = params.get('room');
+                
+                if (!roomId) {
+                    console.error('❌ No room ID found, redirecting based on role...');
+                    await fallbackRedirect();
+                    return;
+                }
+                
+                // Call universal meeting end API
+                console.log('🔚 Calling universal meeting end API for room:', roomId);
+                
+                const response = await fetch(`/api/v1/meetings/${encodeURIComponent(roomId)}/end`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Meeting ended successfully:', data);
+                    
+                    // IMMEDIATELY hide the call UI to prevent students from seeing it
+                    hideUI();
+                    
+                    // Stop any timers
+                    if (callTimer) {
+                        clearInterval(callTimer);
+                    }
+                    
+                    // Close WebRTC connections
+                    if (webrtc) {
+                        webrtc.leaveRoom();
+                    }
+                    
+                    // Show notification
+                    showNotification('Meeting ended. Redirecting to your dashboard...', 'success');
+                    
+                    // Clean up session storage
+                    sessionStorage.removeItem('studentDashboardRedirect');
+                    sessionStorage.removeItem('isStudentMeeting');
+                    // Role cleanup handled by JWT auth;
+                    sessionStorage.removeItem('meetingRoomId');
+                    sessionStorage.removeItem('meetingToken');
+                    // User ID cleanup handled by JWT auth;
+                    // User role cleanup handled by JWT auth;
+                    
+                    // Redirect IMMEDIATELY to prevent UI persistence
+                    setTimeout(() => {
+                        window.location.href = data.redirectUrl;
+                    }, 500); // Reduced from 2000ms to 500ms
+                    
+                } else {
+                    console.error('❌ Error ending meeting:', response.statusText);
+                    await fallbackRedirect();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error calling meeting end API:', error);
+                await fallbackRedirect();
+            }
+        }
+        
+        // Fallback redirect logic if API call fails
+        async function fallbackRedirect() {
+            console.log('🔄 Using fallback redirect logic...');
+            
+            try {
+                // Check user role from authentication
+                const authResponse = await fetch('/api/v1/auth/check', {
+                    credentials: 'include'
+                });
+                
+                if (authResponse.ok) {
+                    const authData = await authResponse.json();
+                    const isStudent = authData.role === 'student';
+                    
+                    console.log('🔍 Fallback redirect - User role:', authData.role, 'isStudent:', isStudent);
+                    
+                    // Clean up session storage
+                    sessionStorage.removeItem('studentDashboardRedirect');
+                    sessionStorage.removeItem('isStudentMeeting');
+                    // Role cleanup handled by JWT auth;
+                    
+                    // Redirect based on role
+                    const redirectUrl = isStudent ? '/student/dashboard' : '/volunteer/dashboard/students';
+                    window.location.href = redirectUrl;
+                } else {
+                    // If auth check fails, redirect to home
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('❌ Fallback redirect failed:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Initialize the call
+        async function initializeCall() {
+            try {
+                // First check if user is authenticated
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return; // Stop initialization if not authenticated
+                }
+                
+                // Get user authentication data to join proper socket rooms
+                const authResponse = await fetch('/api/v1/auth/check', {
+                    credentials: 'include'
+                });
+                
+                if (authResponse.ok) {
+                    const userData = await authResponse.json();
+                    console.log('👤 User data for socket rooms:', userData);
+                    
+                    // Join user-specific socket rooms to receive meeting termination notifications
+                    if (userData.id && userData.role) {
+                        const userRoom = `user_${userData.id}`;
+                        const roleRoom = `${userData.role}_${userData.id}`;
+                        
+                        console.log('🔌 Joining socket rooms:', userRoom, roleRoom);
+                        
+                        // Emit join room events to backend
+                        socket.emit('join-user-room', {
+                            userId: userData.id,
+                            role: userData.role,
+                            rooms: [userRoom, roleRoom]
+                        });
+                        
+                        // Store user info for meeting end notifications
+                        // User data is now managed by JWT authentication
+                        console.log('✅ User authenticated via JWT:', userData.role);
+                        
+                        console.log('✅ Socket rooms joined for meeting termination notifications');
+                    }
+                }
+                
+                // Get URL parameters
+                const params = new URLSearchParams(window.location.search);
+                const room = params.get('room');
+                // Get role from JWT authentication or URL params as fallback
+                const user = window.TalkTimeAuth ? window.TalkTimeAuth.getUser() : null;
+                const role = user ? user.role : (params.get('role') || 'guest');
+                
+                console.log('🎭 User role determined:', role);
+                
+                if (!room) {
+                    showNotification('No room ID provided', 'error');
+                    return;
+                }
+
+                // Load student information for dynamic display
+                await loadStudentInfo();
+                
+                // Get local media stream
+                localStream = await webrtc.getLocalStream(true, { width: 1280, height: 720 });
+                localVideo.srcObject = localStream;
+                
+                // Join the room
+                webrtc.joinRoom(room);
+                
+                showNotification('Connecting to call...', 'info');
+                showUI();
+                
+            } catch (error) {
+                console.error('Failed to initialize call:', error);
+                showNotification('Failed to access camera/microphone', 'error');
+            }
+        }
+
+        // Start the call when page loads
+        window.addEventListener('load', initializeCall);
+    </script>
+</body>
+</html>

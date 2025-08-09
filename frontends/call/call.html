@@ -1,0 +1,2820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime Video Conference</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📹</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Start Screen */
+        .start-screen {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        .start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-screen h1 {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+        }
+
+        .start-button {
+            padding: 16px 40px;
+            border: none;
+            border-radius: 30px;
+            background: #007aff;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .start-button:hover {
+            background: #0051d5;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        /* Server Status */
+        .server-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        .server-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3b30;
+        }
+
+        .server-indicator.connected {
+            background: #34c759;
+        }
+
+        /* Room Created Screen */
+        .room-screen {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .room-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .room-screen h2 {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 30px;
+        }
+
+        .room-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .room-id {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .room-link {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            word-break: break-all;
+        }
+
+        .share-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .share-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .join-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: #34c759;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .join-button:hover {
+            background: #2da647;
+        }
+
+        /* Waiting Screen */
+        .waiting-screen {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 8;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            padding: 20px;
+        }
+
+        .waiting-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .waiting-header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .waiting-header h2 {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .waiting-header p {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .users-container {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 50px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .user-card {
+            background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);
+            border-radius: 24px;
+            padding: 30px;
+            width: 280px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .user-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .user-card.local {
+            border: 2px solid rgba(0, 122, 255, 0.5);
+        }
+
+        .user-card.remote {
+            border: 2px solid rgba(52, 199, 89, 0.5);
+        }
+
+        .user-label {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .user-card.local .user-label {
+            color: #007aff;
+        }
+
+        .user-card.remote .user-label {
+            color: #34c759;
+        }
+
+        .user-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-avatar video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .user-title {
+            font-size: 16px;
+            color: #007aff;
+            margin-bottom: 12px;
+        }
+
+        .user-company {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .user-card.local .status-dot {
+            background: #007aff;
+        }
+
+        .user-card.remote .status-dot {
+            background: #34c759;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .connection-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .connection-line {
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(to right, #007aff, #34c759);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .connection-line::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #007aff;
+            animation: moveDot 3s infinite linear;
+        }
+
+        @keyframes moveDot {
+            0% { left: 0; }
+            100% { left: calc(100% - 10px); }
+        }
+
+        .waiting-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+        }
+
+        .waiting-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .waiting-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            animation: waitingPulse 1.4s infinite ease-in-out;
+        }
+
+        .waiting-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .waiting-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes waitingPulse {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Meeting Link Container */
+        .meeting-link-container {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .copy-link-button {
+            background: linear-gradient(135deg, #007aff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .copy-link-button:hover {
+            background: linear-gradient(135deg, #0056b3, #003d82);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .copy-link-button:active {
+            transform: translateY(0);
+        }
+
+        .copy-link-button svg {
+            fill: currentColor;
+        }
+
+        .copy-success-message {
+            margin-top: 12px;
+            color: #34c759;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .copy-success-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Floating Leave Button */
+        .floating-leave-button {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff3b30, #d70015);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(255, 59, 48, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-leave-button:hover {
+            background: linear-gradient(135deg, #d70015, #a50010);
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 6px 25px rgba(255, 59, 48, 0.5);
+        }
+
+        .floating-leave-button:active {
+            transform: translateY(0);
+        }
+
+        .floating-leave-button svg {
+            fill: white;
+        }
+
+        /* Leave Confirmation Modal */
+        .leave-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .leave-modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .leave-modal-content {
+            background: #1c1c1e;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .leave-modal.show .leave-modal-content {
+            transform: scale(1);
+        }
+
+        .leave-modal h3 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+        }
+
+        .leave-modal p {
+            color: #a1a1a6;
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+
+        .leave-modal-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .leave-cancel-btn, .leave-confirm-btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .leave-cancel-btn {
+            background: #48484a;
+            color: white;
+        }
+
+        .leave-cancel-btn:hover {
+            background: #5a5a5c;
+        }
+
+        .leave-confirm-btn {
+            background: linear-gradient(135deg, #ff3b30, #d70015);
+            color: white;
+        }
+
+        .leave-confirm-btn:hover {
+            background: linear-gradient(135deg, #d70015, #a50010);
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 7;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #007aff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Video Container */
+        .video-container {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .video-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .local-video-container {
+            position: absolute;
+            bottom: 120px;
+            right: 20px;
+            width: 240px;
+            height: 180px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .local-video-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .local-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #2a2a2a;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3b30;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #34c759;
+            animation: none;
+        }
+
+        /* Controls */
+        .controls-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+        }
+
+        .control-button.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .control-button.recording {
+            background: #ff3b30;
+            animation: recordingPulse 1.5s infinite;
+        }
+
+        @keyframes recordingPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+        }
+
+        .control-button.end-call {
+            background: #ff3b30;
+            width: 70px;
+            height: 70px;
+        }
+
+        .control-button.end-call:hover {
+            background: #ff453a;
+        }
+
+        .control-button svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-button:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Fullscreen Button */
+        .fullscreen-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .fullscreen-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Time Display */
+        .time-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .time-container.visible {
+            opacity: 1;
+        }
+
+        .time-display {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 59, 48, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3b30;
+            animation: recordingBlink 1s infinite;
+        }
+
+        @keyframes recordingBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* End Call Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1c1c1e;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: #ff3b30;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: #fff;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .modal-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .modal-button.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .modal-button.cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-button.confirm {
+            background: #ff3b30;
+            color: #fff;
+        }
+
+        .modal-button.confirm:hover {
+            background: #ff453a;
+        }
+
+        /* Recording Notification */
+        .recording-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(255, 59, 48, 0.9);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 200;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .recording-notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Connection Error Notification */
+        .connection-error {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(255, 59, 48, 0.9);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 200;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .connection-error.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* P2P Mode Indicator */
+        .p2p-mode {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(52, 199, 89, 0.2);
+            color: #34c759;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .p2p-mode.show {
+            opacity: 1;
+        }
+
+        .p2p-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34c759;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .users-container {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .local-video-container {
+                width: 120px;
+                height: 90px;
+                bottom: 100px;
+                right: 10px;
+            }
+
+            .control-button {
+                width: 50px;
+                height: 50px;
+            }
+
+            .control-button svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .control-button.end-call {
+                width: 60px;
+                height: 60px;
+            }
+
+            .modal {
+                padding: 20px;
+            }
+
+            .modal-title {
+                font-size: 20px;
+            }
+
+            .modal-message {
+                font-size: 14px;
+            }
+
+            .time-display {
+                font-size: 20px;
+            }
+
+            .user-card {
+                width: 240px;
+                padding: 20px;
+            }
+
+            .user-avatar {
+                width: 80px;
+                height: 80px;
+            }
+
+            .user-name {
+                font-size: 20px;
+            }
+
+            .user-title {
+                font-size: 14px;
+            }
+
+            .connection-line {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Start Screen -->
+        <div class="start-screen" id="startScreen">
+            <h1>TalkTime</h1>
+            <button class="start-button" onclick="createRoom()">Start Call</button>
+            <div class="server-status">
+                <div class="server-indicator" id="serverIndicator"></div>
+                <span id="serverStatusText">Connecting...</span>
+            </div>
+        </div>
+
+        <!-- Room Created Screen -->
+        <div class="room-screen" id="roomScreen">
+            <h2>Share This Link</h2>
+            <div class="room-info">
+                <div class="room-id" id="roomIdDisplay">ROOM-1234</div>
+                <div class="room-link" id="roomLinkDisplay">https://example.com/room/ROOM-1234</div>
+            </div>
+            <button class="share-button" onclick="shareRoom()">Copy Link</button>
+            <button class="join-button" onclick="joinRoom()">Join Room</button>
+        </div>
+
+        <!-- Waiting Screen -->
+        <div class="waiting-screen" id="waitingScreen">
+            <div class="waiting-header">
+                <h2>ADEA TALKTIME</h2>
+                <p id="waitingMessage">Waiting for the other person to join</p>
+            </div>
+            
+            <div class="users-container">
+                <div class="user-card local">
+                    <div class="user-label">You</div>
+                    <div class="user-avatar">
+                        <video id="waitingLocalVideo" autoplay="" playsinline="" muted=""></video>
+                    </div>
+                    <h3 class="user-name" id="localUserName">Loading...</h3>
+                    <div class="user-title" id="localUserTitle">Software Engineer</div>
+
+                    <div class="user-status">
+                        <div class="status-dot"></div>
+                        <span>Ready</span>
+                    </div>
+                </div>
+                
+                <div class="connection-container">
+                    <div class="connection-line"></div>
+                    <div class="waiting-indicator">
+                        <span>Connecting</span>
+                        <div class="waiting-dots">
+                            <div class="waiting-dot"></div>
+                            <div class="waiting-dot"></div>
+                            <div class="waiting-dot"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="user-card remote">
+                    <div class="user-label">Them</div>
+                    <div class="user-avatar">
+                        <img src="https://picsum.photos/seed/remoteuser/200/200" alt="Remote User Avatar">
+                    </div>
+                    <h3 class="user-name" id="remoteUserName">Loading...</h3>
+                    <div class="user-title" id="remoteUserTitle">Senior Product Designer</div>
+
+                    <div class="user-status">
+                        <div class="status-dot"></div>
+                        <span>Waiting</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copy Meeting Link Button -->
+            <div class="meeting-link-container">
+                <button class="copy-link-button" onclick="copyMeetingLink()">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    Copy Meeting Link
+                </button>
+                <div class="copy-success-message" id="copySuccessMessage">
+                    ✓ Link copied to clipboard!
+                </div>
+            </div>
+            
+            <!-- Floating Leave Button -->
+            <button class="floating-leave-button" onclick="showLeaveConfirmation()">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Leave Confirmation Modal -->
+        <div class="leave-modal" id="leaveModal">
+            <div class="leave-modal-content">
+                <h3>Leave Meeting?</h3>
+                <p>Are you sure you want to leave the waiting room? You'll need to rejoin using the meeting link.</p>
+                <div class="leave-modal-buttons">
+                    <button class="leave-cancel-btn" onclick="hideLeaveConfirmation()">Stay</button>
+                    <button class="leave-confirm-btn" onclick="confirmLeave()">Leave</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div class="loading-screen" id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Connecting...</div>
+        </div>
+
+        <!-- Video Container -->
+        <div class="video-container" id="videoContainer">
+            <video class="remote-video" id="remoteVideo" autoplay="" playsinline=""></video>
+            
+            <div class="local-video-container" id="localVideoContainer">
+                <video class="local-video" id="localVideo" autoplay="" playsinline="" muted=""></video>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="connection-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+
+            <!-- Time Display -->
+            <div class="time-container" id="timeContainer">
+                <div class="time-display" id="timeDisplay">00:00</div>
+                <div class="recording-indicator" id="recordingIndicator">
+                    <div class="recording-dot"></div>
+                    <span>Recording</span>
+                </div>
+            </div>
+
+            <!-- Fullscreen Button -->
+            <button class="fullscreen-button" onclick="toggleFullscreen()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path>
+                </svg>
+            </button>
+
+            <!-- Controls -->
+            <div class="controls-container">
+                <button class="control-button" id="micButton" onclick="toggleMic()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 9.92V21h2v-3.08C17.39 17.43 20 14.53 20 11h-3z"></path>
+                    </svg>
+                    <span class="tooltip">Mute</span>
+                </button>
+
+                <button class="control-button" id="videoButton" onclick="toggleVideo()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"></path>
+                    </svg>
+                    <span class="tooltip">Video Off</span>
+                </button>
+
+                <button class="control-button" id="screenButton" onclick="toggleScreenShare()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h3l-1 1v2h12v-2l-1-1h3c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"></path>
+                    </svg>
+                    <span class="tooltip">Share Screen</span>
+                </button>
+
+                <button class="control-button" id="recordButton" onclick="toggleRecording()">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="8"></circle>
+                    </svg>
+                    <span class="tooltip">Start Recording</span>
+                </button>
+
+                <button class="control-button end-call" onclick="showEndCallModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"></path>
+                    </svg>
+                    <span class="tooltip">End Call</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- End Call Modal -->
+        <div class="modal-overlay" id="endCallModal">
+            <div class="modal">
+                <div class="modal-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
+                    </svg>
+                </div>
+                <h2 class="modal-title">End Call?</h2>
+                <p class="modal-message">Are you sure you want to end the call?</p>
+                <div class="modal-buttons">
+                    <button class="modal-button cancel" onclick="hideEndCallModal()">Cancel</button>
+                    <button class="modal-button confirm" onclick="confirmEndCall()">End Call</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recording Notification -->
+        <div class="recording-notification" id="recordingNotification">
+            <div class="recording-dot"></div>
+            <span>Recording in progress...</span>
+        </div>
+
+        <!-- Connection Error Notification -->
+        <div class="connection-error" id="connectionError">
+            <div class="recording-dot"></div>
+            <span>Connection to signaling server failed. Using peer-to-peer mode.</span>
+        </div>
+
+        <!-- P2P Mode Indicator -->
+        <div class="p2p-mode" id="p2pMode">
+            <div class="p2p-dot"></div>
+            <span>Peer-to-Peer Mode</span>
+        </div>
+    </div>
+
+    <script>
+        // WebRTC Configuration
+        // Smart Environment Detection
+        const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                                   window.location.hostname === '127.0.0.1' || 
+                                   window.location.hostname.includes('dev') ||
+                                   window.location.port === '3000' ||
+                                   window.location.port === '8080';
+        
+        console.log('🌍 Environment detected:', isLocalDevelopment ? 'LOCAL DEVELOPMENT' : 'PRODUCTION');
+        
+        // Add local development indicator to UI
+        if (isLocalDevelopment) {
+            const devIndicator = document.createElement('div');
+            devIndicator.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: rgba(255, 152, 0, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 10000;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 152, 0, 0.3);
+            `;
+            devIndicator.textContent = '🧪 DEV MODE';
+            document.body.appendChild(devIndicator);
+        }
+        
+        // Dynamic WebRTC Configuration based on environment
+        const pcConfig = {
+            iceServers: isLocalDevelopment ? [
+                // Local development: More aggressive ICE gathering for same-machine testing
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { 
+                    urls: 'turn:numb.viagenie.ca',
+                    credential: 'muazkh',
+                    username: 'webrtc@live.com'
+                },
+                {
+                    urls: 'turn:relay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ] : [
+                // Production: Standard configuration for real-world usage
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { 
+                    urls: 'turn:numb.viagenie.ca',
+                    credential: 'muazkh',
+                    username: 'webrtc@live.com'
+                }
+            ],
+            // Environment-specific configuration
+            iceCandidatePoolSize: isLocalDevelopment ? 15 : 10,
+            bundlePolicy: isLocalDevelopment ? 'max-bundle' : 'balanced',
+            rtcpMuxPolicy: 'require',
+            iceTransportPolicy: isLocalDevelopment ? 'all' : 'all'
+        };
+
+        // Extract URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('studentId');
+        const studentName = urlParams.get('studentName');
+        const volunteerName = urlParams.get('volunteerName');
+        const volunteerImage = urlParams.get('volunteerImage');
+        const isInstantCall = urlParams.get('instant') === 'true';
+        
+        // Smart role detection: For instant calls, anyone joining an existing room should be a student
+        // The volunteer who initiates the call gets role=volunteer, everyone else joining gets role=student
+        let userRole = urlParams.get('role') || 'volunteer';
+        
+        // Override role logic for instant calls - will be finalized after room join status is known
+        console.log(`🎯 Initial role from URL: ${userRole}`);
+        console.log(`📋 Volunteer info from URL: ${volunteerName}, ${volunteerImage}`);
+
+        // Store student data globally
+        let studentData = null;
+
+        // Get volunteer data from JWT and user data
+        let volunteerData = null;
+        
+        // Debug: Log all localStorage keys to see what's available
+        console.log('Available localStorage keys:', Object.keys(localStorage));
+        console.log('localStorage contents:', {
+            'talktime_user': localStorage.getItem('talktime_user'),
+            'talktime_access_token': localStorage.getItem('talktime_access_token'),
+            'talktime_refresh_token': localStorage.getItem('talktime_refresh_token'),
+            'volunteerToken': localStorage.getItem('volunteerToken'),
+            'token': localStorage.getItem('token')
+        });
+        
+        try {
+            // First try to get user data directly from localStorage (with volunteer prefix)
+            const userData = localStorage.getItem('volunteer_talktime_user');
+            if (userData) {
+                volunteerData = JSON.parse(userData);
+                console.log('Got volunteer data from volunteer_talktime_user:', volunteerData);
+            } else {
+                // Fallback to parsing JWT token (with volunteer prefix)
+                const token = localStorage.getItem('volunteer_talktime_access_token');
+                if (token) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    volunteerData = payload;
+                    console.log('Parsed volunteer data from volunteer_talktime_access_token JWT:', volunteerData);
+                } else {
+                    // Try without prefix as fallback
+                    const fallbackUserData = localStorage.getItem('talktime_user');
+                    const fallbackToken = localStorage.getItem('talktime_access_token');
+                    
+                    if (fallbackUserData) {
+                        volunteerData = JSON.parse(fallbackUserData);
+                        console.log('Got volunteer data from talktime_user (fallback):', volunteerData);
+                    } else if (fallbackToken) {
+                        const payload = JSON.parse(atob(fallbackToken.split('.')[1]));
+                        volunteerData = payload;
+                        console.log('Parsed volunteer data from talktime_access_token JWT (fallback):', volunteerData);
+                    } else {
+                        console.log('No volunteer token found in localStorage');
+                        // Try all possible keys
+                        const allKeys = Object.keys(localStorage);
+                        const tokenKeys = allKeys.filter(key => key.toLowerCase().includes('token') || key.toLowerCase().includes('user') || key.toLowerCase().includes('volunteer'));
+                        console.log('Found potential token/user keys:', tokenKeys);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error getting volunteer data:', error);
+            // Try alternative token keys as final fallback
+            try {
+                const altToken = localStorage.getItem('volunteerToken') || localStorage.getItem('token');
+                if (altToken) {
+                    const payload = JSON.parse(atob(altToken.split('.')[1]));
+                    volunteerData = payload;
+                    console.log('Parsed volunteer data from alternative token:', volunteerData);
+                }
+            } catch (altError) {
+                console.error('Error parsing alternative token:', altError);
+            }
+        }
+
+        // Function to fetch real student data
+        async function fetchStudentData() {
+            if (!studentId || userRole !== 'volunteer') return null;
+            
+            try {
+                const token = localStorage.getItem('volunteer_talktime_access_token');
+                if (!token) return null;
+                
+                const response = await fetch(`/api/v1/volunteers/students/${studentId}/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    studentData = data.student;
+                    console.log('Fetched real student data:', studentData);
+                    return studentData;
+                }
+            } catch (error) {
+                console.error('Error fetching student data:', error);
+            }
+            return null;
+        }
+
+        // Real participant data based on role (will be updated with real student data)
+        // Use volunteer info from URL if available (for student side) or localStorage (for volunteer side)
+        const effectiveVolunteerName = volunteerName || volunteerData?.fullName || volunteerData?.name || 'Volunteer';
+        const effectiveVolunteerImage = volunteerImage || volunteerData?.profileImage || 'https://picsum.photos/seed/volunteer/200/200';
+        
+        let localUserData = {
+            name: userRole === 'volunteer' ? effectiveVolunteerName : (studentName || 'Student'),
+            title: userRole === 'volunteer' ? 'Volunteer' : 'Student',
+            company: userRole === 'volunteer' ? 'TalkTime Volunteer' : 'Maasai Student',
+            bio: userRole === 'volunteer' ? 
+                `Volunteer helping Maasai students practice English conversation through TalkTime.` :
+                `Maasai student practicing English conversation with volunteers.`,
+            avatar: userRole === 'volunteer' ? 
+                effectiveVolunteerImage :
+                'https://picsum.photos/seed/student/200/200'
+        };
+
+        let remoteUserData = {
+            name: userRole === 'volunteer' ? (studentName || 'Student') : effectiveVolunteerName,
+            title: userRole === 'volunteer' ? 'Student' : 'Volunteer',
+            company: userRole === 'volunteer' ? 'Maasai Student' : 'TalkTime Volunteer',
+            bio: userRole === 'volunteer' ? 
+                `Maasai student practicing English conversation with volunteers.` :
+                `Volunteer helping Maasai students practice English conversation through TalkTime.`,
+            avatar: userRole === 'volunteer' ? 
+                'https://picsum.photos/seed/student/200/200' :
+                effectiveVolunteerImage
+        };
+
+        // Function to update participant data with real student info
+        function updateParticipantDataWithStudent(student) {
+            if (userRole === 'volunteer' && student) {
+                // Update remote user data (student) with real profile image
+                remoteUserData.avatar = student.profileImage || 'https://picsum.photos/seed/student/200/200';
+                remoteUserData.name = student.name || studentName || 'Student';
+                console.log('Updated student avatar to:', remoteUserData.avatar);
+                
+                // Store student data globally for redirect purposes
+                window.currentStudentData = student;
+            } else if (userRole === 'student' && student) {
+                // Update local user data (student) with real profile image
+                localUserData.avatar = student.profileImage || 'https://picsum.photos/seed/student/200/200';
+                localUserData.name = student.name || studentName || 'Student';
+                console.log('Updated student avatar to:', localUserData.avatar);
+                
+                // Store student data globally for redirect purposes
+                window.currentStudentData = student;
+            }
+        }
+
+        // Global Variables
+        let localStream = null;
+        let remoteStream = null;
+        let peerConnection = null;
+        let socket = null;
+        let currentRoom = null;
+        let isInitiator = false;
+        let serverConnected = false;
+        let useP2PMode = false;
+        let remoteSocketId = null;
+        let isRecording = false;
+        let callStartTime = null;
+        let timeInterval = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isMicMuted = false;
+        let isVideoOff = false;
+        let isScreenSharing = false;
+        let waitingLocalStream = null;
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const roomScreen = document.getElementById('roomScreen');
+        const waitingScreen = document.getElementById('waitingScreen');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const videoContainer = document.getElementById('videoContainer');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const waitingLocalVideo = document.getElementById('waitingLocalVideo');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const timeContainer = document.getElementById('timeContainer');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const recordingNotification = document.getElementById('recordingNotification');
+        const connectionError = document.getElementById('connectionError');
+        const p2pMode = document.getElementById('p2pMode');
+        const micButton = document.getElementById('micButton');
+        const videoButton = document.getElementById('videoButton');
+        const screenButton = document.getElementById('screenButton');
+        const recordButton = document.getElementById('recordButton');
+        const endCallModal = document.getElementById('endCallModal');
+        const roomIdDisplay = document.getElementById('roomIdDisplay');
+        const roomLinkDisplay = document.getElementById('roomLinkDisplay');
+        const serverIndicator = document.getElementById('serverIndicator');
+        const serverStatusText = document.getElementById('serverStatusText');
+
+        // Initialize Socket.IO connection to our TalkTime backend
+        function initializeSocket() {
+            // Prevent multiple socket initializations
+            if (socket && socket.connected) {
+                console.log('⚠️ Socket already initialized and connected, skipping...');
+                return;
+            }
+            
+            console.log('Initializing Socket.IO connection to TalkTime backend...');
+            
+            try {
+                // Connect to our TalkTime backend Socket.IO server
+                // Dynamic signaling server URL for ngrok compatibility
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const signalingServerUrl = isLocalhost ? 'http://localhost:3001' : window.location.origin;
+                
+                console.log('🔗 Connecting to signaling server:', signalingServerUrl);
+                console.log('🌐 Current hostname:', window.location.hostname);
+                console.log('🌐 Is localhost:', isLocalhost);
+                
+                socket = io(signalingServerUrl, {
+                    transports: ['websocket', 'polling'],
+                    timeout: 10000,
+                    forceNew: true
+                });
+
+                socket.on('connect', () => {
+                    console.log('✅ Connected to TalkTime signaling server:', socket.id);
+                    serverConnected = true;
+                    updateServerStatus(true);
+                    setupSocketEvents();
+                    
+                    // Auto-join room immediately after connection
+                    if (currentRoom) {
+                        console.log('🏠 Auto-joining room:', currentRoom);
+                        console.log('🔧 Current role from URL:', userRole);
+                        console.log('🔧 Is instant call:', isInstantCall);
+                        socket.emit('join', currentRoom);
+                        
+                        // Update waiting screen with connection status
+                        const waitingMessage = document.querySelector('.waiting-message');
+                        if (waitingMessage) {
+                            waitingMessage.innerHTML = `
+                                <div style="text-align: center;">
+                                    <div>Connecting to room: <strong>${currentRoom}</strong></div>
+                                    <div>Role: <strong>${userRole}</strong></div>
+                                    <div>Socket ID: <strong>${socket.id}</strong></div>
+                                    <div style="margin-top: 10px; color: #10b981;">✅ Connected to signaling server</div>
+                                    <div style="margin-top: 5px; color: #f59e0b;">⏳ Waiting for other participant...</div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        console.error('❌ No room ID available for auto-join');
+                    }
+                });
+
+                socket.on('connect_error', (error) => {
+                    console.error('❌ Connection error:', error);
+                    serverConnected = false;
+                    updateServerStatus(false);
+                    showConnectionError();
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('🔌 Disconnected from signaling server');
+                    serverConnected = false;
+                    updateServerStatus(false);
+                });
+
+            } catch (error) {
+                console.error('❌ Error creating socket:', error);
+                showConnectionError();
+            }
+        }
+
+        // Setup Socket.IO events for WebRTC signaling
+        function setupSocketEvents() {
+            // Handle room creation confirmation
+            socket.on('createdRoom', () => {
+                console.log('🏠 Room created, waiting for other participant...');
+                console.log('🔧 Room ID:', currentRoom);
+                console.log('🔧 Socket ID:', socket.id);
+                // Room creator is always the volunteer (initiator)
+                if (isInstantCall) {
+                    userRole = 'volunteer';
+                    console.log('🎯 Smart role assignment: Room creator = volunteer');
+                }
+                isInitiator = (userRole === 'volunteer');
+                console.log(`✅ Set initiator status: ${isInitiator} (role: ${userRole})`);
+                
+                // Update waiting screen
+                const waitingMessage = document.querySelector('.waiting-message');
+                if (waitingMessage) {
+                    waitingMessage.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="color: #10b981; font-size: 18px; margin-bottom: 10px;">🏠 Room Created Successfully!</div>
+                            <div>Room: <strong>${currentRoom}</strong></div>
+                            <div>Role: <strong>Volunteer (Initiator)</strong></div>
+                            <div>Socket ID: <strong>${socket.id}</strong></div>
+                            <div style="margin-top: 15px; color: #f59e0b;">⏳ Waiting for student to join...</div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Handle room join confirmation
+            socket.on('joinedRoom', () => {
+                console.log('🏠 Joined existing room successfully');
+                console.log('🔧 Room ID:', currentRoom);
+                console.log('🔧 Socket ID:', socket.id);
+                // Anyone joining an existing instant call room is a student
+                if (isInstantCall) {
+                    userRole = 'student';
+                    console.log('🎯 Smart role assignment: Room joiner = student');
+                }
+                isInitiator = (userRole === 'volunteer');
+                console.log(`✅ Set initiator status: ${isInitiator} (role: ${userRole})`);
+                
+                // Update waiting screen
+                const waitingMessage = document.querySelector('.waiting-message');
+                if (waitingMessage) {
+                    waitingMessage.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="color: #10b981; font-size: 18px; margin-bottom: 10px;">🏠 Joined Room Successfully!</div>
+                            <div>Room: <strong>${currentRoom}</strong></div>
+                            <div>Role: <strong>Student (Recipient)</strong></div>
+                            <div>Socket ID: <strong>${socket.id}</strong></div>
+                            <div style="margin-top: 15px; color: #f59e0b;">⏳ Waiting for volunteer to join...</div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Handle new user joining the room
+            socket.on('newUser', async (socketId) => {
+                console.log('👤 New user joined:', socketId);
+                console.log('🔍 Current state:', { isInitiator, localStream, waitingLocalStream });
+                remoteSocketId = socketId;
+                
+                // Update waiting screen to show both participants are connected
+                const waitingMessage = document.querySelector('.waiting-message');
+                if (waitingMessage) {
+                    waitingMessage.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="color: #10b981; font-size: 18px; margin-bottom: 10px;">🎉 Both Participants Connected!</div>
+                            <div>Room: <strong>${currentRoom}</strong></div>
+                            <div>Your Role: <strong>${userRole === 'volunteer' ? 'Volunteer (Initiator)' : 'Student (Recipient)'}</strong></div>
+                            <div>Your Socket: <strong>${socket.id}</strong></div>
+                            <div>Remote Socket: <strong>${socketId}</strong></div>
+                            <div style="margin-top: 15px; color: #3b82f6;">🔄 Starting video connection...</div>
+                        </div>
+                    `;
+                }
+                
+                if (isInitiator) {
+                    console.log('🚀 Initiator starting WebRTC connection...');
+                    try {
+                        // Initiator creates and sends offer
+                        console.log('🔧 About to create peer connection...');
+                        await createPeerConnection();
+                        console.log('🔧 Peer connection created, now creating offer...');
+                        await createOffer();
+                        console.log('🔧 Offer creation completed successfully!');
+                    } catch (error) {
+                        console.error('❌ Error in initiator flow:', error);
+                        console.error('❌ Error details:', error.message, error.stack);
+                    }
+                } else {
+                    console.log('👂 Non-initiator waiting for offer...');
+                }
+            });
+
+            // Handle WebRTC offer
+            socket.on('offer', async (description, fromSocketId) => {
+                console.log('📞 Received offer from:', fromSocketId);
+                remoteSocketId = fromSocketId;
+                
+                try {
+                    if (!peerConnection) {
+                        await createPeerConnection();
+                    }
+                    
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(description));
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    // Send answer back to the specific socket
+                    socket.emit('answer', answer, fromSocketId);
+                    console.log('📞 Sent answer to:', fromSocketId);
+                } catch (err) {
+                    console.error('❌ Error handling offer:', err);
+                }
+            });
+
+            // Handle WebRTC answer
+            socket.on('answer', async (description, fromSocketId) => {
+                console.log('📞 Received answer from:', fromSocketId);
+                
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(description));
+                    console.log('✅ Remote description set successfully');
+                } catch (err) {
+                    console.error('❌ Error handling answer:', err);
+                }
+            });
+
+            // Handle ICE candidates
+            socket.on('iceCandidate', async (candidate, fromSocketId) => {
+                console.log('🧊 Received ICE candidate from:', fromSocketId);
+                
+                try {
+                    if (peerConnection && candidate) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                        console.log('✅ ICE candidate added successfully');
+                    }
+                } catch (err) {
+                    console.error('❌ Error adding ICE candidate:', err);
+                }
+            });
+
+            // Handle user removal
+            socket.on('removeUser', (socketId) => {
+                console.log('👤 User left:', socketId);
+                if (socketId === remoteSocketId) {
+                    // Remote user left, clean up connection
+                    if (peerConnection) {
+                        peerConnection.close();
+                        peerConnection = null;
+                    }
+                    remoteSocketId = null;
+                    
+                    // Update UI to show waiting state
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = null;
+                    }
+                }
+            });
+
+            // Handle being kicked from call
+            socket.on('kicked', () => {
+                console.log('❌ You have been kicked from the call');
+                endCall();
+            });
+        }
+
+        // Update server status indicator
+        function updateServerStatus(connected) {
+            if (connected) {
+                serverIndicator.classList.add('connected');
+                serverStatusText.textContent = 'Online';
+            } else {
+                serverIndicator.classList.remove('connected');
+                serverStatusText.textContent = 'Offline';
+            }
+        }
+
+        // Show connection error notification
+        function showConnectionError() {
+            connectionError.classList.add('show');
+            setTimeout(() => {
+                connectionError.classList.remove('show');
+            }, 5000);
+        }
+
+        // Show P2P mode indicator
+        function showP2PMode() {
+            p2pMode.classList.add('show');
+        }
+
+        // Create WebRTC peer connection
+        async function createPeerConnection() {
+            console.log('🔗 Creating peer connection...');
+            
+            try {
+                peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Ensure we have a local stream
+                let streamToUse = localStream || waitingLocalStream;
+                
+                if (!streamToUse) {
+                    console.log('📹 No local stream available, creating one...');
+                    streamToUse = await startWaitingVideo();
+                    if (!streamToUse) {
+                        throw new Error('Failed to get local media stream');
+                    }
+                    localStream = streamToUse;
+                }
+                
+                // Add local stream tracks to peer connection
+                console.log('➕ Adding local stream tracks to peer connection...');
+                streamToUse.getTracks().forEach(track => {
+                    const sender = peerConnection.addTrack(track, streamToUse);
+                    console.log(`✅ Added ${track.kind} track:`, track.label || 'unlabeled');
+                });
+                
+                // Handle remote stream
+                peerConnection.ontrack = (event) => {
+                    console.log('📺 Received remote track:', event.track.kind, event.streams.length, 'streams');
+                    
+                    if (event.streams && event.streams[0]) {
+                        remoteStream = event.streams[0];
+                        console.log('🎬 Setting remote stream with', remoteStream.getTracks().length, 'tracks');
+                        
+                        if (remoteVideo) {
+                            remoteVideo.srcObject = remoteStream;
+                            console.log('✅ Remote video stream set successfully');
+                            
+                            // Switch to video call view when we receive remote stream
+                            setTimeout(() => {
+                                console.log('🎥 Switching to video call view...');
+                                waitingScreen.classList.remove('active');
+                                videoContainer.classList.add('active');
+                                
+                                // Set local video stream for picture-in-picture display
+                                if (waitingLocalStream || localStream) {
+                                    const streamToShow = waitingLocalStream || localStream;
+                                    localVideo.srcObject = streamToShow;
+                                    console.log('📹 Local video set with', streamToShow.getTracks().length, 'tracks');
+                                } else {
+                                    console.warn('⚠️ No local stream available for local video display');
+                                }
+                                
+                                startTimer();
+                                updateConnectionStatus(true);
+                            }, 500);
+                        }
+                    }
+                };
+                
+                // Handle ICE candidates
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate && remoteSocketId) {
+                        console.log('🧊 Sending ICE candidate to:', remoteSocketId);
+                        socket.emit('iceCandidate', event.candidate, remoteSocketId);
+                    } else if (!event.candidate) {
+                        console.log('🧊 ICE gathering complete');
+                    }
+                };
+                
+                // Handle connection state changes
+                peerConnection.onconnectionstatechange = () => {
+                    console.log('🔗 Connection state changed to:', peerConnection.connectionState);
+                    const isConnected = peerConnection.connectionState === 'connected';
+                    updateConnectionStatus(isConnected);
+                    
+                    if (isConnected) {
+                        console.log('🎉 WebRTC connection established successfully!');
+                    }
+                };
+                
+                // Handle ICE connection state changes with smart fallback
+                peerConnection.oniceconnectionstatechange = () => {
+                    console.log('🧊 ICE connection state:', peerConnection.iceConnectionState);
+                    
+                    // Smart local development fallback
+                    if (isLocalDevelopment && peerConnection.iceConnectionState === 'failed') {
+                        console.log('🔄 Local development detected: ICE failed, attempting fallback...');
+                        
+                        // Show local testing notification
+                        showLocalTestingNotification();
+                        
+                        setTimeout(() => {
+                            if (peerConnection.iceConnectionState === 'failed') {
+                                console.log('🎯 Activating local testing mode - simulating successful connection');
+                                // Force UI transition for local testing
+                                if (remoteStream && remoteStream.getTracks().length > 0) {
+                                    console.log('🎥 Local testing: Forcing video call view transition...');
+                                    waitingScreen.classList.remove('active');
+                                    videoContainer.classList.add('active');
+                                    
+                                    // Set local video stream for picture-in-picture display
+                                    if (waitingLocalStream || localStream) {
+                                        const streamToShow = waitingLocalStream || localStream;
+                                        localVideo.srcObject = streamToShow;
+                                        console.log('📹 Local testing: Local video set with', streamToShow.getTracks().length, 'tracks');
+                                    }
+                                    
+                                    startTimer();
+                                    updateConnectionStatus(true);
+                                    
+                                    // Show success notification for local testing
+                                    showLocalTestingSuccessNotification();
+                                }
+                            }
+                        }, 3000); // Give ICE 3 seconds to recover
+                    }
+                };
+                
+                console.log('✅ Peer connection created successfully with', streamToUse.getTracks().length, 'local tracks');
+                return peerConnection;
+                
+            } catch (error) {
+                console.error('❌ Error creating peer connection:', error);
+                throw error;
+            }
+        }
+
+        // Create and send WebRTC offer
+        async function createOffer() {
+            console.log('📞 Creating offer...');
+            console.log('🔧 remoteSocketId:', remoteSocketId);
+            console.log('🔧 peerConnection exists:', !!peerConnection);
+            
+            try {
+                if (!peerConnection) {
+                    console.log('🔧 No peer connection, creating one...');
+                    await createPeerConnection();
+                }
+                
+                console.log('🔧 About to create WebRTC offer...');
+                const offer = await peerConnection.createOffer();
+                console.log('🔧 WebRTC offer created:', offer.type);
+                
+                console.log('🔧 Setting local description...');
+                await peerConnection.setLocalDescription(offer);
+                console.log('🔧 Local description set successfully');
+                
+                // Send offer to remote peer
+                if (remoteSocketId) {
+                    console.log('🔧 About to emit offer to socket:', remoteSocketId);
+                    socket.emit('offer', offer, remoteSocketId);
+                    console.log('📞 Sent offer to:', remoteSocketId);
+                } else {
+                    console.error('❌ No remote socket ID to send offer to');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error creating offer:', error);
+            }
+        }
+
+        // Create Room
+        function createRoom() {
+            currentRoom = generateRoomId();
+            isInitiator = true;
+            
+            roomIdDisplay.textContent = currentRoom;
+            // Use the full URL including the current domain
+            roomLinkDisplay.textContent = `${window.location.href.split('#')[0]}#${currentRoom}`;
+            
+            startScreen.classList.add('hidden');
+            roomScreen.classList.add('active');
+            
+            // Socket initialization handled in auto-join logic
+        }
+
+        // Join Room
+        function joinRoom() {
+            roomScreen.classList.remove('active');
+            waitingScreen.classList.add('active');
+            
+            // Socket initialization handled in auto-join logic
+            
+            // Show bio data and start local video
+            updateBioDisplay();
+            startWaitingVideo();
+        }
+
+        // Generate Room ID
+        function generateRoomId() {
+            return 'ROOM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        }
+
+        // Share Room
+        function shareRoom() {
+            const link = roomLinkDisplay.textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                // Create a temporary notification
+                const notification = document.createElement('div');
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.left = '50%';
+                notification.style.transform = 'translateX(-50%)';
+                notification.style.background = 'rgba(52, 199, 89, 0.9)';
+                notification.style.color = 'white';
+                notification.style.padding = '12px 24px';
+                notification.style.borderRadius = '30px';
+                notification.style.fontSize = '14px';
+                notification.style.fontWeight = '500';
+                notification.style.zIndex = '1000';
+                notification.textContent = 'Link copied to clipboard!';
+                document.body.appendChild(notification);
+                
+                // Remove after 2 seconds
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 2000);
+            });
+        }
+
+        // Start Waiting Video
+        async function startWaitingVideo() {
+            console.log('🎥 Starting waiting video with audio...');
+            try {
+                waitingLocalStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true  // Include audio for WebRTC connection
+                });
+                waitingLocalVideo.srcObject = waitingLocalStream;
+                console.log('✅ Waiting video stream created successfully');
+                return waitingLocalStream;
+            } catch (error) {
+                console.error('❌ Error accessing camera/microphone for waiting screen:', error);
+                // Fallback to avatar if camera access fails
+                const avatar = document.createElement('img');
+                avatar.src = localUserData.avatar;
+                avatar.alt = "Your Avatar";
+                avatar.style.width = '100%';
+                avatar.style.height = '100%';
+                avatar.style.objectFit = 'cover';
+                waitingLocalVideo.parentNode.replaceChild(avatar, waitingLocalVideo);
+                return null;
+            }
+        }
+
+        // Update Bio Display
+        function updateBioDisplay() {
+            console.log('Updating bio display with real participant data:', {
+                localUser: localUserData,
+                remoteUser: remoteUserData,
+                userRole: userRole,
+                studentName: studentName,
+                volunteerData: volunteerData
+            });
+            
+            // Update waiting header message with real student name
+            const waitingMessage = document.getElementById('waitingMessage');
+            if (userRole === 'volunteer' && studentName) {
+                waitingMessage.textContent = `Waiting for ${studentName} to join`;
+            } else if (userRole === 'student' && volunteerData?.fullName) {
+                waitingMessage.textContent = `Waiting for ${volunteerData.fullName} to join`;
+            } else {
+                waitingMessage.textContent = 'Waiting for the other person to join';
+            }
+            
+            // Update local user data
+            document.getElementById('localUserName').textContent = localUserData.name;
+            document.getElementById('localUserTitle').textContent = localUserData.title;
+            // Remove company display for cleaner UI
+            
+            // Update remote user data
+            document.querySelector('.user-card.remote .user-avatar img').src = remoteUserData.avatar;
+            document.getElementById('remoteUserName').textContent = remoteUserData.name;
+            document.getElementById('remoteUserTitle').textContent = remoteUserData.title;
+            // Remove company display for cleaner UI
+            document.querySelector('.user-card.remote .user-status span').textContent = `Waiting for ${remoteUserData.name}`;
+        }
+
+        // Start Call
+        async function startCall() {
+            waitingScreen.classList.remove('active');
+            loadingScreen.classList.add('active');
+
+            try {
+                // If we already have a stream from the waiting screen, use it
+                if (waitingLocalStream) {
+                    // Get audio track for the call
+                    const audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: true
+                    });
+                    
+                    // Combine video from waiting stream with audio
+                    localStream = new MediaStream([
+                        ...waitingLocalStream.getVideoTracks(),
+                        ...audioStream.getAudioTracks()
+                    ]);
+                } else {
+                    // Get local media stream
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                }
+
+                localVideo.srcObject = localStream;
+
+                // Create peer connection
+                peerConnection = new RTCPeerConnection(configuration);
+
+                // Add local stream to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                // Handle remote stream
+                peerConnection.ontrack = (event) => {
+                    remoteStream = event.streams[0];
+                    remoteVideo.srcObject = remoteStream;
+                    updateConnectionStatus(true);
+                    startTimer();
+                };
+
+                // ICE candidates
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        if (socket && serverConnected) {
+                            socket.emit('candidate', currentRoom, event.candidate);
+                        } else if (useP2PMode) {
+                            // For P2P mode, we'll use a simple signaling mechanism
+                            handleP2PSignaling('candidate', event.candidate);
+                        }
+                    }
+                };
+
+                // Connection state changes
+                peerConnection.onconnectionstatechange = () => {
+                    console.log('Connection state:', peerConnection.connectionState);
+                    if (peerConnection.connectionState === 'connected') {
+                        loadingScreen.classList.remove('active');
+                        videoContainer.classList.add('active');
+                    }
+                };
+
+                // If we're using P2P mode, simulate the signaling process
+                if (useP2PMode) {
+                    simulateP2PConnection();
+                }
+
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                if (window.showNotification) {
+                    window.showNotification('Unable to access camera or microphone. Please check your browser permissions and try again.', 'error', {
+                        title: 'Media Access Denied',
+                        autoClose: false,
+                        showCloseButton: true
+                    });
+                } else {
+                    alert('Unable to access camera or microphone. Please check permissions.');
+                }
+                loadingScreen.classList.remove('active');
+                waitingScreen.classList.add('active');
+            }
+        }
+
+        // Simulate P2P connection for testing
+        function simulateP2PConnection() {
+            // This is a simplified version for testing without a signaling server
+            // In a real application, you would need a proper signaling mechanism
+            
+            if (isInitiator) {
+                setTimeout(() => {
+                    createOffer();
+                }, 1000);
+            }
+        }
+
+        // Handle P2P signaling (simplified for demo)
+        function handleP2PSignaling(type, data) {
+            // In a real application, this would send the signaling data to the other peer
+            // through some channel (WebSocket, HTTP, etc.)
+            console.log('P2P signaling:', type, data);
+        }
+
+
+
+        // Copy Meeting Link
+        function copyMeetingLink() {
+            // Generate the correct student URL for sharing
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('room');
+            const studentId = urlParams.get('studentId');
+            const studentName = urlParams.get('studentName');
+            const volunteerName = urlParams.get('volunteerName');
+            const volunteerImage = urlParams.get('volunteerImage');
+            const isInstant = urlParams.get('instant');
+            
+            // Create student URL with all necessary info (anyone joining should be a student)
+            const baseParams = `room=${roomId}&role=student&instant=${isInstant}&studentId=${studentId}&studentName=${encodeURIComponent(studentName || '')}&volunteerName=${encodeURIComponent(volunteerName || '')}&volunteerImage=${encodeURIComponent(volunteerImage || '')}`;
+            const studentUrl = `${window.location.origin}/call.html?${baseParams}`;
+            
+            console.log('📋 Copying student URL with volunteer info for sharing:', studentUrl);
+            
+            // Use the Clipboard API if available
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(studentUrl).then(() => {
+                    showCopySuccess();
+                }).catch(err => {
+                    console.error('Failed to copy link:', err);
+                    fallbackCopyTextToClipboard(studentUrl);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(studentUrl);
+            }
+        }
+
+        // Fallback copy function for older browsers
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    console.error('Fallback: Copying text command was unsuccessful');
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // Show copy success message
+        function showCopySuccess() {
+            const successMessage = document.getElementById('copySuccessMessage');
+            successMessage.classList.add('show');
+            
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // Local Testing Notification Functions
+        function showLocalTestingNotification() {
+            if (!isLocalDevelopment) return;
+            
+            const notification = createNotification({
+                title: '🧪 Local Testing Mode',
+                message: 'Network connection failed. Activating local testing fallback...',
+                type: 'warning',
+                duration: 4000
+            });
+        }
+
+        function showLocalTestingSuccessNotification() {
+            if (!isLocalDevelopment) return;
+            
+            const notification = createNotification({
+                title: '✅ Local Testing Active',
+                message: 'Video call simulated for local development. For real testing, use different devices.',
+                type: 'success',
+                duration: 6000
+            });
+        }
+
+        function createNotification({ title, message, type = 'info', duration = 3000 }) {
+            const notification = document.createElement('div');
+            const colors = {
+                success: 'rgba(52, 199, 89, 0.95)',
+                warning: 'rgba(255, 149, 0, 0.95)',
+                error: 'rgba(255, 59, 48, 0.95)',
+                info: 'rgba(0, 122, 255, 0.95)'
+            };
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${colors[type]};
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10001;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                max-width: 400px;
+                text-align: center;
+                opacity: 0;
+                transition: all 0.3s ease;
+            `;
+            
+            notification.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+                <div style="font-weight: 400; opacity: 0.9;">${message}</div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(-50%) translateY(0)';
+            }, 100);
+            
+            // Remove after duration
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(-50%) translateY(-20px)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, duration);
+            
+            return notification;
+        }
+
+        // Show leave confirmation modal
+        function showLeaveConfirmation() {
+            const leaveModal = document.getElementById('leaveModal');
+            leaveModal.classList.add('show');
+        }
+
+        // Hide leave confirmation modal
+        function hideLeaveConfirmation() {
+            const leaveModal = document.getElementById('leaveModal');
+            leaveModal.classList.remove('show');
+        }
+
+        // Confirm leave and redirect
+        function confirmLeave() {
+            // Clean up resources
+            if (waitingLocalStream) {
+                waitingLocalStream.getTracks().forEach(track => track.stop());
+                waitingLocalStream = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            if (socket && serverConnected) {
+                socket.disconnect();
+            }
+            
+            // Redirect back to specific student's detail page for volunteers
+            if (userRole === 'volunteer' && studentId && studentName) {
+                const admission = window.currentStudentData?.admissionNumber || window.currentStudentData?.admission || `ADM${studentId}`;
+                window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${encodeURIComponent(admission)}&name=${encodeURIComponent(studentName)}`;
+            } else if (userRole === 'volunteer') {
+                window.location.href = '/volunteer/dashboard/';
+            } else if (userRole === 'student') {
+                window.location.href = '/student/dashboard/';
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        // Toggle Microphone
+        function toggleMic() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    isMicMuted = !audioTrack.enabled;
+                    micButton.classList.toggle('active', isMicMuted);
+                    micButton.querySelector('.tooltip').textContent = isMicMuted ? 'Unmute' : 'Mute';
+                }
+            }
+        }
+
+        // Toggle Video
+        function toggleVideo() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    isVideoOff = !videoTrack.enabled;
+                    videoButton.classList.toggle('active', isVideoOff);
+                    videoButton.querySelector('.tooltip').textContent = isVideoOff ? 'Video On' : 'Video Off';
+                }
+            }
+        }
+
+        // Toggle Screen Share
+        async function toggleScreenShare() {
+            if (!isScreenSharing) {
+                try {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: false
+                    });
+
+                    // Replace video track
+                    const videoTrack = screenStream.getVideoTracks()[0];
+                    const sender = peerConnection.getSenders().find(s => 
+                        s.track && s.track.kind === 'video'
+                    );
+                    
+                    if (sender) {
+                        sender.replaceTrack(videoTrack);
+                    }
+
+                    localVideo.srcObject = screenStream;
+                    isScreenSharing = true;
+                    screenButton.classList.add('active');
+                    screenButton.querySelector('.tooltip').textContent = 'Stop Sharing';
+
+                    // Handle screen share end
+                    videoTrack.onended = () => {
+                        stopScreenShare();
+                    };
+
+                } catch (error) {
+                    console.error('Error sharing screen:', error);
+                }
+            } else {
+                stopScreenShare();
+            }
+        }
+
+        // Stop Screen Share
+        function stopScreenShare() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                const sender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'video'
+                );
+                
+                if (sender && videoTrack) {
+                    sender.replaceTrack(videoTrack);
+                }
+
+                localVideo.srcObject = localStream;
+                isScreenSharing = false;
+                screenButton.classList.remove('active');
+                screenButton.querySelector('.tooltip').textContent = 'Share Screen';
+            }
+        }
+
+        // Toggle Recording
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        // Start Recording
+        function startRecording() {
+            if (!remoteStream || !localStream) {
+                if (window.showNotification) {
+                    window.showNotification('Cannot start recording. Please wait for the call to be established first.', 'warning', {
+                        title: 'Recording Unavailable',
+                        autoClose: true,
+                        duration: 4000
+                    });
+                } else {
+                    alert('Cannot start recording. Call not established yet.');
+                }
+                return;
+            }
+
+            // Create a combined stream for recording
+            const combinedStream = new MediaStream();
+            
+            // Add remote video track
+            if (remoteStream.getVideoTracks().length > 0) {
+                combinedStream.addTrack(remoteStream.getVideoTracks()[0]);
+            }
+            
+            // Add local audio track
+            if (localStream.getAudioTracks().length > 0) {
+                combinedStream.addTrack(localStream.getAudioTracks()[0]);
+            }
+            
+            // Add remote audio track
+            if (remoteStream.getAudioTracks().length > 0) {
+                combinedStream.addTrack(remoteStream.getAudioTracks()[0]);
+            }
+
+            // Initialize MediaRecorder
+            try {
+                mediaRecorder = new MediaRecorder(combinedStream, {
+                    mimeType: 'video/webm;codecs=vp9,opus'
+                });
+
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = saveRecording;
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordButton.classList.add('recording');
+                recordButton.querySelector('.tooltip').textContent = 'Stop Recording';
+                recordingIndicator.classList.add('active');
+                recordingNotification.classList.add('show');
+
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    recordingNotification.classList.remove('show');
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                if (window.showNotification) {
+                    window.showNotification('Recording is not supported in this browser. Please try using Chrome, Firefox, or Safari.', 'error', {
+                        title: 'Recording Not Supported',
+                        autoClose: false,
+                        showCloseButton: true
+                    });
+                } else {
+                    alert('Recording is not supported in this browser.');
+                }
+            }
+        }
+
+        // Stop Recording
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                recordButton.querySelector('.tooltip').textContent = 'Start Recording';
+                recordingIndicator.classList.remove('active');
+            }
+        }
+
+        // Save Recording
+        function saveRecording() {
+            const blob = new Blob(recordedChunks, {
+                type: 'video/webm'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `talktime-recording-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            recordedChunks = [];
+        }
+
+        // Show End Call Modal
+        function showEndCallModal() {
+            endCallModal.classList.add('active');
+        }
+
+        // Hide End Call Modal
+        function hideEndCallModal() {
+            endCallModal.classList.remove('active');
+        }
+
+        // Confirm End Call
+        function confirmEndCall() {
+            hideEndCallModal();
+            
+            // Stop recording if active
+            if (isRecording) {
+                stopRecording();
+            }
+            
+            endCall();
+        }
+
+        // End Call
+        function endCall() {
+            if (socket) {
+                socket.emit('leave', currentRoom);
+                socket.disconnect();
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            if (waitingLocalStream) {
+                waitingLocalStream.getTracks().forEach(track => track.stop());
+                waitingLocalStream = null;
+            }
+
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+
+            clearInterval(timeInterval);
+            updateConnectionStatus(false);
+            timeContainer.classList.remove('visible');
+            videoContainer.classList.remove('active');
+            p2pMode.classList.remove('show');
+            
+            // Reset UI
+            startScreen.classList.remove('hidden');
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+            waitingLocalVideo.srcObject = null;
+            
+            // Reset button states
+            micButton.classList.remove('active');
+            videoButton.classList.remove('active');
+            screenButton.classList.remove('active');
+            recordButton.classList.remove('recording');
+            isMicMuted = false;
+            isVideoOff = false;
+            isScreenSharing = false;
+            isRecording = false;
+            
+            // Reset tooltips
+            micButton.querySelector('.tooltip').textContent = 'Mute';
+            videoButton.querySelector('.tooltip').textContent = 'Video Off';
+            screenButton.querySelector('.tooltip').textContent = 'Share Screen';
+            recordButton.querySelector('.tooltip').textContent = 'Start Recording';
+            
+            // Reset variables
+            currentRoom = null;
+            isInitiator = false;
+            serverConnected = false;
+            useP2PMode = false;
+        }
+
+        // Update Connection Status
+        function updateConnectionStatus(connected) {
+            statusIndicator.classList.toggle('connected', connected);
+            statusText.textContent = connected ? 'Connected' : 'Disconnected';
+        }
+
+        // Start Timer
+        function startTimer() {
+            callStartTime = Date.now();
+            timeContainer.classList.add('visible');
+            
+            timeInterval = setInterval(() => {
+                const elapsed = Date.now() - callStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Toggle Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (isRecording) {
+                stopRecording();
+            }
+            endCall();
+        });
+
+        // Local video container click to swap
+        document.getElementById('localVideoContainer').addEventListener('click', () => {
+            const temp = localVideo.srcObject;
+            localVideo.srcObject = remoteVideo.srcObject;
+            remoteVideo.srcObject = temp;
+        });
+
+        // Close modal when clicking outside
+        endCallModal.addEventListener('click', (e) => {
+            if (e.target === endCallModal) {
+                hideEndCallModal();
+            }
+        });
+
+        // Check for room ID in URL hash or URL parameters
+        window.addEventListener('load', async () => {
+            const hash = window.location.hash.substr(1);
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomFromParams = urlParams.get('room');
+            
+            // Fetch real student data if available
+            if (studentId && userRole === 'volunteer') {
+                const student = await fetchStudentData();
+                if (student) {
+                    updateParticipantDataWithStudent(student);
+                }
+            }
+            
+            if (hash || roomFromParams) {
+                currentRoom = hash || roomFromParams;
+                isInitiator = true; // Set as initiator for instant calls
+                
+                // Skip start screen and go directly to waiting screen
+                startScreen.classList.add('hidden');
+                waitingScreen.classList.add('active');
+                updateBioDisplay();
+                startWaitingVideo();
+                
+                // Initialize socket and join room
+                initializeSocket();
+                
+                // Room joining now happens immediately on socket connection
+            }
+        });
+
+        // Room join handled in auto-join logic above
+    </script>
+</body>
+</html>

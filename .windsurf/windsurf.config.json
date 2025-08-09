@@ -1,0 +1,14 @@
+{
+    "agent": "TalkTimeAgent",
+    "name": "talktime",
+    "model": "gemini-2.5-pro",
+    "context": "../rules/talktime.context.md",
+    "memory": true,
+    "rules": "../rules/talktime.rules.md",
+    "default": true,
+    "runtime": {
+      "allowCodeExecution": true,
+      "allowWebAccess": false
+    }
+  }
+  

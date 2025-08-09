@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - TalkTime</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/instant-call.css">
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-animation {
+            animation: pulse 1s infinite;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+    <!-- Phone-like Instant Call UI will be injected here by instant-call-ui.js -->
+
+    <div class="min-h-screen bg-gray-50">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Welcome, <span id="studentName">Student</span>!</h1>
+                        <span id="admissionNumber" class="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"></span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div id="notificationBell" class="relative cursor-pointer">
+                            <i class="fas fa-bell text-gray-600 hover:text-gray-800 text-xl"></i>
+                            <span id="notificationCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                        </div>
+                        <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Navigation Tabs -->
+            <div class="border-b border-gray-200 mb-8">
+                <nav class="-mb-px flex space-x-8">
+                    <button id="tab-upcoming" class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                        <i class="fas fa-calendar-alt mr-2"></i>Upcoming Meetings
+                    </button>
+                    <button id="tab-history" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-history mr-2"></i>Meeting History
+                    </button>
+                    <button id="tab-instant" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-phone mr-2"></i>Instant Calls
+                    </button>
+                    <button id="tab-messages" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-envelope mr-2"></i>Messages
+                    </button>
+                    <button id="tab-notifications" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <i class="fas fa-bell mr-2"></i>Notifications
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tabContent">
+                <!-- Upcoming Meetings Tab -->
+                <div id="content-upcoming" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Upcoming Meetings</h3>
+                        <div id="upcomingMeetingsList" class="space-y-4">
+                            <p class="text-center text-gray-500 italic">Loading your upcoming meetings...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meeting History Tab -->
+                <div id="content-history" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Completed Meetings -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h4 class="text-lg font-medium text-green-900 mb-4">
+                                <i class="fas fa-check-circle mr-2 text-green-500"></i>Completed
+                            </h4>
+                            <div id="completedMeetings" class="space-y-3">
+                                <p class="text-gray-500 text-sm">Loading...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Canceled Meetings -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h4 class="text-lg font-medium text-red-900 mb-4">
+                                <i class="fas fa-times-circle mr-2 text-red-500"></i>Canceled
+                            </h4>
+                            <div id="canceledMeetings" class="space-y-3">
+                                <p class="text-gray-500 text-sm">Loading...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Missed Meetings -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h4 class="text-lg font-medium text-yellow-900 mb-4">
+                                <i class="fas fa-exclamation-circle mr-2 text-yellow-500"></i>Missed
+                            </h4>
+                            <div id="missedMeetings" class="space-y-3">
+                                <p class="text-gray-500 text-sm">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instant Calls Tab -->
+                <div id="content-instant" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Instant Call History</h3>
+                        <div id="instantCallsList" class="space-y-4">
+                            <p class="text-center text-gray-500 italic">Loading your instant call history...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Tab -->
+                <div id="content-messages" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Messages</h3>
+                        <div id="messagesList" class="space-y-4">
+                            <p class="text-center text-gray-500 italic">Loading your messages...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div id="content-notifications" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Your Notifications</h3>
+                            <button id="markAllRead" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
+                        </div>
+                        <div id="notificationsList" class="space-y-4">
+                            <p class="text-center text-gray-500 italic">Loading your notifications...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Load JWT Auth Utils -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+
+    <script>
+    // Initialize TalkTime Auth for students FIRST
+    window.TalkTimeAuth = new TalkTimeJWTAuth('student');
+    
+    // Load enhanced instant call UI AFTER JWT Auth is initialized
+    const script = document.createElement('script');
+    script.src = './js/enhanced-instant-call-ui.js';
+    script.onload = function() {
+        console.log('✅ Enhanced Instant Call UI loaded after JWT Auth initialization');
+    };
+    document.head.appendChild(script);
+    
+    // Global variables
+    let currentUser = null;
+    let currentTab = 'upcoming';
+    
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if student is authenticated
+        if (!window.TalkTimeAuth.isAuthenticated()) {
+            // Redirect to login if not authenticated
+            window.location.href = '/student/login.html';
+            return;
+        }
+        
+        // Get user info from JWT token
+        currentUser = window.TalkTimeAuth.getUser();
+        if (!currentUser) {
+            console.error('Student data not found in token');
+            window.location.href = '/student/login.html';
+            return;
+        }
+        
+        // Set student info
+        document.getElementById('studentName').textContent = currentUser.fullName || 'Student';
+        document.getElementById('admissionNumber').textContent = currentUser.admissionNumber || '';
+        
+        // Initialize the dashboard
+        initDashboard(currentUser);
+        
+        // Add event listeners
+        setupEventListeners();
+        
+        // Load initial data
+        loadUpcomingMeetings();
+        loadNotifications();
+    });
+    
+    // Initialize dashboard with user data
+    function initDashboard(user) {
+        console.log('Initializing comprehensive dashboard for student:', user.fullName, 'ID:', user.id);
+        
+        // Phone-like instant call UI is automatically initialized by instant-call-ui.js
+        joinSocketRoom(user.id);
+    }
+    
+    // Setup all event listeners
+    function setupEventListeners() {
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+        
+        // Tab navigation
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tabId = e.target.id.replace('tab-', '');
+                switchTab(tabId);
+            });
+        });
+        
+        // Notification bell
+        document.getElementById('notificationBell').addEventListener('click', () => {
+            switchTab('notifications');
+        });
+        
+        // Mark all notifications as read
+        document.getElementById('markAllRead').addEventListener('click', markAllNotificationsRead);
+    }
+    
+    // Switch between tabs
+    function switchTab(tabId) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            button.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        const activeTab = document.getElementById(`tab-${tabId}`);
+        if (activeTab) {
+            activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+        }
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        const activeContent = document.getElementById(`content-${tabId}`);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
+        
+        currentTab = tabId;
+        
+        // Load data for the active tab
+        loadTabData(tabId);
+    }
+    
+    // Load data based on active tab
+    function loadTabData(tabId) {
+        switch(tabId) {
+            case 'upcoming':
+                loadUpcomingMeetings();
+                break;
+            case 'history':
+                loadMeetingHistory();
+                break;
+            case 'instant':
+                loadInstantCalls();
+                break;
+            case 'messages':
+                loadMessages();
+                break;
+            case 'notifications':
+                loadNotifications();
+                break;
+        }
+    }
+    
+    // Load upcoming meetings
+    async function loadUpcomingMeetings() {
+        try {
+            console.log('📅 Loading upcoming meetings...');
+            
+            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/meetings/upcoming', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Upcoming meetings loaded:', data);
+                
+                if (data.success && data.meetings) {
+                    displayUpcomingMeetings(data.meetings);
+                } else {
+                    displayUpcomingMeetings([]);
+                }
+            } else {
+                console.error('❌ Failed to fetch upcoming meetings, status:', response.status);
+                displayUpcomingMeetings([]);
+                
+                if (response.status === 401) {
+                    handleAuthError();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Network error fetching upcoming meetings:', error);
+            displayUpcomingMeetings([]);
+        }
+    }
+    
+    // Load meeting history
+    async function loadMeetingHistory() {
+        try {
+            console.log('📚 Loading meeting history...');
+            
+            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/meetings/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Meeting history loaded:', data);
+                
+                if (data.success && data.history) {
+                    displayMeetingHistory(data.history);
+                } else {
+                    displayMeetingHistory({ completed: [], canceled: [], missed: [] });
+                }
+            } else {
+                console.error('❌ Failed to fetch meeting history, status:', response.status);
+                displayMeetingHistory({ completed: [], canceled: [], missed: [] });
+                
+                if (response.status === 401) {
+                    handleAuthError();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Network error fetching meeting history:', error);
+            displayMeetingHistory({ completed: [], canceled: [], missed: [] });
+        }
+    }
+    
+    // Load instant calls
+    async function loadInstantCalls() {
+        try {
+            console.log('📞 Loading instant calls...');
+            
+            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/instant-calls', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Instant calls loaded:', data);
+                
+                if (data.success && data.instantCalls) {
+                    displayInstantCalls(data.instantCalls);
+                } else {
+                    displayInstantCalls([]);
+                }
+            } else {
+                console.error('❌ Failed to fetch instant calls, status:', response.status);
+                displayInstantCalls([]);
+                
+                if (response.status === 401) {
+                    handleAuthError();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Network error fetching instant calls:', error);
+            displayInstantCalls([]);
+        }
+    }
+    
+    // Load messages
+    async function loadMessages() {
+        try {
+            console.log('💬 Loading messages...');
+            
+            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/messages', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Messages loaded:', data);
+                
+                if (data.success && data.messages) {
+                    displayMessages(data.messages);
+                } else {
+                    displayMessages([]);
+                }
+            } else {
+                console.error('❌ Failed to fetch messages, status:', response.status);
+                displayMessages([]);
+                
+                if (response.status === 401) {
+                    handleAuthError();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Network error fetching messages:', error);
+            displayMessages([]);
+        }
+    }
+    
+    // Load notifications
+    async function loadNotifications() {
+        try {
+            console.log('🔔 Loading notifications...');
+            
+            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/notifications', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Notifications loaded:', data);
+                
+                if (data.success && data.notifications) {
+                    displayNotifications(data.notifications);
+                    updateNotificationCount(data.unreadCount || 0);
+                } else {
+                    displayNotifications([]);
+                    updateNotificationCount(0);
+                }
+            } else {
+                console.error('❌ Failed to fetch notifications, status:', response.status);
+                displayNotifications([]);
+                updateNotificationCount(0);
+                
+                if (response.status === 401) {
+                    handleAuthError();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Network error fetching notifications:', error);
+            displayNotifications([]);
+            updateNotificationCount(0);
+        }
+    }
+    
+    // Display upcoming meetings list
+    function displayUpcomingMeetings(meetings) {
+        const meetingsList = document.getElementById('upcomingMeetingsList');
+        
+        if (!meetings || meetings.length === 0) {
+            meetingsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no upcoming meetings.</p>';
+            return;
+        }
+        
+        const meetingsHtml = meetings.map(meeting => {
+            const meetingDate = new Date(meeting.scheduledTime);
+            const formattedDate = meetingDate.toLocaleDateString();
+            const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Check if meeting was rescheduled
+            const isRescheduled = meeting.is_rescheduled || meeting.isRescheduled;
+            const rescheduleCount = meeting.reschedule_count || meeting.rescheduleCount || 0;
+            const lastRescheduledAt = meeting.last_rescheduled_at || meeting.lastRescheduledAt;
+            
+            // Format original time if available
+            let originalTimeInfo = '';
+            if (isRescheduled && meeting.original_scheduled_time) {
+                const originalDate = new Date(meeting.original_scheduled_time);
+                const originalFormattedDate = originalDate.toLocaleDateString();
+                const originalFormattedTime = originalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                originalTimeInfo = `
+                    <p class="text-xs text-orange-600 mt-1 bg-orange-50 px-2 py-1 rounded">
+                        <i class="fas fa-history mr-1"></i>Originally scheduled: ${originalFormattedDate} at ${originalFormattedTime}
+                    </p>
+                `;
+            }
+            
+            // Format reschedule info
+            let rescheduleInfo = '';
+            if (isRescheduled && lastRescheduledAt) {
+                const rescheduleDate = new Date(lastRescheduledAt);
+                const rescheduleFormatted = rescheduleDate.toLocaleDateString();
+                rescheduleInfo = `
+                    <p class="text-xs text-blue-600 mt-1">
+                        <i class="fas fa-sync-alt mr-1"></i>Rescheduled on ${rescheduleFormatted}${rescheduleCount > 1 ? ` (${rescheduleCount} times)` : ''}
+                    </p>
+                `;
+            }
+            
+            return `
+                <div class="bg-gray-50 rounded-lg p-4 border ${isRescheduled ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-semibold text-gray-900">Meeting with ${meeting.volunteerName || 'Volunteer'}</h4>
+                                ${isRescheduled ? '<span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"><i class="fas fa-sync-alt mr-1"></i>Rescheduled</span>' : ''}
+                            </div>
+                            <p class="text-gray-600 mt-1 text-sm">
+                                <i class="fas fa-calendar mr-2"></i>${formattedDate} at ${formattedTime}
+                            </p>
+                            ${originalTimeInfo}
+                            ${rescheduleInfo}
+                            <p class="text-xs text-gray-500 mt-1">
+                                Status: <span class="capitalize font-medium">${meeting.status}</span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <a href="/call.html?room=${meeting.roomId}" 
+                               class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors inline-block">
+                                <i class="fas fa-video mr-1"></i>Join
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        meetingsList.innerHTML = meetingsHtml;
+    }
+    
+    // Display meeting history
+    function displayMeetingHistory(history) {
+        // Display completed meetings
+        const completedContainer = document.getElementById('completedMeetings');
+        if (history.completed && history.completed.length > 0) {
+            const completedHtml = history.completed.map(meeting => {
+                const meetingDate = new Date(meeting.scheduledTime);
+                const formattedDate = meetingDate.toLocaleDateString();
+                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="bg-green-50 border border-green-200 rounded p-3">
+                        <p class="font-medium text-green-900 text-sm">${meeting.volunteerName}</p>
+                        <p class="text-green-700 text-xs">${formattedDate} at ${formattedTime}</p>
+                    </div>
+                `;
+            }).join('');
+            completedContainer.innerHTML = completedHtml;
+        } else {
+            completedContainer.innerHTML = '<p class="text-gray-500 text-sm">No completed meetings</p>';
+        }
+        
+        // Display canceled meetings
+        const canceledContainer = document.getElementById('canceledMeetings');
+        if (history.canceled && history.canceled.length > 0) {
+            const canceledHtml = history.canceled.map(meeting => {
+                const meetingDate = new Date(meeting.scheduledTime);
+                const formattedDate = meetingDate.toLocaleDateString();
+                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="bg-red-50 border border-red-200 rounded p-3">
+                        <p class="font-medium text-red-900 text-sm">${meeting.volunteerName}</p>
+                        <p class="text-red-700 text-xs">${formattedDate} at ${formattedTime}</p>
+                    </div>
+                `;
+            }).join('');
+            canceledContainer.innerHTML = canceledHtml;
+        } else {
+            canceledContainer.innerHTML = '<p class="text-gray-500 text-sm">No canceled meetings</p>';
+        }
+        
+        // Display missed meetings
+        const missedContainer = document.getElementById('missedMeetings');
+        if (history.missed && history.missed.length > 0) {
+            const missedHtml = history.missed.map(meeting => {
+                const meetingDate = new Date(meeting.scheduledTime);
+                const formattedDate = meetingDate.toLocaleDateString();
+                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="font-medium text-yellow-900 text-sm">${meeting.volunteerName}</p>
+                        <p class="text-yellow-700 text-xs">${formattedDate} at ${formattedTime}</p>
+                    </div>
+                `;
+            }).join('');
+            missedContainer.innerHTML = missedHtml;
+        } else {
+            missedContainer.innerHTML = '<p class="text-gray-500 text-sm">No missed meetings</p>';
+        }
+    }
+    
+    // Display instant calls
+    function displayInstantCalls(instantCalls) {
+        const instantCallsList = document.getElementById('instantCallsList');
+        
+        if (!instantCalls || instantCalls.length === 0) {
+            instantCallsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no instant call history.</p>';
+            return;
+        }
+        
+        const instantCallsHtml = instantCalls.map(call => {
+            const callDate = new Date(call.scheduledTime);
+            const formattedDate = callDate.toLocaleDateString();
+            const formattedTime = callDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const statusColor = {
+                'completed': 'text-green-600 bg-green-100',
+                'canceled': 'text-red-600 bg-red-100',
+                'missed': 'text-yellow-600 bg-yellow-100'
+            }[call.status] || 'text-gray-600 bg-gray-100';
+            
+            return `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">Instant Call with ${call.volunteerName || 'Volunteer'}</h4>
+                            <p class="text-gray-600 mt-1 text-sm">
+                                <i class="fas fa-clock mr-2"></i>${formattedDate} at ${formattedTime}
+                            </p>
+                            <span class="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+                                ${call.status.charAt(0).toUpperCase() + call.status.slice(1)}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <i class="fas fa-phone text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        instantCallsList.innerHTML = instantCallsHtml;
+    }
+    
+    // Display messages
+    function displayMessages(messages) {
+        const messagesList = document.getElementById('messagesList');
+        
+        if (!messages || messages.length === 0) {
+            messagesList.innerHTML = '<p class="text-center text-gray-500 italic">You have no messages.</p>';
+            return;
+        }
+        
+        const messagesHtml = messages.map(message => {
+            const messageDate = new Date(message.messageTime);
+            const formattedDate = messageDate.toLocaleDateString();
+            const formattedTime = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900">From ${message.volunteerName || 'Volunteer'}</h4>
+                            <p class="text-gray-700 mt-2">${message.message}</p>
+                            <p class="text-gray-500 text-xs mt-2">
+                                <i class="fas fa-clock mr-1"></i>${formattedDate} at ${formattedTime}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        messagesList.innerHTML = messagesHtml;
+    }
+    
+    // Display notifications
+    function displayNotifications(notifications) {
+        const notificationsList = document.getElementById('notificationsList');
+        
+        if (!notifications || notifications.length === 0) {
+            notificationsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no notifications.</p>';
+            return;
+        }
+        
+        const notificationsHtml = notifications.map(notification => {
+            const notificationDate = new Date(notification.created_at || notification.createdAt);
+            const formattedDate = notificationDate.toLocaleDateString();
+            const formattedTime = notificationDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Special styling for reschedule notifications
+            const isReschedule = notification.type === 'meeting_rescheduled';
+            const isHighPriority = notification.priority === 'high' || isReschedule;
+            
+            let bgColor, borderColor, icon, iconColor;
+            if (isReschedule) {
+                bgColor = 'bg-orange-50';
+                borderColor = 'border-orange-200';
+                icon = 'fas fa-sync-alt';
+                iconColor = 'text-orange-600';
+            } else if (isHighPriority) {
+                bgColor = 'bg-red-50';
+                borderColor = 'border-red-200';
+                icon = 'fas fa-exclamation-triangle';
+                iconColor = 'text-red-600';
+            } else {
+                bgColor = 'bg-blue-50';
+                borderColor = 'border-blue-200';
+                icon = 'fas fa-bell';
+                iconColor = 'text-blue-600';
+            }
+            
+            const readStatus = notification.isRead ? 'opacity-60' : '';
+            
+            return `
+                <div class="${bgColor} ${borderColor} rounded-lg p-4 border-l-4 ${readStatus}" data-notification-id="${notification.id}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 flex items-center">
+                                <i class="${icon} ${iconColor} mr-2"></i>
+                                ${notification.title}
+                                ${isReschedule ? '<span class="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">Rescheduled</span>' : ''}
+                            </h4>
+                            <p class="text-gray-700 mt-2">${notification.message}</p>
+                            <p class="text-gray-500 text-xs mt-2">
+                                <i class="fas fa-clock mr-1"></i>${formattedDate} at ${formattedTime}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            ${!notification.isRead ? '<span class="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        notificationsList.innerHTML = notificationsHtml;
+    }
+    
+    // Update notification count in header
+    function updateNotificationCount(count) {
+        const notificationCount = document.getElementById('notificationCount');
+        if (count > 0) {
+            notificationCount.textContent = count;
+            notificationCount.classList.remove('hidden');
+        } else {
+            notificationCount.classList.add('hidden');
+        }
+    }
+    
+    // Mark all notifications as read
+    async function markAllNotificationsRead() {
+        try {
+            // This would require a batch endpoint, for now we'll just reload
+            console.log('Marking all notifications as read...');
+            loadNotifications();
+        } catch (error) {
+            console.error('Error marking notifications as read:', error);
+        }
+    }
+    
+    // Handle authentication errors
+    function handleAuthError() {
+        console.log('🔒 Authentication error, redirecting to login');
+        setTimeout(() => {
+            window.location.href = '/student/login.html';
+        }, 1000);
+    }
+    
+    // Socket room joining function
+    function joinSocketRoom(studentId) {
+        console.log('🔌 Joining socket room for student ID:', studentId);
+        
+        // The InstantCallUI class handles socket connections automatically
+        // This function is kept for compatibility with the fetchStudentInfo flow
+        if (window.instantCallUI) {
+            console.log('✅ InstantCallUI already initialized');
+        } else {
+            console.log('⚠️ InstantCallUI not yet initialized, will be handled by instant-call-ui.js');
+        }
+    }
+    
+    // All instant call functionality is now handled by the new phone-like InstantCallUI class
+    // Old functions removed for cleaner code
+    
+    // Logout function
+    async function handleLogout() {
+        try {
+            console.log('Student logging out...');
+            
+            // Clear JWT token and user data
+            await window.TalkTimeAuth.logout();
+            
+            // Redirect to login page
+            window.location.href = '/student/login.html';
+        } catch (error) {
+            console.error('Error during student logout:', error);
+            // Still redirect to login page on error
+            window.location.href = '/student/login.html';
+        }
+    }
+</script>
+</body>
+</html>

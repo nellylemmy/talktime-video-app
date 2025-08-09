@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime Analytics | Admin Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <style>
+        .btn-primary {
+            background: linear-gradient(to right, #f56565, #ed8936);
+        }
+        .btn-secondary {
+            background-color: #4CAF50;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+        }
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/admin/dashboard.html" class="text-xl font-bold text-gray-800">
+                            <span class="text-pink-500">Talk</span><span class="text-orange-500">Time</span>
+                            <span class="text-gray-600 text-sm ml-2">Admin</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/admin/dashboard.html" class="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-100">Dashboard</a>
+                    <a href="/admin/analytics.html" class="px-3 py-2 rounded-md text-sm font-medium text-pink-500 bg-gray-100">Analytics</a>
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-100">Volunteers</a>
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-100">Meetings</a>
+                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:bg-gray-100">Settings</a>
+                    <button id="logout-btn" class="ml-4 px-4 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="border-b border-gray-200 pb-5 mb-5">
+                <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+                <p class="mt-2 text-sm text-gray-500">Monitor system performance and engagement metrics.</p>
+            </div>
+
+            <!-- System Overview Stats -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">System Overview</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4" id="system-stats">
+                    <!-- Loading placeholders -->
+                    <div class="bg-white p-6 rounded-lg shadow-md animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                        <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                        <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                        <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                        <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md animate-pulse col-span-2">
+                        <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                        <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div class="text-red-500 text-center py-4 col-span-full" style="display: none;">
+                        Failed to load system statistics. Please try again.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Volunteers -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Top Volunteers</h2>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volunteer</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Meetings</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-volunteers" class="bg-white divide-y divide-gray-200">
+                            <!-- Top volunteers will be inserted here -->
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    Loading volunteers...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Engagement -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Student Engagement</h2>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 flex justify-between items-center border-b border-gray-200">
+                        <div class="text-sm text-gray-500">Showing top engaged students</div>
+                        <input type="text" id="student-search" placeholder="Search students..." class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm">
+                    </div>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission #</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Meetings</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Meeting</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-engagement" class="bg-white divide-y divide-gray-200">
+                            <!-- Student engagement data will be inserted here -->
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    Loading students...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Meeting Statistics -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-medium text-gray-900">Meeting Statistics</h2>
+                    <div class="flex space-x-2">
+                        <button data-period="day" class="period-btn px-3 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300">Day</button>
+                        <button data-period="week" class="period-btn px-3 py-1 text-sm rounded-md bg-pink-500 text-white">Week</button>
+                        <button data-period="month" class="period-btn px-3 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300">Month</button>
+                        <button data-period="year" class="period-btn px-3 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300">Year</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <canvas id="meeting-chart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize JWT authentication for admin
+            window.TalkTimeAuth = new TalkTimeJWTAuth('admin');
+            
+            // Check if user is authenticated as admin
+            checkAdminAuth();
+            
+            // Load all analytics data
+            loadSystemStats();
+            loadMeetingStats('week');
+            loadTopVolunteers();
+            loadStudentEngagement();
+            
+            // Add event listeners
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button styling
+                    document.querySelectorAll('.period-btn').forEach(b => {
+                        b.classList.remove('bg-pink-500', 'text-white');
+                        b.classList.add('bg-gray-200');
+                    });
+                    this.classList.remove('bg-gray-200');
+                    this.classList.add('bg-pink-500', 'text-white');
+                    
+                    // Load data for selected period
+                    loadMeetingStats(this.dataset.period);
+                });
+            });
+            
+            document.getElementById('student-search').addEventListener('input', function() {
+                filterStudents(this.value);
+            });
+            
+            // Add logout button event listener
+            document.getElementById('logout-btn').addEventListener('click', logout);
+        });
+        
+        // Check if user is authenticated as admin
+        function checkAdminAuth() {
+            // Check JWT authentication
+            if (!window.TalkTimeAuth.isAuthenticated()) {
+                console.log('Admin not authenticated, redirecting to login');
+                window.location.href = '/admin/login.html';
+                return;
+            }
+            
+            // Verify admin role
+            const user = window.TalkTimeAuth.getUser();
+            if (!user || user.role !== 'admin') {
+                console.log('User is not admin, redirecting to login');
+                window.location.href = '/admin/login.html';
+                return;
+            }
+            
+            console.log('Admin authentication verified');
+        }
+        
+        // Load system overview statistics
+        function loadSystemStats() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/analytics/system-stats', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch system statistics');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const statsContainer = document.getElementById('system-stats');
+                statsContainer.innerHTML = ''; // Clear loading placeholders
+                
+                // Create combined Average Per Student & Completion Rate card FIRST (full width)
+                const avgPerStudent = data.stats.averagePerStudent || 0;
+                const completionRate = data.stats.completionRate || 0;
+                
+                statsContainer.innerHTML += `
+                    <div class="col-span-full bg-gradient-to-r from-indigo-500 to-pink-500 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 mb-4">
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="rounded-full p-4 bg-white bg-opacity-20 backdrop-blur-sm">
+                                <i class="fas fa-broadcast-tower text-white text-2xl animate-pulse"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-center text-white text-lg font-semibold mb-6">Real-Time Analytics Dashboard</h3>
+                        <div class="flex items-center justify-around">
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-white bg-opacity-20 backdrop-blur-sm mb-3 mx-auto w-fit">
+                                    <i class="fas fa-play-circle text-white text-xl animate-pulse"></i>
+                                </div>
+                                <p class="text-white text-sm font-medium mb-2">Ongoing Meetings</p>
+                                <p class="text-4xl font-bold text-white">${data.stats.ongoingMeetings || 0}</p>
+                                <p class="text-white text-xs opacity-80">active right now</p>
+                            </div>
+                            <div class="w-px h-20 bg-white bg-opacity-30"></div>
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-white bg-opacity-20 backdrop-blur-sm mb-3 mx-auto w-fit">
+                                    <i class="fas fa-calculator text-white text-xl"></i>
+                                </div>
+                                <p class="text-white text-sm font-medium mb-2">Average Per Student</p>
+                                <p class="text-4xl font-bold text-white">${avgPerStudent}</p>
+                                <p class="text-white text-xs opacity-80">meetings per student</p>
+                            </div>
+                            <div class="w-px h-20 bg-white bg-opacity-30"></div>
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-white bg-opacity-20 backdrop-blur-sm mb-3 mx-auto w-fit">
+                                    <i class="fas fa-chart-line text-white text-xl"></i>
+                                </div>
+                                <p class="text-white text-sm font-medium mb-2">Completion Rate</p>
+                                <p class="text-4xl font-bold text-white">${completionRate}%</p>
+                                <p class="text-white text-xs opacity-80">of all meetings</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Create left column with stacked cards (Total Students, Total Volunteers, Today's Activity)
+                const leftColumnStats = [
+                    { 
+                        label: 'Total Students', 
+                        value: data.stats.totalStudents, 
+                        icon: 'fa-user-graduate',
+                        color: 'text-blue-500',
+                        bgColor: 'bg-blue-100'
+                    },
+                    { 
+                        label: 'Total Volunteers', 
+                        value: data.stats.totalVolunteers, 
+                        icon: 'fa-hands-helping',
+                        color: 'text-green-500',
+                        bgColor: 'bg-green-100'
+                    }
+                ];
+                
+                // Create left column container (spans 2 columns) with side-by-side cards at top
+                statsContainer.innerHTML += `
+                    <div class="col-span-2 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            ${leftColumnStats.map(stat => `
+                                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-center">
+                                    <div class="rounded-full p-4 ${stat.bgColor} mx-auto mb-4 w-fit">
+                                        <i class="fas ${stat.icon} ${stat.color} text-2xl"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-500 mb-2">${stat.label}</p>
+                                    <p class="text-3xl font-bold text-gray-900">${stat.value}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="bg-gradient-to-r from-cyan-50 via-blue-50 to-emerald-50 p-6 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-all duration-200">
+                            <h4 class="text-center text-sm font-semibold text-gray-700 mb-4">Today's Activity</h4>
+                            <div class="flex items-center justify-around">
+                                <div class="text-center">
+                                    <div class="rounded-full p-3 bg-cyan-100 mx-auto mb-3 w-fit">
+                                        <i class="fas fa-user-check text-cyan-600 text-lg"></i>
+                                    </div>
+                                    <p class="text-xs font-medium text-gray-600 mb-1">Active Volunteers</p>
+                                    <p class="text-2xl font-bold text-cyan-700">${data.stats.activeVolunteersToday}</p>
+                                </div>
+                                <div class="w-px h-16 bg-gray-300"></div>
+                                <div class="text-center">
+                                    <div class="rounded-full p-3 bg-emerald-100 mx-auto mb-3 w-fit">
+                                        <i class="fas fa-calendar-check text-emerald-600 text-lg"></i>
+                                    </div>
+                                    <p class="text-xs font-medium text-gray-600 mb-1">Students with Meetings</p>
+                                    <p class="text-2xl font-bold text-emerald-700">${data.stats.studentsWithMeetings}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Create right column with Meeting Statistics (spans 4 columns)
+                const cancelledMeetings = data.stats.meetingStats.cancelled || 0;
+                const completedMeetings = data.stats.meetingStats.completed || 0;
+                const scheduledMeetings = data.stats.meetingStats.scheduled || 0;
+                
+                statsContainer.innerHTML += `
+                    <div class="col-span-4 bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                        <div class="text-center mb-6">
+                            <div class="rounded-full p-4 bg-purple-100 mx-auto mb-4 w-fit">
+                                <i class="fas fa-chart-bar text-purple-500 text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Meeting Statistics</h3>
+                            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                                <p class="text-sm font-medium text-gray-500 mb-1">Total Meetings</p>
+                                <p class="text-4xl font-bold text-purple-600">${data.stats.totalMeetings}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-green-100 mx-auto mb-3 w-fit">
+                                    <i class="fas fa-check-circle text-green-500 text-lg"></i>
+                                </div>
+                                <p class="text-sm font-medium text-gray-500 mb-1">Successful</p>
+                                <p class="text-2xl font-bold text-green-600">${completedMeetings}</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-red-100 mx-auto mb-3 w-fit">
+                                    <i class="fas fa-times-circle text-red-500 text-lg"></i>
+                                </div>
+                                <p class="text-sm font-medium text-gray-500 mb-1">Cancelled</p>
+                                <p class="text-2xl font-bold text-red-600">${cancelledMeetings}</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="rounded-full p-3 bg-yellow-100 mx-auto mb-3 w-fit">
+                                    <i class="fas fa-clock text-yellow-500 text-lg"></i>
+                                </div>
+                                <p class="text-sm font-medium text-gray-500 mb-1">Scheduled</p>
+                                <p class="text-2xl font-bold text-yellow-600">${scheduledMeetings}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading system statistics:', error);
+                document.getElementById('system-stats').innerHTML = `
+                    <div class="col-span-4 bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-red-500">Failed to load system statistics. Please try again.</p>
+                    </div>
+                `;
+            });
+        }
+        
+        // Meeting chart instance
+        let meetingChart = null;
+        
+        // Load meeting statistics by time period
+        function loadMeetingStats(period) {
+            window.TalkTimeAuth.makeAuthenticatedRequest(`/api/v1/analytics/meeting-stats?period=${period}`, {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch meeting statistics');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Prepare chart data
+                const labels = data.stats.map(item => formatDate(item.date));
+                const scheduled = data.stats.map(item => item.scheduled);
+                const completed = data.stats.map(item => item.completed);
+                const cancelled = data.stats.map(item => item.cancelled);
+                
+                // Destroy existing chart if it exists
+                if (meetingChart) {
+                    meetingChart.destroy();
+                }
+                
+                // Create new chart
+                const ctx = document.getElementById('meeting-chart').getContext('2d');
+                meetingChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Scheduled',
+                                data: scheduled,
+                                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                                borderColor: 'rgb(59, 130, 246)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Completed',
+                                data: completed,
+                                backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                                borderColor: 'rgb(16, 185, 129)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Cancelled',
+                                data: cancelled,
+                                backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                                borderColor: 'rgb(239, 68, 68)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: `Meeting Statistics (${period.charAt(0).toUpperCase() + period.slice(1)})`
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading meeting statistics:', error);
+                document.getElementById('meeting-chart').parentNode.innerHTML = `
+                    <div class="p-6">
+                        <p class="text-red-500">Failed to load meeting statistics. Please try again.</p>
+                    </div>
+                `;
+            });
+        }
+        
+        // Load top volunteers
+        function loadTopVolunteers() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/analytics/top-volunteers?limit=10', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch top volunteers');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('top-volunteers');
+                
+                if (data.volunteers.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                No volunteer data available.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tableBody.innerHTML = '';
+                data.volunteers.forEach(volunteer => {
+                    const completionRate = volunteer.meetingCount > 0 ? 
+                        Math.round((volunteer.completedCount / volunteer.meetingCount) * 100) : 0;
+                    
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                        <span class="text-gray-500 font-medium">${volunteer.fullName.charAt(0)}</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">${volunteer.fullName}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${volunteer.email}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${volunteer.meetingCount}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${volunteer.completedCount}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="text-sm text-gray-900 mr-2">${completionRate}%</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: ${completionRate}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(error => {
+                console.error('Error loading top volunteers:', error);
+                document.getElementById('top-volunteers').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">
+                            Failed to load volunteer data. Please try again.
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Load student engagement data
+        function loadStudentEngagement() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/analytics/student-engagement', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch student engagement data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('student-engagement');
+                
+                if (data.students.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                No student data available.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tableBody.innerHTML = '';
+                data.students.forEach(student => {
+                    const lastMeeting = student.lastMeeting ? formatDate(student.lastMeeting) : 'Never';
+                    const status = getStudentStatus(student.lastMeeting, student.meetingCount);
+                    
+                    tableBody.innerHTML += `
+                        <tr class="student-row">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${student.fullName}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.admissionNumber}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.meetingCount}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lastMeeting}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status.bgColor} ${status.textColor}">
+                                    ${status.label}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(error => {
+                console.error('Error loading student engagement data:', error);
+                document.getElementById('student-engagement').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">
+                            Failed to load student data. Please try again.
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Filter students by search query
+        function filterStudents(query) {
+            query = query.toLowerCase();
+            const rows = document.querySelectorAll('.student-row');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                const admissionNumber = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                
+                if (name.includes(query) || admissionNumber.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Invalid date';
+            
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        // Determine student status based on activity
+        function getStudentStatus(lastMeeting, meetingCount) {
+            if (!lastMeeting) {
+                return {
+                    label: 'New',
+                    bgColor: 'bg-blue-100',
+                    textColor: 'text-blue-800'
+                };
+            }
+            
+            const lastMeetingDate = new Date(lastMeeting);
+            const currentDate = new Date();
+            const daysSinceLastMeeting = Math.floor((currentDate - lastMeetingDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysSinceLastMeeting <= 7) {
+                return {
+                    label: 'Active',
+                    bgColor: 'bg-green-100',
+                    textColor: 'text-green-800'
+                };
+            } else if (daysSinceLastMeeting <= 30) {
+                return {
+                    label: 'Recent',
+                    bgColor: 'bg-blue-100',
+                    textColor: 'text-blue-800'
+                };
+            } else if (daysSinceLastMeeting <= 90) {
+                return {
+                    label: 'Inactive',
+                    bgColor: 'bg-yellow-100',
+                    textColor: 'text-yellow-800'
+                };
+            } else {
+                return {
+                    label: 'Dormant',
+                    bgColor: 'bg-red-100',
+                    textColor: 'text-red-800'
+                };
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/jwt-auth/logout', {
+                method: 'POST'
+            })
+            .then(() => {
+                window.TalkTimeAuth.clearAuth();
+                window.location.href = '/admin/login.html';
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                window.TalkTimeAuth.clearAuth();
+                window.location.href = '/admin/login.html';
+            });
+        }
+    </script>
+</body>
+</html>

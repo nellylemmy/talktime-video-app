@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Student Profile | Volunteer Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="View detailed profile of a Maasai student and schedule an English practice session on TalkTime.">
+    <link rel="canonical" id="canonical-link" href="">
+    <meta name="robots" content="index, follow">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- JWT Authentication -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Navigation Loader -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+    
+    <style>
+        /* Base styles matching the landing page */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4ff;
+            overflow-x: hidden;
+        }
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
+        }
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal-glass-bg {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .section-heading {
+             background-image: linear-gradient(to right, #ec4899, #8b5cf6);
+             -webkit-background-clip: text;
+             background-clip: text;
+             color: transparent;
+        }
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* Page Transition */
+        .page, .tab-pane {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .page-hidden, .tab-pane-hidden {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transform: translateY(10px);
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        
+        /* Live Pulse Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .live-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Calendar Styles */
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover:not(.day-disabled):not(.day-selected) {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        .day-disabled {
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+        .day-selected {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .day-today {
+            border: 2px solid #4f46e5;
+        }
+        
+        /* Time Input Styles */
+        .time-input {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .time-slot {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .time-slot:hover:not(.time-disabled) {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .time-slot.time-selected {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .time-disabled {
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            transition: opacity 300ms ease-in-out;
+        }
+        .modal .modal-content {
+            transition: transform 300ms ease-in-out;
+        }
+        .profile-dropdown, .options-menu {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Image Gallery */
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .gallery-img {
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .gallery-img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Blobs -->
+    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+    
+    <!-- Navigation Container -->
+    <div id="nav-container">
+        <!-- Navigation will be loaded dynamically -->
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Dashboard Navigation -->
+        <div class="mb-8 flex items-center">
+            <a href="/volunteer/dashboard/students.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Students
+            </a>
+        </div>
+        
+        <!-- Student Profile Page -->
+        <div id="page-student-profile" class="page w-full">
+            <div class="max-w-3xl mx-auto">
+                <div id="student-profile" class="glass-bg rounded-xl p-6 mb-6">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-1/3">
+                            <img id="student-profile-image" src="/volunteer/images/default-profile.svg" alt="Student" class="w-full aspect-square object-cover rounded-xl">
+                        </div>
+                        <div class="w-full md:w-2/3">
+                            <h2 id="student-name" class="text-2xl font-bold mb-2">Student Name</h2>
+                            <div class="flex items-center mb-4">
+                                <span id="student-age" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full mr-2">Age: 14</span>
+                                <span id="student-gender" class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Female</span>
+                            </div>
+                            <p id="student-admission" class="text-sm text-gray-600 mb-4">Admission #: <span class="font-semibold">12345</span></p>
+                            <h3 class="font-semibold mb-2">About</h3>
+                            <p id="student-bio" class="text-gray-700 mb-4">Loading student bio...</p>
+                            
+                            <div id="schedule-button-container" class="mt-6">
+                                <!-- Schedule or Reschedule button will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Student Gallery -->
+                <div class="glass-bg rounded-xl p-6 mb-6">
+                    <h3 class="font-semibold mb-4">Gallery</h3>
+                    <div id="student-gallery" class="gallery-container">
+                        <!-- Gallery images will be inserted here -->
+                    </div>
+                </div>
+                
+                <!-- Student Story -->
+                <div class="glass-bg rounded-xl p-6">
+                    <h3 class="font-semibold mb-4">Student's Story</h3>
+                    <p id="student-story" class="text-gray-700">Loading student story...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const studentNameEl = document.getElementById('student-name');
+        const studentAgeEl = document.getElementById('student-age');
+        const studentGenderEl = document.getElementById('student-gender');
+        const studentAdmissionEl = document.getElementById('student-admission');
+        const studentBioEl = document.getElementById('student-bio');
+        const studentStoryEl = document.getElementById('student-story');
+        const studentProfileImageEl = document.getElementById('student-profile-image');
+        const studentGalleryEl = document.getElementById('student-gallery');
+        const scheduleButtonContainer = document.getElementById('schedule-button-container');
+        const notificationEl = document.getElementById('notification');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+
+        // --- Utility Functions ---
+        function showNotification(message, type = 'success') {
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notificationEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notificationEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Function to get URL parameters
+        function getUrlParams() {
+            // Parse query parameters from the new URL structure
+            // Format: /volunteer/dashboard/student-detail.html?id=1&admission=ADM0001&name=Test%20Student
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            const id = urlParams.get('id');
+            const admission = urlParams.get('admission');
+            const name = urlParams.get('name');
+            
+            // Validate that we have the required parameters
+            if (id && admission && name) {
+                return {
+                    studentId: id,
+                    studentAdmission: admission,
+                    studentName: decodeURIComponent(name)
+                };
+            }
+            
+            // If query parameters are missing, return null
+            console.error('Missing required URL parameters:', { id, admission, name });
+            return null;
+        }
+
+        // --- Data Loading ---
+        function loadStudentData() {
+            const params = getUrlParams();
+            
+            if (!params) {
+                showNotification('Invalid student URL', 'error');
+                return;
+            }
+            
+            // Update page title with student name
+            document.title = `TalkTime - ${params.studentName} | Student Profile`;
+            
+            // Update canonical link
+            const canonicalLink = document.getElementById('canonical-link');
+            canonicalLink.href = window.location.href;
+            
+            // Use the full student ID for the API call - some students have the name in their admission number
+            // This handles both formats: ADM1234 and ADM1234-name-name
+            
+            // Fetch student data from the backend API
+            TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/${params.studentId}/profile`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Student data received:', data);
+                    
+                    // Update student profile data - API returns student data wrapped in 'student' property
+                    renderStudentProfile(data.student);
+                    
+                    // Check if there's an existing meeting and render the appropriate button
+                    checkExistingMeeting(params.studentId);
+                })
+                .catch(error => {
+                    console.error('Error loading student data:', error);
+                    showNotification('Failed to load student data. Please try again.', 'error');
+                });
+        }
+
+        // Function to render student profile
+        function renderStudentProfile(student) {
+            console.log('Rendering student profile:', student);
+            console.log('Student data properties:', Object.keys(student));
+            console.log('Student name value:', student.name);
+            console.log('Student admission value:', student.admissionNumber);
+            
+            // Check if DOM elements exist
+            console.log('DOM elements check:', {
+                studentNameEl: !!studentNameEl,
+                studentAgeEl: !!studentAgeEl,
+                studentAdmissionEl: !!studentAdmissionEl,
+                studentBioEl: !!studentBioEl
+            });
+            
+            // Store the numeric student ID in a data attribute for later use
+            document.getElementById('student-profile').dataset.numericId = student.id;
+            
+            // Update basic info - using correct property names from API response
+            if (studentNameEl) {
+                studentNameEl.textContent = student.name || 'Student Name';
+                console.log('Updated student name to:', studentNameEl.textContent);
+            }
+            if (studentAgeEl) {
+                studentAgeEl.textContent = `Age: ${student.age || 'Unknown'}`;
+                console.log('Updated student age to:', studentAgeEl.textContent);
+            }
+            if (studentGenderEl) {
+                studentGenderEl.textContent = student.gender || 'Unknown';
+            }
+            if (studentAdmissionEl) {
+                studentAdmissionEl.innerHTML = `Admission #: <span class="font-semibold">${student.admissionNumber || 'Unknown'}</span>`;
+                console.log('Updated student admission to:', studentAdmissionEl.innerHTML);
+            }
+            if (studentBioEl) {
+                studentBioEl.textContent = student.bio || 'No bio available.';
+            }
+            if (studentStoryEl) {
+                studentStoryEl.textContent = student.story || 'No story available.';
+            }
+            
+            // Update profile image with fallback
+            const profileImageSrc = student.profileImage || '/images/placeholder-student.jpg';
+            studentProfileImageEl.src = profileImageSrc;
+            studentProfileImageEl.alt = student.name || 'Student';
+            
+            // Add error handler for broken images
+            studentProfileImageEl.onerror = function() {
+                this.src = '/images/placeholder-student.jpg';
+            };
+            
+            // Render gallery if available
+            if (student.gallery && Array.isArray(student.gallery) && student.gallery.length > 0) {
+                const galleryHtml = student.gallery.map(image => `
+                    <img src="${image}" alt="${student.name}" class="gallery-img">
+                `).join('');
+                
+                studentGalleryEl.innerHTML = galleryHtml;
+            } else if (student.profileImage) {
+                // If no gallery but we have a profile image, use it as a gallery item
+                studentGalleryEl.innerHTML = `<img src="${student.profileImage}" alt="${student.name}" class="gallery-img">`;
+            } else {
+                studentGalleryEl.innerHTML = '<p class="text-gray-500 col-span-3 text-center py-4">No gallery images available.</p>';
+            }
+        }
+
+        // Function to check if there's an existing meeting with this student
+        function checkExistingMeeting(studentId) {
+            // Use the full student ID for the API call - some students have the name in their admission number
+            
+            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/student/${studentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // If meeting is null, show schedule button
+                    if (!data.meeting) {
+                        renderScheduleButton(studentId);
+                        return;
+                    }
+                    
+                    // Get the current volunteer ID from the session
+                    const currentVolunteerId = data.currentVolunteerId;
+                    
+                    // Check if the current volunteer is the owner of the meeting
+                    const isOwner = data.meeting.volunteer_id == currentVolunteerId;
+                    
+                    // Add ownership information to the meeting object
+                    data.meeting.isOwner = isOwner;
+                    
+                    console.log('Meeting ownership check:', {
+                        meetingVolunteerId: data.meeting.volunteer_id,
+                        currentVolunteerId: currentVolunteerId,
+                        isOwner: isOwner
+                    });
+                    
+                    // Meeting found, show reschedule button with ownership information
+                    renderRescheduleButton(studentId, data.meeting);
+                })
+                .catch(error => {
+                    console.error('Error checking existing meeting:', error);
+                    // Default to showing schedule button on error
+                    renderScheduleButton(studentId);
+                });
+        }
+
+        // Function to render schedule button
+        function renderScheduleButton(studentId) {
+            const params = getUrlParams();
+            if (!params) return;
+            
+            // Get the numeric ID from the data attribute
+            const numericId = document.getElementById('student-profile').dataset.numericId;
+            
+            scheduleButtonContainer.innerHTML = `
+                <div class="flex gap-3">
+                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
+                       class="inline-block bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
+                       data-numeric-id="${numericId}">
+                        <i class="far fa-calendar-plus mr-2"></i>Schedule a Meeting
+                    </a>
+                    <button id="instant-call-btn" 
+                    class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                    data-student-id="${numericId}"
+                    data-student-name="${document.getElementById('student-name').textContent.trim()}">
+                <i class="fas fa-phone-alt mr-2"></i>Instant Call
+            </button>
+                </div>
+            `;
+            
+            // Add event listener for instant call button
+            document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+        }
+
+        // Function to render reschedule button
+        function renderRescheduleButton(studentId, meeting) {
+            const params = getUrlParams();
+            if (!params) return;
+            
+            // Get the numeric ID from the data attribute
+            const numericId = document.getElementById('student-profile').dataset.numericId;
+            
+            const meetingDate = new Date(meeting.scheduled_time);
+            
+            // Check if the current volunteer is the owner of this meeting
+            const isOwner = meeting.isOwner === true || meeting.is_owner === true;
+            
+            if (isOwner) {
+                // If current volunteer is the owner, show existing meeting management AND new scheduling options
+                scheduleButtonContainer.innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Existing Meeting Info -->
+                        <div class="p-3 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-gray-700">You have a scheduled meeting on:</p>
+                            <p class="font-semibold">${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        
+                        <!-- Existing Meeting Management -->
+                        <div class="flex gap-3">
+                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" class="inline-block bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                                <i class="far fa-calendar-alt mr-2"></i>Reschedule
+                            </a>
+                            <button id="cancel-meeting-btn" data-meeting-id="${meeting.id}" class="bg-white border border-red-500 text-red-500 py-2 px-4 rounded-lg hover:bg-red-50 transition-colors">
+                                <i class="far fa-calendar-times mr-2"></i>Cancel Meeting
+                            </button>
+                        </div>
+                        
+                        <!-- Divider -->
+                        <div class="border-t border-gray-200 pt-3">
+                            <p class="text-sm text-gray-600 mb-3">Schedule additional meetings on other dates:</p>
+                        </div>
+                        
+                        <!-- New Meeting Options -->
+                        <div class="flex gap-3">
+                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
+                               class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                               data-numeric-id="${numericId}">
+                                <i class="far fa-calendar-plus mr-2"></i>Schedule Another Meeting
+                            </a>
+                            <button id="instant-call-btn" 
+                            class="inline-block bg-orange-600 text-white py-2 px-6 rounded-lg hover:bg-orange-700 transition-colors"
+                            data-student-id="${numericId}"
+                            data-student-name="${document.getElementById('student-name').textContent.trim()}">
+                        <i class="fas fa-phone-alt mr-2"></i>Instant Call
+                    </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners
+                document.getElementById('cancel-meeting-btn').addEventListener('click', () => {
+                    cancelMeeting(meeting.id, params.studentName);
+                });
+                document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+            } else {
+                // If another volunteer owns this meeting, show normal schedule button (no warning)
+                scheduleButtonContainer.innerHTML = `
+                    <div class="flex gap-3">
+                        <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
+                           class="inline-block bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
+                           data-numeric-id="${numericId}">
+                            <i class="far fa-calendar-plus mr-2"></i>Schedule a Meeting
+                        </a>
+                        <button id="instant-call-btn" 
+                        class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                        data-student-id="${numericId}"
+                        data-student-name="${document.getElementById('student-name').textContent.trim()}">
+                    <i class="fas fa-phone-alt mr-2"></i>Instant Call
+                </button>
+                    </div>
+                `;
+                
+                // Add event listener for instant call button
+                document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+            }
+        }
+
+        // Function to cancel a meeting
+        async function cancelMeeting(meetingId, studentName) {
+            const confirmed = await window.showConfirmation(
+                `Are you sure you want to cancel your meeting with ${studentName}?`,
+                {
+                    title: 'Cancel Meeting',
+                    confirmText: 'Cancel Meeting',
+                    cancelText: 'Keep Meeting',
+                    type: 'warning'
+                }
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Send API request to cancel the meeting
+            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to cancel meeting');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Show success notification
+                    showNotification('Meeting cancelled successfully');
+                    
+                    // Update the button to show schedule option
+                    const params = getUrlParams();
+                    if (params) {
+                        renderScheduleButton(params.studentId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling meeting:', error);
+                    showNotification('Failed to cancel meeting. Please try again.', 'error');
+                });
+        }
+
+        // Function to initiate instant call
+        function initiateInstantCall() {
+            const studentId = this.dataset.studentId;
+            const studentName = this.dataset.studentName;
+            
+            // Get volunteer data from localStorage for sharing with student
+            let volunteerData = null;
+            try {
+                const userData = localStorage.getItem('volunteer_talktime_user');
+                if (userData) {
+                    volunteerData = JSON.parse(userData);
+                } else {
+                    const token = localStorage.getItem('volunteer_talktime_access_token');
+                    if (token) {
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        volunteerData = payload;
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting volunteer data:', error);
+            }
+            
+            // Generate a unique room ID for this instant call
+            const roomId = `instant-${Date.now()}-${studentId}`;
+            
+            // Prepare volunteer info for URL (encode for sharing with student)
+            const volunteerName = volunteerData?.fullName || volunteerData?.name || 'Volunteer';
+            const volunteerImage = volunteerData?.profileImage || '';
+            
+            // Generate both volunteer and student URLs with volunteer info
+            const baseParams = `room=${roomId}&instant=true&studentId=${studentId}&studentName=${encodeURIComponent(studentName)}&volunteerName=${encodeURIComponent(volunteerName)}&volunteerImage=${encodeURIComponent(volunteerImage)}`;
+            const volunteerUrl = `/call.html?${baseParams}&role=volunteer`;
+            const studentUrl = `/call.html?${baseParams}&role=student`;
+            
+            // Store student URL for sharing (could be used for notifications, etc.)
+            console.log('📋 Generated URLs with volunteer info:');
+            console.log('👨‍🏫 Volunteer URL:', window.location.origin + volunteerUrl);
+            console.log('👨‍🎓 Student URL:', window.location.origin + studentUrl);
+            
+            // Show notification and redirect volunteer to their URL
+            showNotification('Starting instant call. Redirecting to meeting room...');
+            
+            // TODO: In a real implementation, the student URL should be sent to the student
+            // via SMS, email, or push notification so they can join with role=student
+            
+            setTimeout(() => {
+                window.location.href = volunteerUrl;
+            }, 1000);
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('click', e => {
+            // Profile dropdown toggle
+            if (profileBtn && profileBtn.contains(e.target)) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+                profileDropdown.classList.toggle('opacity-0');
+                profileDropdown.classList.toggle('-translate-y-2');
+            } else if (profileDropdown && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
+            }
+        });
+        
+        // --- Initialize Authentication ---
+        window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        
+        // --- Initial Load ---
+        loadStudentData();
+    });
+    
+    </script>
+
+    <!-- Initialize Navigation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize navigation with authentication requirement
+            await VolunteerNavLoader.init(true);
+        });
+    </script>
+</body>
+</html>

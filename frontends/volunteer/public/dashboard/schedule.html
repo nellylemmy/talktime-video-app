@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Schedule Meeting | Volunteer Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Schedule or reschedule an English practice session with a Maasai student. Choose a date, time, and timezone for your TalkTime conversation.">
+    <link rel="canonical" id="canonical-link" href="">
+    <meta name="robots" content="index, follow">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Navigation Loader -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+    
+    <!-- JWT Authentication Utility -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4ff; }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            z-index: -1;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover:not(.day-disabled):not(.day-selected) {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        .day-disabled {
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+        .day-selected {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .day-today {
+            border: 2px solid #4f46e5;
+        }
+        .time-input {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .time-slot {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .time-slot:hover:not(.time-disabled) {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .time-slot.time-selected {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .time-disabled {
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Blobs -->
+    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+    
+    <!-- Navigation Container -->
+    <div id="nav-container">
+        <!-- Navigation will be loaded dynamically -->
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Back Navigation -->
+        <div class="mb-8 flex items-center" id="back-link-container">
+            <!-- Back link will be inserted here -->
+        </div>
+        
+        <!-- Schedule Page -->
+        <div id="page-scheduler" class="w-full">
+            <div class="max-w-3xl mx-auto">
+                <div class="glass-bg rounded-xl p-6 mb-6">
+                    <h2 id="schedule-title" class="text-2xl font-bold mb-4 text-center">Schedule a Meeting</h2>
+                    <div class="flex items-center mb-6">
+                        <img id="student-image" src="/volunteer/images/default-profile.svg" alt="Student" class="w-16 h-16 rounded-full object-cover mr-4">
+                        <div>
+                            <h3 id="student-name" class="font-semibold text-lg">Student Name</h3>
+                            <p id="student-details" class="text-sm text-gray-600">Age: 14 | Female</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Timezone Selection -->
+                    <div class="mb-6">
+                        <label for="timezone-select" class="block text-sm font-medium text-gray-700 mb-2">Your Timezone</label>
+                        <select id="timezone-select" class="w-full p-3 bg-white/70 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <!-- Timezone options will be inserted here -->
+                        </select>
+                        <p class="mt-2 text-xs text-gray-500">Students are in Kenya (EAT). Available hours: 9:00 AM - 5:00 PM EAT.</p>
+                    </div>
+                    
+                    <!-- Calendar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <button id="prev-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-left"></i></button>
+                            <h4 id="calendar-month" class="font-semibold">July 2025</h4>
+                            <button id="next-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar mb-2">
+                            <div class="text-center text-gray-500 text-sm font-medium">S</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">M</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">T</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">W</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">T</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">F</div>
+                            <div class="text-center text-gray-500 text-sm font-medium">S</div>
+                        </div>
+                        <div id="calendar-days" class="calendar">
+                            <!-- Calendar days will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Time Selection -->
+                    <div id="time-selection" class="mb-6 hidden">
+                        <h4 class="font-semibold mb-3">Select a Time <span id="selected-date-display" class="text-gray-500 font-normal">(July 16, 2025)</span></h4>
+                        <div id="time-slots" class="time-input">
+                            <!-- Time slots will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Confirm Button -->
+                    <div id="confirm-container" class="text-center hidden">
+                        <button id="confirm-btn" class="bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors">
+                            Confirm Meeting
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">Confirm Your Meeting</h3>
+            <p class="mb-4">You're about to schedule a meeting with <span id="modal-student-name" class="font-semibold">Student Name</span>.</p>
+            <div class="p-4 bg-blue-50 rounded-lg mb-4">
+                <p><i class="far fa-calendar mr-2 text-blue-600"></i><span id="modal-date">July 16, 2025</span></p>
+                <p><i class="far fa-clock mr-2 text-blue-600"></i><span id="modal-time">3:00 PM</span> (Your local time)</p>
+                <p><i class="far fa-clock mr-2 text-blue-600"></i><span id="modal-time-eat"></span> (Kenya time - EAT)</p>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="modal-cancel" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
+                <button id="modal-confirm" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        const backLinkContainer = document.getElementById('back-link-container');
+        const scheduleTitle = document.getElementById('schedule-title');
+        const studentImage = document.getElementById('student-image');
+        const studentName = document.getElementById('student-name');
+        const studentDetails = document.getElementById('student-details');
+        const timezoneSelect = document.getElementById('timezone-select');
+        const calendarMonth = document.getElementById('calendar-month');
+        const calendarDays = document.getElementById('calendar-days');
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month');
+        const timeSelection = document.getElementById('time-selection');
+        const selectedDateDisplay = document.getElementById('selected-date-display');
+        const timeSlots = document.getElementById('time-slots');
+        const confirmContainer = document.getElementById('confirm-container');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+        const modalStudentName = document.getElementById('modal-student-name');
+        const modalDate = document.getElementById('modal-date');
+        const modalTime = document.getElementById('modal-time');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const notificationEl = document.getElementById('notification');
+        
+        // --- State Variables ---
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+        let selectedDate = null;
+        let selectedTimeSlot = null;
+        let studentData = null;
+        let meetingId = null; // For rescheduling
+        let isRescheduling = false;
+        
+        // --- Utility Functions ---
+        function showNotification(message, type = 'success') {
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notificationEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notificationEl.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function formatDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString(undefined, options);
+        }
+        
+        function formatTime(hours, minutes) {
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            return `${formattedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+        }
+        
+        // Function to generate time slots for a specific date based on EAT constraints
+        function generateTimeSlotsForDate(date, timezone) {
+            const slots = [];
+            
+            // EAT constraints: 9:00 AM - 5:00 PM with 15-minute intervals
+            const eatStartHour = 9; // 9:00 AM EAT
+            const eatEndHour = 17;  // 5:00 PM EAT
+            
+            // Create a date object for the selected date at midnight
+            const selectedDateObj = new Date(date);
+            selectedDateObj.setHours(0, 0, 0, 0);
+            
+            // Check if the selected date is today
+            const today = new Date();
+            const isToday = selectedDateObj.toDateString() === today.toDateString();
+            
+            // Get current time in volunteer's timezone for filtering past slots
+            const currentVolunteerTime = new Date();
+            
+            // Generate all possible time slots in 15-minute increments within EAT constraints
+            for (let hour = eatStartHour; hour < eatEndHour; hour++) {
+                for (let minute = 0; minute < 60; minute += 15) {
+                    // Create a date object for this time slot in EAT
+                    const eatDate = new Date(selectedDateObj);
+                    eatDate.setHours(hour, minute, 0, 0);
+                    
+                    // Convert EAT time to the volunteer's timezone for display
+                    const volunteerDate = convertEatToVolunteerTime(eatDate, timezone);
+                    
+                    // Skip past time slots if this is today
+                    if (isToday && volunteerDate <= currentVolunteerTime) {
+                        continue;
+                    }
+                    
+                    // Get the hours and minutes in the volunteer's timezone
+                    const volunteerHour = volunteerDate.getHours();
+                    const volunteerMinute = volunteerDate.getMinutes();
+                    
+                    // Format the time for display
+                    const displayTime = formatTime(volunteerHour, volunteerMinute);
+                    
+                    // Add the time slot
+                    slots.push({
+                        display: displayTime,
+                        hour: volunteerHour,
+                        minute: volunteerMinute,
+                        eatHour: hour,
+                        eatMinute: minute,
+                        date: volunteerDate
+                    });
+                }
+            }
+            
+            return slots;
+        }
+        
+        // Function to convert EAT time to volunteer's timezone
+        function convertEatToVolunteerTime(eatDate, volunteerTimezone) {
+            // EAT is UTC+3, so we need to properly handle timezone conversion
+            // First, treat the eatDate as if it's in EAT (UTC+3)
+            const eatYear = eatDate.getFullYear();
+            const eatMonth = eatDate.getMonth();
+            const eatDay = eatDate.getDate();
+            const eatHour = eatDate.getHours();
+            const eatMinute = eatDate.getMinutes();
+            
+            // Create a date string in EAT timezone format
+            const eatTimeString = `${eatYear}-${String(eatMonth + 1).padStart(2, '0')}-${String(eatDay).padStart(2, '0')}T${String(eatHour).padStart(2, '0')}:${String(eatMinute).padStart(2, '0')}:00+03:00`;
+            
+            // Parse this as a proper timezone-aware date
+            const eatDateWithTimezone = new Date(eatTimeString);
+            
+            // Convert to volunteer's local timezone (browser will handle this automatically)
+            return eatDateWithTimezone;
+        }
+        
+        // Function to convert volunteer time to EAT
+        function convertVolunteerTimeToEat(volunteerDate, volunteerTimezone) {
+            // The volunteerDate is in the volunteer's local timezone
+            // We need to convert it to EAT (UTC+3)
+            
+            // Get the UTC time from the volunteer's local time
+            const utcTime = volunteerDate.getTime() + (volunteerDate.getTimezoneOffset() * 60000);
+            
+            // EAT is UTC+3 (3 hours ahead of UTC)
+            const eatTime = utcTime + (3 * 60 * 60 * 1000);
+            
+            // Create the EAT date
+            const eatDate = new Date(eatTime);
+            
+            return eatDate;
+        }
+        
+        // Function to get URL parameters
+        function getUrlParams() {
+            // Parse query parameters from the new URL structure
+            // Format: /volunteer/dashboard/schedule.html?id=1&admission=ADM0001&name=Test%20Student&meeting=123
+            const searchParams = new URLSearchParams(window.location.search);
+            
+            const id = searchParams.get('id');
+            const admission = searchParams.get('admission');
+            const name = searchParams.get('name');
+            const meetingParam = searchParams.get('meeting'); // For reschedule requests
+            
+            // Validate that we have the required parameters
+            if (id && admission && name) {
+                return {
+                    studentId: id,
+                    studentAdmission: admission,
+                    studentName: decodeURIComponent(name),
+                    action: meetingParam ? 'update' : 'new', // If meeting ID is present, it's a reschedule
+                    meetingId: meetingParam
+                };
+            }
+            
+            // If query parameters are missing, return null
+            console.error('Missing required URL parameters for schedule page:', { id, admission, name });
+            return null;
+        }
+        
+        // --- Calendar Functions ---
+        function renderCalendar() {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            
+            // Update month display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            calendarMonth.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            // Clear calendar
+            calendarDays.innerHTML = '';
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < startingDay; i++) {
+                const emptyDay = document.createElement('div');
+                calendarDays.appendChild(emptyDay);
+            }
+            
+            // Add days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                dayEl.classList.add('calendar-day');
+                
+                const dateToCheck = new Date(currentYear, currentMonth, day);
+                
+                // Calculate 3-month limit from today
+                const threeMonthsFromToday = new Date(today);
+                threeMonthsFromToday.setMonth(today.getMonth() + 3);
+                
+                // Check if this day is in the past or beyond 3-month window
+                if (dateToCheck < new Date(today.getFullYear(), today.getMonth(), today.getDate()) || 
+                    dateToCheck > threeMonthsFromToday) {
+                    dayEl.classList.add('day-disabled');
+                } else {
+                    // Check if this is the selected date
+                    if (selectedDate && day === selectedDate.getDate() && currentMonth === selectedDate.getMonth() && currentYear === selectedDate.getFullYear()) {
+                        dayEl.classList.add('day-selected');
+                    }
+                    
+                    // Check if this is today
+                    if (day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                        dayEl.classList.add('day-today');
+                    }
+                    
+                    // Add click event
+                    dayEl.addEventListener('click', () => {
+                        // Remove selected class from all days
+                        document.querySelectorAll('.day-selected').forEach(el => el.classList.remove('day-selected'));
+                        
+                        // Add selected class to this day
+                        dayEl.classList.add('day-selected');
+                        
+                        // Update selected date
+                        selectedDate = new Date(currentYear, currentMonth, day);
+                        
+                        // Show time selection
+                        showTimeSelection();
+                    });
+                }
+                
+                calendarDays.appendChild(dayEl);
+            }
+        }
+        
+        function showTimeSelection() {
+            // Format the selected date for display
+            selectedDateDisplay.textContent = `(${formatDate(selectedDate)})`;
+            
+            // Show time selection section
+            timeSelection.classList.remove('hidden');
+            
+            // Generate time slots
+            generateTimeSlots();
+            
+            // Scroll to time selection
+            timeSelection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateTimeSlots() {
+            // Clear existing time slots
+            timeSlots.innerHTML = '';
+            
+            // Get selected timezone
+            const timezone = timezoneSelect.value;
+            
+            // Generate time slots based on EAT constraints (9:00 AM - 5:00 PM EAT)
+            // with 15-minute intervals (00, 15, 30, 45)
+            const slots = generateTimeSlotsForDate(selectedDate, timezone);
+            
+            // Add time slots to the UI
+            slots.forEach(slot => {
+                const timeSlot = document.createElement('div');
+                timeSlot.textContent = slot.display;
+                timeSlot.classList.add('time-slot');
+                timeSlot.dataset.eatHour = slot.eatHour;
+                timeSlot.dataset.eatMinute = slot.eatMinute;
+                
+                // Add click event
+                timeSlot.addEventListener('click', () => {
+                    // Remove selected class from all time slots
+                    document.querySelectorAll('.time-selected').forEach(el => el.classList.remove('time-selected'));
+                    
+                    // Add selected class to this time slot
+                    timeSlot.classList.add('time-selected');
+                    
+                    // Update selected time slot with both volunteer time and EAT time
+                    selectedTimeSlot = {
+                        hour: slot.hour,
+                        minute: slot.minute,
+                        eatHour: slot.eatHour,
+                        eatMinute: slot.eatMinute
+                    };
+                    
+                    // Show confirm button
+                    confirmContainer.classList.remove('hidden');
+                });
+                
+                timeSlots.appendChild(timeSlot);
+            });
+        }
+        
+        // --- Data Loading ---
+        function loadStudentData() {
+            const params = getUrlParams();
+            
+            if (!params) {
+                showNotification('Invalid URL', 'error');
+                return;
+            }
+            
+            // Check if this is a reschedule
+            isRescheduling = params.action === 'update';
+            if (isRescheduling) {
+                scheduleTitle.textContent = 'Reschedule Meeting';
+                meetingId = params.meetingId;
+                
+                // Update page title for reschedule
+                document.title = `TalkTime - Reschedule Meeting | Volunteer Dashboard`;
+            } else {
+                // Update page title for new schedule
+                document.title = `TalkTime - Schedule Meeting | Volunteer Dashboard`;
+            }
+            
+            // Update canonical link
+            const canonicalLink = document.getElementById('canonical-link');
+            canonicalLink.href = window.location.href;
+            
+            // Update back link
+            backLinkContainer.innerHTML = `
+                <a href="/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Student Profile
+                </a>
+            `;
+            
+            // Fetch student data using JWT authentication
+            TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/${params.studentId}/profile`, {
+                method: 'GET'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    studentData = data.student; // API returns student data wrapped in 'student' property
+                    
+                    // Store the numeric student ID for later use
+                    console.log('Received student data with numeric ID:', studentData.id);
+                    
+                    // Update student info - using correct property names from API response
+                    studentName.textContent = studentData.full_name;
+                    studentDetails.textContent = `Age: ${studentData.age} | ${studentData.gender}`;
+                    
+                    // Update profile image with fallback
+                    const profileImageSrc = studentData.profileImage || '/images/placeholder-student.jpg';
+                    studentImage.src = profileImageSrc;
+                    studentImage.alt = studentData.full_name || 'Student';
+                    
+                    // Add error handler for broken images
+                    studentImage.onerror = function() {
+                        this.src = '/images/placeholder-student.jpg';
+                    };
+                    
+                    // Update modal student name
+                    modalStudentName.textContent = studentData.full_name;
+                    
+                    // If rescheduling, fetch meeting details
+                    if (isRescheduling && meetingId) {
+                        fetchMeetingDetails(meetingId);
+                    }
+                    
+                    // Initialize timezone select
+                    initializeTimezoneSelect();
+                })
+                .catch(error => {
+                    console.error('Error loading student data:', error);
+                    showNotification('Failed to load student data. Please try again.', 'error');
+                });
+        }
+        
+        function fetchMeetingDetails(meetingId) {
+            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
+                method: 'GET'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Pre-select the date and time from the meeting
+                    const meetingDate = new Date(data.meeting.scheduled_time);
+                    
+                    // Update calendar to show the month of the meeting
+                    currentMonth = meetingDate.getMonth();
+                    currentYear = meetingDate.getFullYear();
+                    
+                    // Render calendar with the meeting month
+                    renderCalendar();
+                    
+                    // Select the date
+                    selectedDate = new Date(meetingDate);
+                    
+                    // Show time selection
+                    showTimeSelection();
+                    
+                    // Pre-select the time slot
+                    const hour = meetingDate.getHours();
+                    const minute = meetingDate.getMinutes();
+                    selectedTimeSlot = { hour, minute };
+                    
+                    // Find and select the time slot
+                    setTimeout(() => {
+                        const timeSlotElements = document.querySelectorAll('.time-slot');
+                        timeSlotElements.forEach(slot => {
+                            if (slot.textContent === formatTime(hour, minute)) {
+                                slot.classList.add('time-selected');
+                                confirmContainer.classList.remove('hidden');
+                            }
+                        });
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Error loading meeting details:', error);
+                    showNotification('Failed to load meeting details. Please try again.', 'error');
+                });
+        }
+        
+        function initializeTimezoneSelect() {
+            // Get user's timezone
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // List of common timezones with EAT (Africa/Nairobi) at the top
+            const commonTimezones = [
+                'Africa/Nairobi', // EAT
+                'UTC',
+                'America/New_York',
+                'America/Chicago',
+                'America/Denver',
+                'America/Los_Angeles',
+                'America/Toronto',
+                'Europe/London',
+                'Europe/Paris',
+                'Europe/Berlin',
+                'Asia/Dubai',
+                'Asia/Tokyo',
+                'Asia/Shanghai',
+                'Australia/Sydney',
+                'Pacific/Auckland'
+            ];
+            
+            // Add user's timezone if not in the common list
+            if (!commonTimezones.includes(userTimezone)) {
+                commonTimezones.push(userTimezone);
+            }
+            
+            // Create common timezones optgroup
+            let timezoneOptions = '<optgroup label="Common Time Zones">';
+            
+            // Generate common timezone options
+            commonTimezones.forEach(tz => {
+                const selected = tz === userTimezone ? 'selected' : '';
+                const now = new Date();
+                const tzString = now.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop();
+                timezoneOptions += `<option value="${tz}" ${selected}>${tz.replace('_', ' ')} (${tzString})</option>`;
+            });
+            
+            timezoneOptions += '</optgroup>';
+            
+            // Add all IANA timezones grouped by continent
+            let allTimezones = [];
+            
+            try {
+                // This might not be supported in all browsers
+                allTimezones = Intl.supportedValuesOf('timeZone');
+            } catch (e) {
+                console.warn('Intl.supportedValuesOf not supported, using fallback timezone list');
+                // Fallback to a smaller list of common timezones
+                allTimezones = [
+                    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
+                    'America/Mexico_City', 'America/Phoenix', 'America/Sao_Paulo',
+                    'Asia/Hong_Kong', 'Asia/Jerusalem', 'Asia/Seoul', 'Asia/Singapore',
+                    'Australia/Melbourne', 'Australia/Perth',
+                    'Europe/Amsterdam', 'Europe/Istanbul', 'Europe/Moscow', 'Europe/Rome'
+                ];
+            }
+            
+            // Filter out the common timezones that we've already added
+            const otherTimezones = allTimezones.filter(tz => !commonTimezones.includes(tz));
+            
+            // Group by continent
+            const continents = {};
+            
+            otherTimezones.forEach(tz => {
+                const continent = tz.split('/')[0];
+                if (!continents[continent]) {
+                    continents[continent] = [];
+                }
+                continents[continent].push(tz);
+            });
+            
+            // Add each continent as an optgroup
+            Object.keys(continents).sort().forEach(continent => {
+                timezoneOptions += `<optgroup label="${continent}">`;
+                
+                continents[continent].sort().forEach(tz => {
+                    const selected = tz === userTimezone ? 'selected' : '';
+                    const now = new Date();
+                    const tzString = now.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop();
+                    timezoneOptions += `<option value="${tz}" ${selected}>${tz.replace('_', ' ')} (${tzString})</option>`;
+                });
+                
+                timezoneOptions += '</optgroup>';
+            });
+            
+            // Set the timezone options
+            timezoneSelect.innerHTML = timezoneOptions;
+            
+            // Add event listener to regenerate time slots when timezone changes
+            timezoneSelect.addEventListener('change', () => {
+                if (selectedDate) {
+                    showTimeSelection();
+                }
+            });
+        }
+        
+        // --- Event Handlers ---
+        prevMonthBtn.addEventListener('click', () => {
+            // Don't allow going to past months
+            const today = new Date();
+            if (currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                return;
+            }
+            
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        });
+        
+        nextMonthBtn.addEventListener('click', () => {
+            // Calculate 3-month limit from today
+            const today = new Date();
+            const threeMonthsFromToday = new Date(today);
+            threeMonthsFromToday.setMonth(today.getMonth() + 3);
+            
+            // Check if next month would exceed 3-month window
+            let nextMonth = currentMonth + 1;
+            let nextYear = currentYear;
+            if (nextMonth > 11) {
+                nextMonth = 0;
+                nextYear++;
+            }
+            
+            const nextMonthDate = new Date(nextYear, nextMonth, 1);
+            if (nextMonthDate > threeMonthsFromToday) {
+                return; // Don't allow navigation beyond 3-month window
+            }
+            
+            currentMonth = nextMonth;
+            currentYear = nextYear;
+            renderCalendar();
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            if (!selectedDate || !selectedTimeSlot) {
+                showNotification('Please select a date and time', 'error');
+                return;
+            }
+            
+            // Set the selected date and time for the meeting
+            const meetingDate = new Date(selectedDate);
+            meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
+            
+            // Update modal with selected date and time
+            modalDate.textContent = formatDate(meetingDate);
+            modalTime.textContent = formatTime(selectedTimeSlot.hour, selectedTimeSlot.minute);
+            
+            // Show confirmation modal
+            confirmModal.classList.remove('hidden');
+        });
+        
+        modalCancel.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+        });
+        
+        modalConfirm.addEventListener('click', () => {
+            // Hide modal
+            confirmModal.classList.add('hidden');
+            
+            // Get student ID from URL
+            const params = getUrlParams();
+            if (!params) return;
+            
+            // Set the selected date and time for the meeting
+            const meetingDate = new Date(selectedDate);
+            meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
+            
+            // Get selected timezone
+            const timezone = timezoneSelect.value;
+            
+            // Prepare meeting data
+            const meetingData = {
+                studentId: studentData.id, // Use the numeric ID from the API response
+                scheduledTime: meetingDate.toISOString(),
+                timezone: timezone,
+                eatTime: {
+                    hour: selectedTimeSlot.eatHour,
+                    minute: selectedTimeSlot.eatMinute
+                }
+            };
+            
+            console.log('Sending meeting data with numeric studentId:', meetingData.studentId);
+            
+            // API endpoint and method
+            let endpoint = '/api/v1/meetings';
+            let method = 'POST';
+            
+            // If rescheduling, update the endpoint and method
+            if (isRescheduling && meetingId) {
+                endpoint = `/api/v1/meetings/${meetingId}`;
+                method = 'PUT';
+            }
+            
+            // Send API request to schedule or reschedule the meeting using JWT authentication
+            TalkTimeAuth.authenticatedRequest(endpoint, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(meetingData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        // Check specific error status codes
+                        if (response.status === 403) {
+                            throw new Error('Not authorized: This student already has an active meeting scheduled. Please cancel the existing meeting before scheduling a new one.');
+                        } else {
+                            throw new Error('Failed to schedule meeting');
+                        }
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Show success notification
+                    showNotification(isRescheduling ? 'Meeting rescheduled successfully' : 'Meeting scheduled successfully');
+                    
+                    // Redirect to student profile page
+                    setTimeout(() => {
+                        window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error scheduling meeting:', error);
+                    // Display the specific error message
+                    showNotification(error.message || 'Failed to schedule meeting. Please try again.', 'error');
+                    
+                    // If it's a 403 error (student already has a meeting), redirect back to student detail page after 3 seconds
+                    if (error.message && error.message.includes('already has an active meeting')) {
+                        setTimeout(() => {
+                            window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
+                        }, 3000);
+                    }
+                });
+        });
+        
+        // Profile dropdown toggle
+        document.addEventListener('click', e => {
+            if (profileBtn && profileBtn.contains(e.target)) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+            } else if (profileDropdown && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+            }
+        });
+        
+        // --- Initialize Authentication ---
+        window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        
+        // --- Initialization ---
+        loadStudentData();
+        renderCalendar();
+    });
+    </script>
+
+    <!-- Initialize Navigation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize navigation with authentication requirement
+            await VolunteerNavLoader.init(true);
+        });
+    </script>
+</body>
+</html>

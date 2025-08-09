@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime Student Portal - ADEA Foundation</title>
+    <meta name="description" content="TalkTime Student Portal - Connect with volunteers for English conversation practice. ADEA Foundation program for Maasai students.">
+    <link rel="canonical" href="https://students.adeatalktime.org">
+    <title>Student Portal - TalkTime</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fef7ed',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c'
+                        },
+                        green: {
+                            500: '#10b981',
+                            600: '#059669'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+            min-height: 100vh;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .student-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .student-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .welcome-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            animation: pulse 2s infinite;
+        }
+        
+        .maasai-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="gradient-bg maasai-pattern">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 p-6 z-20">
+        <nav class="container mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center text-2xl font-bold text-white" aria-label="TalkTime Student Home">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#10b981;" />
+                            <stop offset="100%" style="stop-color:#059669;" />
+                        </linearGradient>
+                    </defs>
+                    <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="gradient-text">TALKTIME STUDENT</span>
+            </a>
+            
+            <!-- Student Badge -->
+            <div class="welcome-badge px-4 py-2 rounded-full text-white text-sm font-semibold">
+                <i class="fas fa-graduation-cap mr-2"></i>
+                STUDENT PORTAL
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="min-h-screen flex items-center justify-center p-4 pt-24">
+        <div class="w-full max-w-lg">
+            <!-- Student Portal Card -->
+            <div class="student-card rounded-2xl p-8 text-center">
+                <!-- Logo -->
+                <div class="mb-8">
+                    <div class="w-24 h-24 mx-auto bg-gradient-to-br from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-comments text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Karibu Student!</h1>
+                    <p class="text-orange-100">Welcome to TalkTime - Practice English with Global Volunteers</p>
+                </div>
+
+                <!-- Welcome Message -->
+                <div class="mb-8 p-6 bg-green-500/20 border border-green-400/30 rounded-lg">
+                    <h2 class="text-lg font-semibold text-white mb-3">
+                        <i class="fas fa-heart text-red-400 mr-2"></i>
+                        Improve Your English Skills
+                    </h2>
+                    <p class="text-green-100 text-sm leading-relaxed">
+                        Connect with volunteers from around the world for one-on-one English conversation practice. 
+                        Build confidence, learn new words, and make international friends!
+                    </p>
+                </div>
+
+                <!-- Features List -->
+                <div class="mb-8 text-left">
+                    <h3 class="text-lg font-semibold text-white mb-4 text-center">What You Can Do:</h3>
+                    <ul class="space-y-3 text-orange-100">
+                        <li class="flex items-center">
+                            <i class="fas fa-video text-green-400 mr-3"></i>
+                            Join scheduled video calls
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-calendar-check text-green-400 mr-3"></i>
+                            View your upcoming meetings
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-clock text-green-400 mr-3"></i>
+                            Practice English daily (max 1 call per day)
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-star text-green-400 mr-3"></i>
+                            Rate your conversation experience
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-globe text-green-400 mr-3"></i>
+                            Meet volunteers from different countries
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Login Button (Only option for students) -->
+                <div class="space-y-4">
+                    <a href="/student/login.html" class="student-btn w-full py-4 px-6 rounded-lg text-white font-semibold text-lg flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Student Login
+                    </a>
+                </div>
+
+                <!-- Account Info -->
+                <div class="mt-8 p-4 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+                    <div class="text-blue-200">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span class="text-sm">
+                            <strong>Need an account?</strong> Student accounts are created by your teachers or administrators. 
+                            Contact your school administrator if you don't have login credentials.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Help Section -->
+                <div class="mt-6 text-center">
+                    <p class="text-orange-200 text-sm">
+                        <i class="fas fa-question-circle mr-1"></i>
+                        Need help? Ask your teacher or contact 
+                        <a href="mailto:support@adeatalktime.org" class="text-green-300 hover:text-green-200 underline">
+                            support@adeatalktime.org
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-8 text-orange-200">
+                <p class="text-sm">
+                    © 2024 ADEA Foundation | TalkTime Student Portal
+                </p>
+                <p class="text-xs mt-2">
+                    Empowering Maasai youth through English conversation practice
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-green-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-red-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
+    </div>
+</body>
+</html>

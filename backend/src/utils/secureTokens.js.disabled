@@ -1,0 +1,177 @@
+/**
+ * Secure Token Generation and Validation Utilities
+ * Provides cryptographically secure tokens for meeting access control
+ */
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+
+// Default token expiration: 24 hours from creation
+const DEFAULT_TOKEN_EXPIRY_HOURS = 24;
+const TOKEN_SECRET = process.env.MEETING_TOKEN_SECRET || 'fallback-secret-change-in-production';
+
+/**
+ * Generate a secure access token for a specific student and meeting
+ * @param {Object} params - Token generation parameters
+ * @param {number} params.meetingId - The meeting ID
+ * @param {number} params.studentId - The target student ID
+ * @param {number} params.volunteerId - The volunteer who created the meeting
+ * @param {Date} params.scheduledTime - When the meeting is scheduled
+ * @param {number} params.expiryHours - Hours until token expires (default: 24)
+ * @returns {Object} - { token, expiresAt }
+ */
+export function generateSecureAccessToken({
+    meetingId,
+    studentId,
+    volunteerId,
+    scheduledTime,
+    expiryHours = DEFAULT_TOKEN_EXPIRY_HOURS
+}) {
+    try {
+        // Calculate expiration time
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + expiryHours);
+        
+        // Create token payload with all necessary data
+        const payload = {
+            meetingId: parseInt(meetingId),
+            studentId: parseInt(studentId),
+            volunteerId: parseInt(volunteerId),
+            scheduledTime: scheduledTime.toISOString(),
+            tokenType: 'meeting_access',
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(expiresAt.getTime() / 1000)
+        };
+        
+        // Generate JWT token with payload
+        const jwtToken = jwt.sign(payload, TOKEN_SECRET, {
+            algorithm: 'HS256',
+            issuer: 'talktime-app',
+            audience: 'student-meeting-access'
+        });
+        
+        // Create a URL-safe token by combining JWT with random suffix
+        const randomSuffix = crypto.randomBytes(16).toString('hex');
+        const secureToken = `${jwtToken}.${randomSuffix}`;
+        
+        return {
+            token: secureToken,
+            expiresAt,
+            payload
+        };
+        
+    } catch (error) {
+        console.error('Error generating secure access token:', error);
+        throw new Error('Failed to generate secure access token');
+    }
+}
+
+/**
+ * Validate and decode a secure access token
+ * @param {string} token - The token to validate
+ * @returns {Object|null} - Decoded payload if valid, null if invalid
+ */
+export function validateSecureAccessToken(token) {
+    try {
+        if (!token || typeof token !== 'string') {
+            return { valid: false, error: 'Invalid token format' };
+        }
+        
+        // Extract JWT part (remove random suffix)
+        const tokenParts = token.split('.');
+        if (tokenParts.length < 4) { // JWT has 3 parts + our random suffix
+            return { valid: false, error: 'Malformed token' };
+        }
+        
+        // Reconstruct JWT (first 3 parts)
+        const jwtToken = tokenParts.slice(0, 3).join('.');
+        
+        // Verify and decode JWT
+        const decoded = jwt.verify(jwtToken, TOKEN_SECRET, {
+            algorithms: ['HS256'],
+            issuer: 'talktime-app',
+            audience: 'student-meeting-access'
+        });
+        
+        // Additional validation
+        if (decoded.tokenType !== 'meeting_access') {
+            return { valid: false, error: 'Invalid token type' };
+        }
+        
+        // Check if token is expired (additional check beyond JWT exp)
+        const now = Math.floor(Date.now() / 1000);
+        if (decoded.exp && decoded.exp < now) {
+            return { valid: false, error: 'Token expired' };
+        }
+        
+        return {
+            valid: true,
+            payload: decoded,
+            meetingId: decoded.meetingId,
+            studentId: decoded.studentId,
+            volunteerId: decoded.volunteerId,
+            scheduledTime: new Date(decoded.scheduledTime),
+            expiresAt: new Date(decoded.exp * 1000)
+        };
+        
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return { valid: false, error: 'Token expired' };
+        } else if (error.name === 'JsonWebTokenError') {
+            return { valid: false, error: 'Invalid token signature' };
+        } else {
+            console.error('Token validation error:', error);
+            return { valid: false, error: 'Token validation failed' };
+        }
+    }
+}
+
+/**
+ * Generate a simple random token for fallback scenarios
+ * @param {number} length - Length of the token (default: 32)
+ * @returns {string} - Random hex token
+ */
+export function generateSimpleToken(length = 32) {
+    return crypto.randomBytes(length).toString('hex');
+}
+
+/**
+ * Hash a token for secure storage (if needed)
+ * @param {string} token - Token to hash
+ * @returns {string} - SHA256 hash of the token
+ */
+export function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Verify token timing constraints
+ * @param {Date} scheduledTime - When the meeting is scheduled
+ * @param {Date} tokenExpiresAt - When the token expires
+ * @returns {Object} - Validation result
+ */
+export function validateTokenTiming(scheduledTime, tokenExpiresAt) {
+    const now = new Date();
+    
+    // Token should not be expired
+    if (tokenExpiresAt < now) {
+        return { valid: false, error: 'Access token has expired' };
+    }
+    
+    // Meeting should not be in the past (with 5-minute grace period)
+    const gracePeriod = 5 * 60 * 1000; // 5 minutes in milliseconds
+    if (scheduledTime < new Date(now.getTime() - gracePeriod)) {
+        return { valid: false, error: 'Meeting time has passed' };
+    }
+    
+    return { valid: true };
+}
+
+/**
+ * Create meeting access URL from token
+ * @param {string} token - The secure access token
+ * @param {string} baseUrl - Base URL of the application (default: process.env.FRONTEND_URL)
+ * @returns {string} - Complete meeting access URL
+ */
+export function createMeetingAccessUrl(token, baseUrl = process.env.FRONTEND_URL || 'http://localhost') {
+    return `${baseUrl}/meeting/join/${encodeURIComponent(token)}`;
+}

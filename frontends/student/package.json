@@ -1,0 +1,43 @@
+{
+  "name": "talktime-student-frontend",
+  "version": "1.0.0",
+  "description": "TalkTime Student Frontend - Portal for Maasai students to practice English with volunteers",
+  "main": "public/index.html",
+  "scripts": {
+    "start": "serve -s public -l 3003",
+    "build": "echo 'Static files - no build needed'",
+    "dev": "live-server public --port=3003 --host=0.0.0.0",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "talktime",
+    "student",
+    "english",
+    "learning",
+    "maasai",
+    "education"
+  ],
+  "author": {
+    "name": "Nelson Lemein",
+    "email": "nelsonlemmy61@gmail.com",
+    "url": "https://kepas.co.ke/"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nellylemmy/talktime"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "live-server": "^1.2.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "homepage": "https://students.adeatalktime.org"
+}

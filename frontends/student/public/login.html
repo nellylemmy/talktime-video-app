@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - TalkTime</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/main.css">
+    
+    <!-- JWT Authentication Utilities -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+    <style>
+        .error-message {
+            display: none;
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .success-message {
+            display: none;
+            color: #10b981;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 m-4">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Student Login</h2>
+                <p class="text-gray-600">Welcome back to TalkTime</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                    <input type="text" id="name" name="name" 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                           required>
+                    <div id="nameError" class="error-message"></div>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="admission_number" class="block text-sm font-medium text-gray-700">Admission Number *</label>
+                    <input type="text" id="admission_number" name="admission_number" 
+                           placeholder="Enter only the numbers (e.g., 3745)"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                           required>
+                    <p class="mt-1 text-xs text-gray-500">Enter only the numeric part of your admission number</p>
+                    <div id="admission_numberError" class="error-message"></div>
+                </div>
+                
+                <div id="generalError" class="error-message mb-4"></div>
+                <div id="successMessage" class="success-message mb-4"></div>
+                
+                <button type="submit" id="submitBtn" 
+                        class="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all">
+                    <span id="submitText">Login</span>
+                    <span id="loadingText" class="hidden">Logging in...</span>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    Need help? Contact your administrator for login credentials.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize TalkTime Auth for students
+            window.TalkTimeAuth = new TalkTimeJWTAuth('student');
+            
+            const form = document.getElementById('loginForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingText = document.getElementById('loadingText');
+            
+            // Clear error messages
+            function clearErrors() {
+                const errorElements = document.querySelectorAll('.error-message');
+                errorElements.forEach(el => {
+                    el.style.display = 'none';
+                    el.textContent = '';
+                });
+                
+                const successElement = document.getElementById('successMessage');
+                successElement.style.display = 'none';
+                successElement.textContent = '';
+            }
+            
+            // Show error message
+            function showError(fieldName, message) {
+                const errorElement = document.getElementById(fieldName + 'Error');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.style.display = 'block';
+                }
+            }
+            
+            // Show success message
+            function showSuccess(message) {
+                const successElement = document.getElementById('successMessage');
+                successElement.textContent = message;
+                successElement.style.display = 'block';
+            }
+            
+            // Validate form
+            function validateForm() {
+                clearErrors();
+                let isValid = true;
+                
+                const name = document.getElementById('name').value.trim();
+                const admissionNumber = document.getElementById('admission_number').value.trim();
+                
+                if (!name) {
+                    showError('name', 'Full name is required');
+                    isValid = false;
+                }
+                
+                if (!admissionNumber) {
+                    showError('admission_number', 'Admission number is required');
+                    isValid = false;
+                }
+                
+                return isValid;
+            }
+            
+            // Handle form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!validateForm()) {
+                    return;
+                }
+                
+                // Show loading state
+                submitBtn.classList.add('loading');
+                submitText.classList.add('hidden');
+                loadingText.classList.remove('hidden');
+                
+                try {
+                    const formData = new FormData(form);
+                    const data = {
+                        name: formData.get('name').trim(),
+                        admission_number: formData.get('admission_number').trim()
+                    };
+                    
+                    const credentials = {
+                        name: data.name,
+                        admission_number: data.admission_number
+                    };
+                    const result = await window.TalkTimeAuth.login(credentials, '/api/v1/jwt-auth/student/login');
+                    
+                    if (result.success) {
+                        // Clear any existing error messages
+                        clearErrors();
+                        
+                        // Show professional success modal
+                        if (window.showNotification) {
+                            window.showNotification('Login successful! Redirecting to dashboard...', 'success', {
+                                autoClose: true,
+                                duration: 2000
+                            });
+                        } else {
+                            // Fallback to inline success message
+                            showSuccess('Login successful! Redirecting...');
+                        }
+                        
+                        // Redirect after brief delay
+                        setTimeout(() => {
+                            // Check for redirect URL from sessionStorage
+                            const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                            
+                            if (redirectUrl) {
+                                // Only redirect to call screens if it's a legitimate meeting URL with room parameter
+                                const url = new URL(redirectUrl, window.location.origin);
+                                const isCallScreen = url.pathname.includes('/call.html');
+                                const hasRoomParam = url.searchParams.has('room');
+                                
+                                if (isCallScreen && hasRoomParam) {
+                                    // This is a legitimate meeting redirect
+                                    sessionStorage.removeItem('redirectAfterLogin');
+                                    window.location.href = redirectUrl;
+                                } else {
+                                    // Invalid or non-meeting redirect, go to dashboard instead
+                                    sessionStorage.removeItem('redirectAfterLogin');
+                                    window.location.href = '/student/dashboard.html';
+                                }
+                            } else {
+                                // Default redirect to student dashboard
+                                window.location.href = '/student/dashboard.html';
+                            }
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Invalid credentials. Please check your name and admission number.');
+                    }
+                    
+                } catch (error) {
+                    // Clear any existing error messages
+                    clearErrors();
+                    
+                    // Show professional modal error instead of console error
+                    if (window.showNotification) {
+                        window.showNotification(
+                            error.message || 'Login failed. Please check your name and admission number and try again.',
+                            'error',
+                            {
+                                title: 'Login Failed',
+                                autoClose: false,
+                                showCloseButton: true
+                            }
+                        );
+                    } else {
+                        // Fallback to inline error message if modal system fails
+                        showError('general', error.message || 'An error occurred during login. Please try again.');
+                    }
+                } finally {
+                    // Hide loading state
+                    submitBtn.classList.remove('loading');
+                    submitText.classList.remove('hidden');
+                    loadingText.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TalkTime Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <meta name="description" content="TalkTime platform technical documentation for ADEA student-volunteer video system.">
+  <link rel="canonical" href="https://talktime.app/docs">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r shadow-md fixed md:relative">
+      <div class="p-6 font-bold text-xl text-indigo-600">TalkTime Docs</div>
+      <nav class="flex flex-col p-4 space-y-2">
+        <button hx-get="#overview" hx-swap="innerHTML" class="text-left hover:text-indigo-600">Overview</button>
+        <button hx-get="#admin" hx-swap="innerHTML">Admin</button>
+        <button hx-get="#volunteer" hx-swap="innerHTML">Volunteer</button>
+        <button hx-get="#student" hx-swap="innerHTML">Student</button>
+        <button hx-get="#meeting" hx-swap="innerHTML">Meeting</button>
+        <button hx-get="#notifications" hx-swap="innerHTML">Notifications</button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 ml-64" id="content">
+      <div id="overview">
+        <h1 class="text-3xl font-bold text-indigo-700 mb-4">TalkTime Documentation</h1>
+        <p>Select a section from the sidebar to view its content.</p>
+      </div>
+      <div id="admin" class="hidden">
+        <pre class='whitespace-pre-wrap'># Admin Controls (ADEA Staff Only)
+
+### Access
+
+- Admins log in with secure credentials
+- No student or volunteer can access admin panel
+
+### Student CRUD
+
+- Create student profiles with:
+  - Full name
+  - Admission number
+  - Age, gender
+  - Bio/story
+  - Photos (gallery)
+- Edit or remove existing students
+- All changes are logged
+
+### Call Timer Configuration
+
+- Default time per meeting is 40 minutes
+- Admins can:
+  - Change time per meeting
+  - Allow infinite call duration (no timer)
+
+### Scheduling Oversight
+
+- Admin can override any student's availability
+- Force unavailability for breaks or conflicts
+- Manual meeting creation for testing/training
+
+### Notifications
+
+- Admin actions notify involved volunteers/students via email and/or SMS
+- Approvals and changes are reflected system-wide in real-time
+</pre>
+      </div>
+      <div id="volunteer" class="hidden">
+        <pre class='whitespace-pre-wrap'># Volunteer Guide
+
+### Signup Options
+
+- **Standard Volunteer**: Any user over 18
+- **Student Volunteer**: Requires parental approval if under 18
+
+### Under-18 Workflow
+
+1. Volunteer fills parental email and phone
+2. System sends approval link (email + SMS)
+3. Once clicked, access is granted immediately
+
+### Scheduling Meetings
+
+- Volunteers view list of available students
+- Can book multiple meetings across different days
+- Schedule UI auto-converts to volunteer's local time
+- Students only appear once per day
+- Rescheduling a meeting retains the same immutable meeting link
+
+### Dashboard Tools
+
+- View upcoming and past meetings
+- Join meetings directly from dashboard
+- Edit or cancel meetings
+- Notifications at 30, 10, 5 minutes before meetings
+- Call links are always visible
+</pre>
+      </div>
+      <div id="student" class="hidden">
+        <pre class='whitespace-pre-wrap'># Student Portal
+
+### Login
+
+- Uses **Name + Admission Number**
+- Managed and issued by ADEA admin
+
+### Features
+
+- View list of upcoming meetings
+- Countdown for each scheduled call
+- Auto-launches call screen at scheduled time
+- Rings and vibrates like a phone
+- Buttons:
+  - Join Call
+  - Leave Message (if volunteer not present)
+
+### In-Call Experience
+
+- Cannot end call but can mute/unmute or switch video off/on
+- Sees volunteer name
+- Joins a clean and distraction-free video screen
+- Awaiting mode if volunteer hasn’t joined
+</pre>
+      </div>
+      <div id="meeting" class="hidden">
+        <pre class='whitespace-pre-wrap'># Meeting Behavior & WebRTC Logic
+
+### Call Setup
+
+- Unique, immutable `roomId` per meeting
+- Generated once and reused, even after rescheduling
+
+### Connection Flow
+
+- WebRTC peer-to-peer connection with Socket.IO signaling
+- Role-based logic (Volunteer vs Student)
+
+### Call Timing
+
+- Admin-defined timer
+- Countdown visible to both parties
+- If no timer: call goes indefinitely unless ended manually
+
+### UI Elements
+
+- Video grid (1-on-1)
+- Toggle mic/camera
+- Copy link
+- Leave/end call
+- Kick (volunteer only)
+- Overlay with student bio (volunteer side)
+</pre>
+      </div>
+      <div id="notifications" class="hidden">
+        <pre class='whitespace-pre-wrap'># Notifications
+
+### Channels
+
+- Email (SendGrid or SMTP)
+- SMS (Twilio or equivalent)
+- In-browser notifications (with permission)
+- Sound and vibration (if on mobile)
+
+### Trigger Points
+
+| Event                      | Channel                 |
+| -------------------------- | ----------------------- |
+| Meeting Scheduled          | Email + SMS + Dashboard |
+| Meeting Rescheduled        | Email + SMS + Dashboard |
+| Parent Approval Received   | Email + SMS             |
+| 30-min Reminder            | Email + Push            |
+| 10-min Reminder            | Push + Sound            |
+| 5-min Reminder             | Push + Vibration        |
+| Meeting Started/Ended      | Dashboard + Log         |
+| Message Left (Missed Call) | Email + Dashboard       |
+
+### Permissions
+
+- Browser must request and store permission to send push and vibrate alerts
+- Users can adjust this via browser settings
+</pre>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

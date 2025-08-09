@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime Admin Portal - ADEA Foundation</title>
+    <meta name="description" content="TalkTime Admin Portal - Manage students, volunteers, and meetings for the ADEA Foundation TalkTime program.">
+    <link rel="canonical" href="https://admin.adeatalktime.org">
+    
+    <title>TalkTime Admin Portal</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        },
+                        orange: {
+                            500: '#f97316',
+                            600: '#ea580c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .admin-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .admin-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .security-badge {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 p-6 z-20">
+        <nav class="container mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center text-2xl font-bold text-white" aria-label="TalkTime Admin Home">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#4f46e5;" />
+                            <stop offset="100%" style="stop-color:#a855f7;" />
+                        </linearGradient>
+                    </defs>
+                    <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="gradient-text">TALKTIME ADMIN</span>
+            </a>
+            
+            <!-- Admin Badge -->
+            <div class="security-badge px-4 py-2 rounded-full text-white text-sm font-semibold">
+                <i class="fas fa-shield-alt mr-2"></i>
+                ADMIN PORTAL
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="min-h-screen flex items-center justify-center p-4 pt-24">
+        <div class="w-full max-w-md">
+            <!-- Admin Portal Card -->
+            <div class="admin-card rounded-2xl p-8 text-center">
+                <!-- Logo -->
+                <div class="mb-8">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-user-shield text-3xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Admin Portal</h1>
+                    <p class="text-blue-100">ADEA Foundation TalkTime Management</p>
+                </div>
+
+                <!-- Features List -->
+                <div class="mb-8 text-left">
+                    <h2 class="text-lg font-semibold text-white mb-4">Admin Capabilities:</h2>
+                    <ul class="space-y-2 text-blue-100">
+                        <li class="flex items-center">
+                            <i class="fas fa-users text-blue-400 mr-3"></i>
+                            Manage student profiles
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-calendar-alt text-blue-400 mr-3"></i>
+                            Oversee meeting schedules
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-chart-bar text-blue-400 mr-3"></i>
+                            View call statistics
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-cog text-blue-400 mr-3"></i>
+                            Configure system settings
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-bell text-blue-400 mr-3"></i>
+                            Send notifications
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-4">
+                    <a href="/admin/login.html" class="admin-btn w-full py-3 px-6 rounded-lg text-white font-semibold text-lg flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Admin Login
+                    </a>
+                    
+                    <a href="/admin/signup.html" class="w-full py-3 px-6 rounded-lg text-blue-200 font-semibold border-2 border-blue-300 hover:bg-blue-300 hover:text-blue-800 transition-all flex items-center justify-center">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Create Admin Account
+                    </a>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="mt-8 p-4 bg-red-500/20 border border-red-400/30 rounded-lg">
+                    <div class="flex items-center text-red-200">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span class="text-sm">
+                            Admin access requires a 6-digit security code. Contact system administrator if you need assistance.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-8 text-blue-200">
+                <p class="text-sm">
+                    © 2024 ADEA Foundation | TalkTime Admin Portal
+                </p>
+                <p class="text-xs mt-2">
+                    Secure administrative access for authorized personnel only
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+    </div>
+</body>
+</html>
