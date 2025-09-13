@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - TalkTime | Volunteer Portal</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Manage your volunteer account settings and preferences on TalkTime.">
+    <link rel="canonical" href="/volunteer/settings">
+    <meta name="robots" content="index, follow">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="css/main.css" />
+    
+    <!-- JWT Authentication Utility -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
+    <!-- Theme Manager -->
+    <script src="/shared/js/theme-manager.js"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    
+    <!-- Navigation Loader -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+
+    <!-- Initialize TalkTimeAuth -->
+    <script>
+        if (typeof TalkTimeJWTAuth !== 'undefined') {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+        .blob {
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.3;
+            position: absolute;
+            z-index: -1;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #f0f4ff;">
+    <!-- Background Blobs -->
+    <div class="blob bg-indigo-300 w-72 h-72 top-10 left-10 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+
+    <!-- Navigation Container -->
+    <div id="nav-container">
+        <!-- Navigation will be loaded dynamically -->
+    </div>
+
+    <!-- Main Content -->
+    <div class="pt-24 pb-12 px-4">
+        <div class="container mx-auto max-w-3xl py-20">
+            <h1 class="text-3xl font-poppins font-bold text-gray-900 mb-8">Settings</h1>
+            
+            <!-- Settings Navigation Tabs -->
+            <div class="bg-white rounded-xl shadow-sm mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8 px-6" aria-label="Settings tabs">
+                        <button class="settings-tab active py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600" data-tab="accessibility">
+                            <i class="fas fa-universal-access mr-2"></i>Accessibility
+                        </button>
+                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="availability">
+                            <i class="fas fa-calendar-check mr-2"></i>Availability
+                        </button>
+                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="timezone">
+                            <i class="fas fa-globe mr-2"></i>Time Zone
+                        </button>
+                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="notifications">
+                            <i class="fas fa-bell mr-2"></i>Notifications
+                        </button>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Accessibility Settings -->
+            <div id="accessibility-content" class="settings-content bg-white rounded-xl shadow-sm p-8">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Accessibility & Display</h2>
+                
+                <!-- Font Size -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Text size</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="small">
+                            <span class="block font-medium">Small</span>
+                            <span class="text-xs text-gray-500">14px</span>
+                        </button>
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-size="medium">
+                            <span class="block font-medium">Medium</span>
+                            <span class="text-xs text-gray-500">16px</span>
+                        </button>
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="large">
+                            <span class="block font-medium">Large</span>
+                            <span class="text-xs text-gray-500">18px</span>
+                        </button>
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="xl">
+                            <span class="block font-medium">Extra Large</span>
+                            <span class="text-xs text-gray-500">20px</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Theme Mode -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Theme</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-theme="light">
+                            <i class="fas fa-sun text-2xl mb-2"></i>
+                            <div class="text-sm font-medium">Light</div>
+                        </button>
+                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-theme="dark">
+                            <i class="fas fa-moon text-2xl mb-2"></i>
+                            <div class="text-sm font-medium">Dark</div>
+                        </button>
+                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-theme="auto">
+                            <i class="fas fa-adjust text-2xl mb-2"></i>
+                            <div class="text-sm font-medium">Auto</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Zoom Level -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Page zoom</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="75">
+                            <span class="block font-medium">75%</span>
+                            <span class="text-xs text-gray-500">Smaller</span>
+                        </button>
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-zoom="100">
+                            <span class="block font-medium">100%</span>
+                            <span class="text-xs text-gray-500">Default</span>
+                        </button>
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="125">
+                            <span class="block font-medium">125%</span>
+                            <span class="text-xs text-gray-500">Larger</span>
+                        </button>
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="150">
+                            <span class="block font-medium">150%</span>
+                            <span class="text-xs text-gray-500">Largest</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Live Preview -->
+                <div class="mb-8">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Live Preview</h3>
+                        <p class="text-gray-600 mb-4">This preview shows how your settings will affect the appearance of TalkTime.</p>
+                        <div class="bg-white rounded-lg shadow-sm p-4 border">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Sample Student</div>
+                                        <div class="text-sm text-gray-500">Available for conversation</div>
+                                    </div>
+                                </div>
+                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Schedule Meeting</button>
+                            </div>
+                            <p class="text-gray-600 text-sm">This is how student cards and text will appear with your current settings.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Availability Settings -->
+            <div id="availability-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Availability Settings</h2>
+                
+                <!-- Meeting Limits -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Maximum meetings per day</label>
+                        <select id="max-meetings-day" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="1">1 meeting</option>
+                            <option value="2">2 meetings</option>
+                            <option value="3" selected>3 meetings</option>
+                            <option value="4">4 meetings</option>
+                            <option value="5">5 meetings</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Maximum meetings per week</label>
+                        <select id="max-meetings-week" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="5">5 meetings</option>
+                            <option value="10">10 meetings</option>
+                            <option value="15" selected>15 meetings</option>
+                            <option value="20">20 meetings</option>
+                            <option value="25">25 meetings</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Advance Notice -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Advance notice required</label>
+                    <select id="advance-notice" class="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2">
+                        <option value="0">Immediate booking</option>
+                        <option value="1">1 hour</option>
+                        <option value="2" selected>2 hours</option>
+                        <option value="4">4 hours</option>
+                        <option value="8">8 hours</option>
+                        <option value="24">24 hours</option>
+                    </select>
+                </div>
+                
+                <!-- Auto Accept -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Auto-accept meetings</label>
+                            <p class="text-sm text-gray-500">Automatically accept meeting requests without manual approval</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-accept" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Weekly Availability (Placeholder for complex UI) -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Weekly Availability</h3>
+                    <div class="bg-gray-50 rounded-lg p-6 text-center">
+                        <i class="fas fa-calendar-week text-3xl text-gray-400 mb-3"></i>
+                        <p class="text-gray-600">Weekly schedule builder coming soon</p>
+                        <p class="text-sm text-gray-500 mt-1">Set your preferred meeting times for each day of the week</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Time Zone Settings -->
+            <div id="timezone-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Time Zone Management</h2>
+                
+                <!-- Current Time Zone -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Primary Time Zone</label>
+                    <select id="primary-timezone" class="w-full max-w-lg border border-gray-300 rounded-md px-3 py-2">
+                        <option value="" disabled selected>Detecting your timezone...</option>
+                        <!-- Populated by JavaScript with comprehensive timezone list -->
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1" id="timezone-detection-note">We'll auto-detect your current timezone, but you can change it if needed.</p>
+                    <button type="button" id="detect-timezone-btn" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline">
+                        <i class="fas fa-sync-alt mr-1"></i>Re-detect timezone
+                    </button>
+                </div>
+                
+                <!-- Display Preference -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Display times in</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="radio" name="display-tz" value="local" class="text-indigo-600 focus:ring-indigo-500" checked>
+                            <span class="ml-2 text-sm text-gray-700">My local time zone</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="display-tz" value="eat" class="text-indigo-600 focus:ring-indigo-500">
+                            <span class="ml-2 text-sm text-gray-700">Kenya time (EAT) - for student coordination</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- DST Handling -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Automatic daylight saving adjustments</label>
+                            <p class="text-sm text-gray-500">Automatically adjust for daylight saving time changes</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="dst-handling" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Settings -->
+            <div id="notifications-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
+                
+                <!-- Email Notifications -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Email Notifications</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting scheduled</label>
+                                <p class="text-sm text-gray-500">When a new meeting is booked</p>
+                            </div>
+                            <input type="checkbox" class="email-notification" data-type="meeting_scheduled" checked>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
+                                <p class="text-sm text-gray-500">Before your scheduled meetings</p>
+                            </div>
+                            <input type="checkbox" class="email-notification" data-type="meeting_reminder" checked>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting changes</label>
+                                <p class="text-sm text-gray-500">When meetings are cancelled or rescheduled</p>
+                            </div>
+                            <input type="checkbox" class="email-notification" data-type="meeting_cancelled" checked>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Browser Notifications -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Browser Notifications</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
+                                <p class="text-sm text-gray-500">Pop-up notifications before meetings</p>
+                            </div>
+                            <input type="checkbox" class="browser-notification" data-type="meeting_reminder" checked>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Instant calls</label>
+                                <p class="text-sm text-gray-500">When students make instant calls</p>
+                            </div>
+                            <input type="checkbox" class="browser-notification" data-type="instant_calls" checked>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SMS Notifications -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">SMS Notifications</h3>
+                    <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-800">SMS notifications are sent to your registered phone number for urgent reminders and meeting updates.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Urgent meeting reminders</label>
+                                <p class="text-sm text-gray-500">5 minutes before meeting start</p>
+                            </div>
+                            <input type="checkbox" class="sms-notification" data-type="urgent_reminder">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting changes</label>
+                                <p class="text-sm text-gray-500">When meetings are cancelled or rescheduled</p>
+                            </div>
+                            <input type="checkbox" class="sms-notification" data-type="meeting_changes">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">System alerts</label>
+                                <p class="text-sm text-gray-500">Critical system notifications</p>
+                            </div>
+                            <input type="checkbox" class="sms-notification" data-type="system_alerts">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Push Notifications -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Push Notifications</h3>
+                    <div class="bg-amber-50 rounded-lg p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-bell text-amber-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-amber-800">Enable browser push notifications for real-time alerts even when TalkTime is not open.</p>
+                                <button id="enable-push-btn" class="mt-2 text-sm text-amber-600 hover:text-amber-800 underline hidden">Click to enable push notifications</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
+                                <p class="text-sm text-gray-500">All scheduled meeting reminders</p>
+                            </div>
+                            <input type="checkbox" class="push-notification" data-type="meeting_reminder">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">New meeting requests</label>
+                                <p class="text-sm text-gray-500">When students request meetings</p>
+                            </div>
+                            <input type="checkbox" class="push-notification" data-type="new_requests">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Instant calls</label>
+                                <p class="text-sm text-gray-500">When students initiate instant calls</p>
+                            </div>
+                            <input type="checkbox" class="push-notification" data-type="instant_calls">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reminder Timing -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Reminder timing</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="reminder-timing" value="60" checked>
+                            <span class="ml-2 text-sm text-gray-700">1 hour before</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="reminder-timing" value="30" checked>
+                            <span class="ml-2 text-sm text-gray-700">30 minutes before</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="reminder-timing" value="5" checked>
+                            <span class="ml-2 text-sm text-gray-700">5 minutes before</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="reminder-timing" value="15">
+                            <span class="ml-2 text-sm text-gray-700">15 minutes before</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <div class="mt-8">
+                <button id="save-settings" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                    <i class="fas fa-save mr-2"></i>Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize push notification permission handling
+        async function initializePushNotifications() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+                console.log('Push notifications not supported');
+                return;
+            }
+            
+            const enablePushBtn = document.getElementById('enable-push-btn');
+            const pushCheckboxes = document.querySelectorAll('.push-notification');
+            
+            // Check current permission status
+            const permission = Notification.permission;
+            
+            if (permission === 'default') {
+                enablePushBtn.classList.remove('hidden');
+                pushCheckboxes.forEach(cb => cb.disabled = true);
+            } else if (permission === 'granted') {
+                enablePushBtn.classList.add('hidden');
+                pushCheckboxes.forEach(cb => cb.disabled = false);
+            } else {
+                enablePushBtn.textContent = 'Push notifications blocked';
+                enablePushBtn.disabled = true;
+                pushCheckboxes.forEach(cb => cb.disabled = true);
+            }
+            
+            // Handle enable push button click
+            enablePushBtn.addEventListener('click', async () => {
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        enablePushBtn.classList.add('hidden');
+                        pushCheckboxes.forEach(cb => cb.disabled = false);
+                        showNotification('Push notifications enabled successfully!', 'success');
+                    } else {
+                        showNotification('Push notifications were denied', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error requesting push notification permission:', error);
+                    showNotification('Error enabling push notifications', 'error');
+                }
+            });
+        }
+        
+        // Test notification functionality
+        function testNotification(type) {
+            const messages = {
+                'email': 'Email notifications are configured and will be sent to your registered email address.',
+                'browser': 'This is what a browser notification looks like!',
+                'sms': 'SMS notifications are configured and will be sent to your registered phone number.',
+                'push': 'This is what a push notification looks like!'
+            };
+            
+            if (type === 'browser' || type === 'push') {
+                if (Notification.permission === 'granted') {
+                    new Notification('TalkTime Test Notification', {
+                        body: messages[type],
+                        icon: '/favicon.ico'
+                    });
+                } else {
+                    showNotification('Browser notifications not enabled', 'error');
+                }
+            } else {
+                showNotification(messages[type], 'success');
+            }
+        }
+        
+        // Setup theme manager integration
+        function setupThemeIntegration() {
+            if (!window.TalkTimeTheme) {
+                console.warn('TalkTimeTheme not available');
+                return;
+            }
+            
+            // Setup font size buttons
+            document.querySelectorAll('.font-option').forEach(button => {
+                button.addEventListener('click', () => {
+                    const size = button.getAttribute('data-size');
+                    window.TalkTimeTheme.setFontSize(size);
+                    updateFontSizeSelection();
+                });
+            });
+            
+            // Setup theme buttons
+            document.querySelectorAll('.theme-option').forEach(button => {
+                button.addEventListener('click', () => {
+                    const theme = button.getAttribute('data-theme');
+                    window.TalkTimeTheme.setTheme(theme);
+                    updateThemeSelection();
+                });
+            });
+            
+            // Setup zoom buttons
+            document.querySelectorAll('.zoom-option').forEach(button => {
+                button.addEventListener('click', () => {
+                    const zoom = parseInt(button.getAttribute('data-zoom'));
+                    window.TalkTimeTheme.setZoom(zoom);
+                    updateZoomSelection();
+                });
+            });
+            
+            // Initialize current selections
+            updateFontSizeSelection();
+            updateThemeSelection();
+            updateZoomSelection();
+            
+            // Listen for external theme changes
+            window.addEventListener('themeChanged', updateThemeSelection);
+            window.addEventListener('fontSizeChanged', updateFontSizeSelection);
+            window.addEventListener('zoomChanged', updateZoomSelection);
+        }
+        
+        function updateFontSizeSelection() {
+            if (!window.TalkTimeTheme) return;
+            
+            const currentSize = window.TalkTimeTheme.getCurrentFontSize();
+            
+            document.querySelectorAll('.font-option').forEach(button => {
+                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+                
+                if (button.getAttribute('data-size') === currentSize) {
+                    button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                }
+            });
+        }
+        
+        function updateThemeSelection() {
+            if (!window.TalkTimeTheme) return;
+            
+            const currentTheme = window.TalkTimeTheme.currentTheme; // Get the preference, not computed
+            
+            document.querySelectorAll('.theme-option').forEach(button => {
+                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+                
+                if (button.getAttribute('data-theme') === currentTheme) {
+                    button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                }
+            });
+        }
+        
+        // Initialize settings page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Settings page loading...');
+            
+            // Initialize auth check
+            if (!window.TalkTimeAuth || !window.TalkTimeAuth.getToken()) {
+                console.log('No authentication token found, redirecting to login');
+                window.location.href = '/volunteer/login.html';
+                return;
+            }
+            
+            // Update UI with user data
+            updateAuthenticatedUI();
+            
+            // Setup navigation components
+            setupProfileDropdown();
+            setupLogoutHandlers();
+            
+            // Setup mobile menu toggle
+            setupMobileMenu();
+            
+            // Load settings from server
+            await loadServerSettings();
+            
+            // Detect timezone
+            await detectTimezone();
+            
+            // Initialize push notifications
+            await initializePushNotifications();
+            
+            // Setup theme manager integration
+            setupThemeIntegration();
+            
+            // Setup accessibility controls (includes save handler)
+            setupAccessibilityControls();
+            
+            console.log('Settings page initialized');
+        });
+
+        // Authentication and UI setup
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Settings page DOMContentLoaded');
+            
+            // Initialize authentication
+            if (!window.TalkTimeAuth) {
+                window.location.href = '/volunteer/login.html';
+                return;
+            }
+            
+            setupSettingsTabs();
+            setupScrollBehavior();
+            updateAuthenticatedUI();
+            setupProfileDropdown();
+            setupMobileMenu();
+            setupLogoutHandlers();
+            
+            // Initialize timezone selector with comprehensive options
+            populateTimezoneSelector();
+            
+            // Add timezone validation to form validation
+            const timezoneSelect = document.getElementById('primary-timezone');
+            if (timezoneSelect) {
+                timezoneSelect.addEventListener('change', function() {
+                    const selectedTimezone = this.value;
+                    if (!validateTimezone(selectedTimezone)) {
+                        this.setCustomValidity('Please select a valid timezone');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+            
+            // Setup re-detect timezone button
+            const detectBtn = document.getElementById('detect-timezone-btn');
+            if (detectBtn) {
+                detectBtn.addEventListener('click', detectTimezone);
+            }
+            
+            // Load server settings
+            loadServerSettings();
+            
+            setupAccessibilityControls();
+            loadCurrentSettings();
+            
+            console.log('Settings page loaded successfully');
+        });
+        
+        function setupSettingsTabs() {
+            const tabs = document.querySelectorAll('.settings-tab');
+            const contents = document.querySelectorAll('.settings-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // Update tab styles
+                    tabs.forEach(t => {
+                        t.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    this.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    // Show/hide content
+                    contents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    const targetContent = document.getElementById(`${targetTab}-content`);
+                    if (targetContent) {
+                        targetContent.classList.remove('hidden');
+                    }
+                });
+            });
+        }
+        
+        function setupAccessibilityControls() {
+            // Theme selection
+            const themeInputs = document.querySelectorAll('input[name="theme"]');
+            themeInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    if (this.checked && window.TalkTimeTheme) {
+                        window.TalkTimeTheme.setTheme(this.value);
+                        updateThemeSelection();
+                    }
+                });
+            });
+            
+            // Font size slider
+            const fontSlider = document.getElementById('font-size-slider');
+            if (fontSlider) {
+                fontSlider.addEventListener('input', function() {
+                    const sizes = ['small', 'medium', 'large', 'xl'];
+                    const selectedSize = sizes[parseInt(this.value)];
+                    if (window.TalkTimeTheme) {
+                        window.TalkTimeTheme.setFontSize(selectedSize);
+                    }
+                });
+            }
+            
+            // Zoom buttons
+            const zoomButtons = document.querySelectorAll('.zoom-option');
+            zoomButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const zoomLevel = parseInt(this.getAttribute('data-zoom'));
+                    if (window.TalkTimeTheme) {
+                        window.TalkTimeTheme.setZoom(zoomLevel);
+                        updateZoomSelection();
+                    }
+                });
+            });
+            
+            // Save settings button
+            const saveButton = document.getElementById('save-settings');
+            if (saveButton) {
+                saveButton.addEventListener('click', saveAllSettings);
+            }
+        }
+        
+        function loadCurrentSettings() {
+            // Load settings from theme manager and server
+            setTimeout(() => {
+                if (window.TalkTimeTheme) {
+                    updateThemeSelection();
+                    updateFontSizeSelection();
+                    updateZoomSelection();
+                }
+                loadServerSettings();
+            }, 500);
+        }
+        
+        function updateThemeSelection() {
+            if (!window.TalkTimeTheme) return;
+            
+            const currentTheme = window.TalkTimeTheme.getCurrentTheme();
+            const themeInput = document.querySelector(`input[name="theme"][value="${currentTheme}"]`);
+            if (themeInput) {
+                themeInput.checked = true;
+                // Update visual selection
+                document.querySelectorAll('.theme-card').forEach(card => {
+                    card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    card.classList.add('border-gray-200');
+                });
+                
+                const selectedCard = themeInput.parentNode.querySelector('.theme-card');
+                if (selectedCard) {
+                    selectedCard.classList.remove('border-gray-200');
+                    selectedCard.classList.add('border-indigo-500', 'bg-indigo-50');
+                }
+            }
+        }
+        
+        function updateFontSizeSelection() {
+            if (!window.TalkTimeTheme) return;
+            
+            const currentSize = window.TalkTimeTheme.getCurrentFontSize();
+            const sizes = ['small', 'medium', 'large', 'xl'];
+            const index = sizes.indexOf(currentSize);
+            
+            const fontSlider = document.getElementById('font-size-slider');
+            if (fontSlider && index !== -1) {
+                fontSlider.value = index;
+            }
+        }
+        
+        function updateZoomSelection() {
+            if (!window.TalkTimeTheme) return;
+            
+            const currentZoom = window.TalkTimeTheme.getCurrentZoom();
+            
+            document.querySelectorAll('.zoom-option').forEach(button => {
+                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+                
+                if (parseInt(button.getAttribute('data-zoom')) === currentZoom) {
+                    button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                }
+            });
+        }
+        
+        // Function to load settings and populate the form
+        async function loadServerSettings() {
+            try {
+                const response = await fetch('/api/v1/volunteer/settings', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const settings = data.settings;
+                
+                console.log('Loaded settings:', settings);
+                
+                if (settings) {
+                    // Populate basic settings
+                    if (settings.max_meetings_per_day !== null) {
+                        document.getElementById('max-meetings-day').value = settings.max_meetings_per_day;
+                    }
+                    if (settings.max_meetings_per_week !== null) {
+                        document.getElementById('max-meetings-week').value = settings.max_meetings_per_week;
+                    }
+                    if (settings.advance_notice_hours !== null) {
+                        document.getElementById('advance-notice').value = settings.advance_notice_hours;
+                    }
+                    if (settings.auto_accept_meetings !== null) {
+                        document.getElementById('auto-accept').checked = settings.auto_accept_meetings;
+                    }
+                    
+                    // Populate timezone settings
+                    if (settings.primary_timezone) {
+                        document.getElementById('primary-timezone').value = settings.primary_timezone;
+                    }
+                    
+                    if (settings.display_timezone_preference) {
+                        const displayTzRadios = document.querySelectorAll('input[name="display-tz"]');
+                        displayTzRadios.forEach(radio => {
+                            if (radio.value === settings.display_timezone_preference) {
+                                radio.checked = true;
+                            }
+                        });
+                    }
+                    
+                    if (settings.dst_handling !== null) {
+                        document.getElementById('dst-handling').checked = settings.dst_handling;
+                    }
+                    
+                    // Populate notification settings
+                    if (settings.email_notifications) {
+                        let emailPrefs;
+                        try {
+                            emailPrefs = typeof settings.email_notifications === 'string' ? 
+                                        JSON.parse(settings.email_notifications) : 
+                                        settings.email_notifications;
+                        } catch (e) {
+                            console.error('Error parsing email notifications:', e);
+                            emailPrefs = {};
+                        }
+                        
+                        Object.entries(emailPrefs).forEach(([type, enabled]) => {
+                            const checkbox = document.querySelector(`.email-notification[data-type="${type}"]`);
+                            if (checkbox) {
+                                checkbox.checked = enabled;
+                            }
+                        });
+                    }
+                    
+                    if (settings.browser_notifications) {
+                        let browserPrefs;
+                        try {
+                            browserPrefs = typeof settings.browser_notifications === 'string' ? 
+                                          JSON.parse(settings.browser_notifications) : 
+                                          settings.browser_notifications;
+                        } catch (e) {
+                            console.error('Error parsing browser notifications:', e);
+                            browserPrefs = {};
+                        }
+                        
+                        Object.entries(browserPrefs).forEach(([type, enabled]) => {
+                            const checkbox = document.querySelector(`.browser-notification[data-type="${type}"]`);
+                            if (checkbox) {
+                                checkbox.checked = enabled;
+                            }
+                        });
+                    }
+                    
+                    // Populate SMS notification settings
+                    if (settings.sms_notifications) {
+                        let smsPrefs;
+                        try {
+                            smsPrefs = typeof settings.sms_notifications === 'string' ? 
+                                      JSON.parse(settings.sms_notifications) : 
+                                      settings.sms_notifications;
+                        } catch (e) {
+                            console.error('Error parsing SMS notifications:', e);
+                            smsPrefs = {};
+                        }
+                        
+                        Object.entries(smsPrefs).forEach(([type, enabled]) => {
+                            const checkbox = document.querySelector(`.sms-notification[data-type="${type}"]`);
+                            if (checkbox) {
+                                checkbox.checked = enabled;
+                            }
+                        });
+                    }
+                    
+                    // Populate push notification settings
+                    if (settings.push_notifications) {
+                        let pushPrefs;
+                        try {
+                            pushPrefs = typeof settings.push_notifications === 'string' ? 
+                                       JSON.parse(settings.push_notifications) : 
+                                       settings.push_notifications;
+                        } catch (e) {
+                            console.error('Error parsing push notifications:', e);
+                            pushPrefs = {};
+                        }
+                        
+                        Object.entries(pushPrefs).forEach(([type, enabled]) => {
+                            const checkbox = document.querySelector(`.push-notification[data-type="${type}"]`);
+                            if (checkbox) {
+                                checkbox.checked = enabled;
+                            }
+                        });
+                    }
+                    
+                    if (settings.reminder_timings) {
+                        let reminderTimings;
+                        try {
+                            reminderTimings = typeof settings.reminder_timings === 'string' ? 
+                                            JSON.parse(settings.reminder_timings) : 
+                                            settings.reminder_timings;
+                        } catch (e) {
+                            console.error('Error parsing reminder timings:', e);
+                            reminderTimings = [];
+                        }
+                        
+                        if (Array.isArray(reminderTimings)) {
+                            document.querySelectorAll('.reminder-timing').forEach(checkbox => {
+                                checkbox.checked = reminderTimings.includes(parseInt(checkbox.value));
+                            });
+                        }
+                    }
+                    
+                    // Display availability windows
+                    displayAvailabilityWindows(data.availability || []);
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Failed to load settings', 'error');
+            }
+        }
+        
+        function displayAvailabilityWindows(windows) {
+            const container = document.getElementById('availability-windows');
+            if (!container) return;
+            
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            
+            container.innerHTML = windows.map(window => `
+                <div class="availability-window bg-gray-50 p-4 rounded-lg border border-gray-200" data-id="${window.id}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-medium text-gray-900">${dayNames[window.day_of_week]}</div>
+                            <div class="text-sm text-gray-600">${formatTime(window.start_time)} - ${formatTime(window.end_time)}</div>
+                            <div class="text-xs text-gray-500">${window.timezone}</div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editAvailabilityWindow(${window.id})" class="text-indigo-600 hover:text-indigo-800 text-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button onclick="deleteAvailabilityWindow(${window.id})" class="text-red-600 hover:text-red-800 text-sm">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function formatTime(timeString) {
+            return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+        
+        async function saveSettings() {
+            if (!window.TalkTimeAuth || !window.TalkTimeAuth.isAuthenticated()) {
+                showNotification('Please log in to save settings', 'error');
+                return;
+            }
+            
+            const settingsData = {
+                // Accessibility settings
+                theme_mode: document.querySelector('input[name="theme"]:checked')?.value || 'light',
+                font_size: ['small', 'medium', 'large', 'xl'][parseInt(document.getElementById('font-size-slider')?.value || 1)],
+                zoom_level: parseInt(document.querySelector('.zoom-option.bg-indigo-100')?.getAttribute('data-zoom') || 100),
+                
+                // Availability settings
+                max_meetings_per_day: parseInt(document.getElementById('max-meetings-day')?.value || 3),
+                max_meetings_per_week: parseInt(document.getElementById('max-meetings-week')?.value || 10),
+                advance_notice_hours: parseInt(document.getElementById('advance-notice')?.value || 24),
+                auto_accept_meetings: document.getElementById('auto-accept')?.checked || false,
+                
+                // Timezone settings
+                primary_timezone: document.getElementById('primary-timezone')?.value || 'UTC',
+                display_timezone_preference: document.querySelector('input[name="display-tz"]:checked')?.value || 'local',
+                dst_handling: document.getElementById('dst-handling')?.checked || true,
+                
+                // Notification settings
+                email_notifications: collectNotificationSettings('.email-notification'),
+                browser_notifications: collectNotificationSettings('.browser-notification')
+            };
+            
+            try {
+                const response = await fetch('/api/v1/volunteer/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settingsData)
+                });
+                
+                if (response.ok) {
+                    showNotification('Settings saved successfully!', 'success');
+                    
+                    // Apply theme changes immediately
+                    if (window.TalkTimeTheme) {
+                        window.TalkTimeTheme.setTheme(settingsData.theme_mode);
+                        window.TalkTimeTheme.setFontSize(settingsData.font_size);
+                        window.TalkTimeTheme.setZoom(settingsData.zoom_level);
+                    }
+                } else {
+                    const error = await response.json();
+                    showNotification(error.error || 'Failed to save settings', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Error saving settings. Please try again.', 'error');
+            }
+        }
+
+        // Alias for backward compatibility
+        const saveAllSettings = saveSettings;
+        
+        function collectNotificationSettings(selector) {
+                const settings = {};
+                document.querySelectorAll(selector).forEach(checkbox => {
+                    const type = checkbox.getAttribute('data-type');
+                    if (type) {
+                        settings[type] = checkbox.checked;
+                    }
+                });
+                return settings;
+            }
+        
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after delay
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Comprehensive timezone implementation matching signup form
+        const commonTimezones = [
+            { value: 'America/New_York', label: 'Eastern Time (US & Canada)', region: 'North America' },
+            { value: 'America/Chicago', label: 'Central Time (US & Canada)', region: 'North America' },
+            { value: 'America/Denver', label: 'Mountain Time (US & Canada)', region: 'North America' },
+            { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)', region: 'North America' },
+            { value: 'America/Phoenix', label: 'Arizona', region: 'North America' },
+            { value: 'America/Anchorage', label: 'Alaska', region: 'North America' },
+            { value: 'America/Honolulu', label: 'Hawaii', region: 'North America' },
+            { value: 'America/Toronto', label: 'Toronto, Montreal', region: 'North America' },
+            { value: 'America/Mexico_City', label: 'Mexico City', region: 'North America' },
+            { value: 'America/Sao_Paulo', label: 'São Paulo, Brazil', region: 'South America' },
+            { value: 'America/Buenos_Aires', label: 'Buenos Aires, Argentina', region: 'South America' },
+            { value: 'Europe/London', label: 'London, Dublin', region: 'Europe' },
+            { value: 'Europe/Paris', label: 'Paris, Berlin, Rome, Madrid', region: 'Europe' },
+            { value: 'Europe/Amsterdam', label: 'Amsterdam, Brussels', region: 'Europe' },
+            { value: 'Europe/Stockholm', label: 'Stockholm, Copenhagen', region: 'Europe' },
+            { value: 'Europe/Moscow', label: 'Moscow', region: 'Europe' },
+            { value: 'Africa/Cairo', label: 'Cairo', region: 'Africa' },
+            { value: 'Africa/Nairobi', label: 'Nairobi, Kenya (EAT)', region: 'Africa' },
+            { value: 'Africa/Lagos', label: 'Lagos, Nigeria', region: 'Africa' },
+            { value: 'Africa/Johannesburg', label: 'Johannesburg, Cape Town', region: 'Africa' },
+            { value: 'Asia/Dubai', label: 'Dubai, Abu Dhabi', region: 'Middle East' },
+            { value: 'Asia/Kolkata', label: 'Mumbai, Delhi, Kolkata', region: 'Asia' },
+            { value: 'Asia/Shanghai', label: 'Beijing, Shanghai', region: 'Asia' },
+            { value: 'Asia/Tokyo', label: 'Tokyo, Osaka', region: 'Asia' },
+            { value: 'Asia/Seoul', label: 'Seoul', region: 'Asia' },
+            { value: 'Asia/Singapore', label: 'Singapore, Kuala Lumpur', region: 'Asia' },
+            { value: 'Asia/Bangkok', label: 'Bangkok, Jakarta', region: 'Asia' },
+            { value: 'Australia/Sydney', label: 'Sydney, Melbourne', region: 'Australia' },
+            { value: 'Australia/Perth', label: 'Perth', region: 'Australia' },
+            { value: 'Pacific/Auckland', label: 'Auckland, New Zealand', region: 'Pacific' }
+        ];
+
+        function detectCurrentTimezone() {
+            try {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone;
+            } catch (error) {
+                console.warn('Timezone detection failed:', error);
+                return 'America/New_York'; // fallback
+            }
+        }
+
+        function populateTimezoneSelector() {
+            const timezoneSelect = document.getElementById('primary-timezone');
+            if (!timezoneSelect) return;
+            
+            const detectedTimezone = detectCurrentTimezone();
+            
+            // Clear existing options
+            timezoneSelect.innerHTML = '';
+            
+            // Group timezones by region
+            const regionGroups = {};
+            commonTimezones.forEach(tz => {
+                if (!regionGroups[tz.region]) {
+                    regionGroups[tz.region] = [];
+                }
+                regionGroups[tz.region].push(tz);
+            });
+            
+            // Add timezone options grouped by region
+            Object.keys(regionGroups).forEach(region => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = region;
+                
+                regionGroups[region].forEach(timezone => {
+                    const option = document.createElement('option');
+                    option.value = timezone.value;
+                    option.textContent = timezone.label;
+                    
+                    // Mark as selected if this matches detected timezone
+                    if (timezone.value === detectedTimezone) {
+                        option.selected = true;
+                    }
+                    
+                    optgroup.appendChild(option);
+                });
+                
+                timezoneSelect.appendChild(optgroup);
+            });
+            
+            // Update the detection note
+            const detectionNote = document.getElementById('timezone-detection-note');
+            const selectedTimezone = commonTimezones.find(tz => tz.value === detectedTimezone);
+            if (selectedTimezone && detectionNote) {
+                detectionNote.textContent = `✓ Detected: ${selectedTimezone.label}. You can change this if needed.`;
+                detectionNote.classList.add('text-green-600');
+            } else if (detectionNote) {
+                detectionNote.textContent = `Detected timezone: ${detectedTimezone}. Please select your preferred timezone from the list.`;
+            }
+        }
+
+        function validateTimezone(timezone) {
+            if (!timezone) return false;
+            try {
+                // Test if timezone is valid by creating a date with it
+                new Intl.DateTimeFormat('en', { timeZone: timezone });
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function detectTimezone() {
+            const timezone = detectCurrentTimezone();
+            
+            // Update the UI immediately
+            const timezoneSelect = document.getElementById('primary-timezone');
+            if (timezoneSelect && validateTimezone(timezone)) {
+                timezoneSelect.value = timezone;
+                
+                const detectionNote = document.getElementById('timezone-detection-note');
+                const selectedTimezone = commonTimezones.find(tz => tz.value === timezone);
+                if (selectedTimezone && detectionNote) {
+                    detectionNote.textContent = `✓ Re-detected: ${selectedTimezone.label}`;
+                    detectionNote.classList.add('text-green-600');
+                }
+                
+                showNotification('Timezone detected and updated!', 'success');
+            } else {
+                showNotification('Could not detect a valid timezone', 'error');
+            }
+        }
+        
+        // Global functions for availability window management
+        window.editAvailabilityWindow = function(windowId) {
+            // Implementation for editing availability window
+            console.log('Edit availability window:', windowId);
+        };
+        
+        window.deleteAvailabilityWindow = async function(windowId) {
+            if (!confirm('Are you sure you want to delete this availability window?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/v1/volunteer/availability/${windowId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('Availability window deleted successfully!', 'success');
+                    loadServerSettings(); // Reload to refresh the display
+                } else {
+                    showNotification('Failed to delete availability window', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting availability window:', error);
+                showNotification('Error deleting availability window', 'error');
+            }
+        };
+        
+        function updateAuthenticatedUI() {
+            const userData = window.TalkTimeAuth.getUser();
+            if (!userData) return;
+            
+            // Update greeting
+            const volunteerGreeting = document.getElementById('volunteer-greeting');
+            const displayName = userData.username || userData.name || userData.full_name || userData.fullName || userData.email || 'Volunteer';
+            if (volunteerGreeting) {
+                volunteerGreeting.textContent = `Welcome, ${displayName}!`;
+            }
+            
+            // Update avatar initial
+            const volunteerInitial = document.getElementById('volunteer-initial');
+            if (volunteerInitial && displayName) {
+                volunteerInitial.textContent = displayName.charAt(0).toUpperCase();
+            }
+        }
+        
+        function setupProfileDropdown() {
+            const profileBtn = document.getElementById('profile-btn');
+            const profileDropdown = document.getElementById('profile-dropdown');
+            
+            if (!profileBtn || !profileDropdown) return;
+            
+            profileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const dropdown = document.getElementById('profile-dropdown');
+                const isHidden = dropdown.classList.contains('hidden');
+                
+                if (isHidden) {
+                    dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
+                } else {
+                    dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!profileBtn.contains(e.target)) {
+                    profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
+                }
+            });
+        }
+        
+        function setupMobileMenu() {
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (!mobileMenuToggle || !mobileMenu) return;
+            
+            mobileMenuToggle.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        function setupLogoutHandlers() {
+            const logoutLink = document.getElementById('logout-link');
+            const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+            
+            function handleLogout(e) {
+                e.preventDefault();
+                console.log('Logging out...');
+                window.TalkTimeAuth.logout();
+                window.location.href = '/volunteer/login.html';
+            }
+            
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+            
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', handleLogout);
+            }
+        }
+        
+        function setupScrollBehavior() {
+            const header = document.getElementById('main-header');
+            const handleScroll = () => {
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            };
+            window.addEventListener('scroll', handleScroll);
+        }
+        
+        // Settings tabs functionality
+        function setupSettingsTabs() {
+            const tabs = document.querySelectorAll('.settings-tab');
+            const contents = document.querySelectorAll('.settings-content');
+            
+            // Check for URL parameter to open specific tab
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || 'accessibility'; // default to accessibility
+            
+            function showTab(tabName) {
+                // Remove active class from all tabs and hide all content
+                tabs.forEach(tab => {
+                    tab.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+                    tab.classList.add('border-transparent', 'text-gray-500');
+                });
+                
+                contents.forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                // Activate the selected tab
+                const selectedTab = document.querySelector(`[data-tab="${tabName}"]`);
+                const selectedContent = document.getElementById(`${tabName}-content`);
+                
+                if (selectedTab && selectedContent) {
+                    selectedTab.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+                    selectedTab.classList.remove('border-transparent', 'text-gray-500');
+                    selectedContent.style.display = 'block';
+                }
+            }
+            
+            // Add click event listeners to tabs
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    showTab(tabName);
+                    
+                    // Update URL parameter without reloading page
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', newUrl);
+                });
+            });
+            
+            // Show the active tab on initial load
+            showTab(activeTab);
+        }
+
+        // Load notification count when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize navigation loader (handles authentication and notifications)
+            if (typeof VolunteerNavLoader !== 'undefined') {
+                await VolunteerNavLoader.init(true);
+            }
+        });
+    </script>
+</body>
+</html>

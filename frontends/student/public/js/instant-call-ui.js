@@ -153,6 +153,20 @@ class InstantCallUI {
             this.showIncomingCall(callData);
         });
         
+        // 🆕 Listen for student incoming call when volunteer joins meeting
+        this.socket.on('student-incoming-call', (callData) => {
+            console.log('📞 Your volunteer has joined the meeting!', callData);
+            this.showMeetingCall(callData);
+        });
+        
+        // 🆕 Listen for meeting auto-launch notifications
+        this.socket.on('meeting-auto-launch', (launchData) => {
+            console.log('🚀 Meeting auto-launch triggered:', launchData);
+            if (launchData.userRole === 'student') {
+                this.showMeetingReadyNotification(launchData);
+            }
+        });
+        
         // Listen for call timeout
         this.socket.on('instant-call-timeout', (data) => {
             console.log('⏰ Call timed out:', data);
@@ -267,8 +281,9 @@ class InstantCallUI {
             callerPhoto.classList.remove('hidden');
             callerInitials.classList.add('hidden');
         } else {
-            const initials = callData.volunteerName.split(' ').map(n => n[0]).join('').toUpperCase();
-            callerInitials.textContent = initials;
+            // Use nickname/username first letter if available, otherwise first letter of name
+            const avatarLetter = callData.volunteerUsername ? callData.volunteerUsername[0].toUpperCase() : callData.volunteerName[0].toUpperCase();
+            callerInitials.textContent = avatarLetter;
             callerInitials.classList.remove('hidden');
             callerPhoto.classList.add('hidden');
         }
@@ -542,6 +557,120 @@ class InstantCallUI {
             toast.classList.remove('show');
             setTimeout(() => document.body.removeChild(toast), 300);
         }, 3000);
+    }
+    
+    /**
+     * 🆕 Show meeting call when volunteer joins the meeting room
+     * This creates a phone-like incoming call experience
+     */
+    showMeetingCall(callData) {
+        console.log('📞 Showing meeting call for student:', callData);
+        
+        // Create a special meeting call object
+        this.currentCall = {
+            meetingId: callData.meetingId,
+            volunteerId: callData.volunteerId,
+            volunteerName: callData.volunteerName || 'Your Volunteer',
+            type: 'meeting_call',
+            startTime: new Date().toISOString()
+        };
+        
+        // Update call UI for meeting context
+        document.getElementById('caller-name').textContent = this.currentCall.volunteerName;
+        document.querySelector('.call-title').textContent = 'Your Volunteer is Ready!';
+        document.querySelector('.call-type').textContent = 'English Practice Session - Ready to Start';
+        
+        // Show different timer for meeting calls (30 seconds)
+        this.startCallTimer(30);
+        
+        // Show the call overlay
+        const overlay = document.getElementById('instant-call-overlay');
+        overlay.classList.remove('hidden');
+        
+        // Start ringtone for meeting call
+        this.startRingtone();
+        
+        // Auto-accept after 5 seconds if student doesn't respond
+        setTimeout(() => {
+            if (this.currentCall && this.currentCall.type === 'meeting_call') {
+                console.log('🔄 Auto-accepting meeting call...');
+                this.acceptCall();
+            }
+        }, 5000);
+        
+        // Show special meeting notification
+        this.showToast('Your volunteer has joined! Click Accept to start your English practice session.', 'success');
+    }
+    
+    /**
+     * 🆕 Show meeting ready notification (5-minute warning)
+     */
+    showMeetingReadyNotification(launchData) {
+        console.log('🚀 Showing meeting ready notification:', launchData);
+        
+        // Show a prominent notification that meeting is starting soon
+        const notification = document.createElement('div');
+        notification.className = 'meeting-ready-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <div class="notification-icon">🎯</div>
+                <div class="notification-text">
+                    <h3>Meeting Starting in 5 Minutes!</h3>
+                    <p>Your English practice session with ${launchData.volunteer.name} is about to begin.</p>
+                    <p>Get ready and prepare your camera and microphone.</p>
+                </div>
+                <div class="notification-actions">
+                    <button class="btn-primary" onclick="this.parentElement.parentElement.parentElement.remove(); window.open('${launchData.actionUrl}', '_blank');">
+                        Join Now
+                    </button>
+                    <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove();">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 2 minutes
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 120000);
+        
+        // Play notification sound
+        if (this.audioContext) {
+            this.playNotificationSound();
+        }
+    }
+    
+    /**
+     * 🆕 Play notification sound for meeting alerts
+     */
+    playNotificationSound() {
+        if (!this.audioContext) return;
+        
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            // Pleasant notification sound (different from ringtone)
+            oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1000, this.audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(1200, this.audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.5);
+        } catch (error) {
+            console.warn('Could not play notification sound:', error);
+        }
     }
 }
 

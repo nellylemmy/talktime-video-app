@@ -85,7 +85,8 @@ export class ParentalApprovalService {
      * @returns {boolean} True if approval is needed
      */
     static needsParentalApproval(user) {
-        return user.is_under_18 && user.parent_approved !== true;
+        // Require approval for all student volunteers, regardless of age
+        return user.volunteer_type === 'student_volunteer' || (user.is_under_18 && user.parent_approved !== true);
     }
 
     /**

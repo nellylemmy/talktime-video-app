@@ -98,6 +98,194 @@ export const getDashboardData = async (req, res) => {
 };
 
 /**
+ * Get volunteer performance metrics and reputation score
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Performance metrics with psychological impact data
+ */
+export const getVolunteerPerformance = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+        
+        // Get all meetings data with status counts
+        const performanceQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
+                COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
+                COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
+                COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled,
+                COUNT(*) FILTER (WHERE status = 'completed' AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_completed,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled') AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_cancelled,
+                COUNT(*) FILTER (WHERE status = 'missed' AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_missed,
+                COALESCE(SUM(EXTRACT(EPOCH FROM (actual_end_time - actual_start_time))/60) FILTER (WHERE status = 'completed'), 0) as total_minutes,
+                COUNT(DISTINCT student_id) FILTER (WHERE status = 'completed') as students_impacted
+            FROM meetings 
+            WHERE volunteer_id = $1 AND scheduled_time < NOW()
+        `;
+        
+        const { rows } = await pool.query(performanceQuery, [volunteerId]);
+        const metrics = rows[0];
+        
+        // Calculate combined cancelled calls (handling both 'canceled' and 'cancelled' statuses)
+        const cancelledCalls = parseInt(metrics.cancelled_calls) + parseInt(metrics.cancelled_calls_alt);
+        const completedCalls = parseInt(metrics.completed_calls);
+        const missedCalls = parseInt(metrics.missed_calls);
+        const totalScheduled = parseInt(metrics.total_scheduled);
+        const recentCancelled = parseInt(metrics.recent_cancelled);
+        const recentMissed = parseInt(metrics.recent_missed);
+        const recentCompleted = parseInt(metrics.recent_completed);
+        
+        // Calculate success rate and reliability score
+        const successRate = totalScheduled > 0 ? Math.round((completedCalls / totalScheduled) * 100) : 100;
+        const cancelledRate = totalScheduled > 0 ? Math.round((cancelledCalls / totalScheduled) * 100) : 0;
+        const missedRate = totalScheduled > 0 ? Math.round((missedCalls / totalScheduled) * 100) : 0;
+        
+        // Calculate reputation score (0-100)
+        let reputationScore = 100;
+        reputationScore -= (cancelledRate * 1.5); // Heavy penalty for cancellations
+        reputationScore -= (missedRate * 2); // Even heavier penalty for missing calls
+        reputationScore = Math.max(0, Math.round(reputationScore));
+        
+        // Determine performance tier
+        let performanceTier, tierColor, tierIcon;
+        if (reputationScore >= 90) {
+            performanceTier = 'Exceptional';
+            tierColor = 'text-emerald-600';
+            tierIcon = 'fas fa-crown';
+        } else if (reputationScore >= 75) {
+            performanceTier = 'Excellent';
+            tierColor = 'text-green-600';
+            tierIcon = 'fas fa-star';
+        } else if (reputationScore >= 60) {
+            performanceTier = 'Good';
+            tierColor = 'text-blue-600';
+            tierIcon = 'fas fa-thumbs-up';
+        } else if (reputationScore >= 40) {
+            performanceTier = 'Needs Improvement';
+            tierColor = 'text-yellow-600';
+            tierIcon = 'fas fa-exclamation-triangle';
+        } else {
+            performanceTier = 'At Risk';
+            tierColor = 'text-red-600';
+            tierIcon = 'fas fa-warning';
+        }
+        
+        // Determine warning status and restrictions
+        let warningStatus = 'none';
+        let warningMessage = '';
+        let isRestricted = false;
+        
+        // Check for restriction conditions
+        if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
+            isRestricted = true;
+            warningStatus = 'critical';
+            warningMessage = 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Contact support to resolve this.';
+        } else if (cancelledRate >= 30 || missedRate >= 20 || reputationScore < 50) {
+            warningStatus = 'severe';
+            warningMessage = 'WARNING: Your high cancellation/missed call rate is negatively impacting students. Immediate improvement required to avoid account restrictions.';
+        } else if (cancelledRate >= 20 || missedRate >= 15 || (recentCancelled + recentMissed) >= 3) {
+            warningStatus = 'moderate';
+            warningMessage = 'Notice: Your recent cancellations/missed calls are affecting your reliability score. Please prioritize committed calls.';
+        } else if (cancelledRate >= 10 || missedRate >= 10) {
+            warningStatus = 'minor';
+            warningMessage = 'Tip: Maintaining consistent attendance helps build trust with students and improves learning outcomes.';
+        }
+        
+        // Calculate impact metrics for psychological motivation
+        const potentialStudentsImpacted = completedCalls * 1.2; // Multiplier effect
+        const learningHoursProvided = Math.round(parseInt(metrics.total_minutes) / 60 * 100) / 100;
+        const livesPositivelyImpacted = parseInt(metrics.students_impacted);
+        
+        // Get recent trend (last 7 days vs previous 7 days)
+        const trendQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'completed' AND scheduled_time >= NOW() - INTERVAL '7 days') as recent_7d_completed,
+                COUNT(*) FILTER (WHERE status = 'completed' AND scheduled_time >= NOW() - INTERVAL '14 days' AND scheduled_time < NOW() - INTERVAL '7 days') as previous_7d_completed,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled', 'missed') AND scheduled_time >= NOW() - INTERVAL '7 days') as recent_7d_issues,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled', 'missed') AND scheduled_time >= NOW() - INTERVAL '14 days' AND scheduled_time < NOW() - INTERVAL '7 days') as previous_7d_issues
+            FROM meetings 
+            WHERE volunteer_id = $1
+        `;
+        
+        const { rows: trendRows } = await pool.query(trendQuery, [volunteerId]);
+        const trend = trendRows[0];
+        
+        let performanceTrend = 'stable';
+        if (parseInt(trend.recent_7d_completed) > parseInt(trend.previous_7d_completed)) {
+            performanceTrend = 'improving';
+        } else if (parseInt(trend.recent_7d_completed) < parseInt(trend.previous_7d_completed) || 
+                   parseInt(trend.recent_7d_issues) > parseInt(trend.previous_7d_issues)) {
+            performanceTrend = 'declining';
+        }
+        
+        // Response data
+        res.json({
+            performance: {
+                // Core metrics
+                completedCalls,
+                cancelledCalls,
+                missedCalls,
+                totalScheduled,
+                successRate,
+                cancelledRate,
+                missedRate,
+                
+                // Reputation and tier
+                reputationScore,
+                performanceTier,
+                tierColor,
+                tierIcon,
+                performanceTrend,
+                
+                // Warning system
+                warningStatus,
+                warningMessage,
+                isRestricted,
+                
+                // Impact metrics for motivation
+                learningHoursProvided,
+                studentsImpacted: livesPositivelyImpacted,
+                potentialStudentsImpacted: Math.round(potentialStudentsImpacted),
+                
+                // Recent activity
+                recentCompleted,
+                recentCancelled,
+                recentMissed,
+                
+                // Psychological triggers
+                impactMessages: {
+                    positive: [
+                        `You've positively impacted ${livesPositivelyImpacted} students' English learning journey`,
+                        `Your ${completedCalls} completed calls have provided ${learningHoursProvided} hours of valuable learning`,
+                        `Students depend on your commitment - you're making a real difference!`
+                    ],
+                    improvement: [
+                        `Each cancelled call disappoints a student who was looking forward to learning`,
+                        `Missing calls breaks trust and disrupts students' learning momentum`,
+                        `Your reliability directly affects students' confidence and progress`
+                    ]
+                }
+            }
+        });
+        
+        console.log(`Performance data calculated for volunteer ${volunteerId}:`, {
+            reputationScore,
+            performanceTier,
+            warningStatus,
+            isRestricted,
+            completedCalls,
+            cancelledCalls,
+            missedCalls
+        });
+        
+    } catch (error) {
+        console.error('Error fetching volunteer performance:', error);
+        res.status(500).json({ error: 'Failed to load performance data' });
+    }
+};
+
+/**
  * Get available student cards
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -352,6 +540,48 @@ export const createMeeting = async (req, res) => {
         // Check if student is available
         if (student.is_available === false) {
             return res.status(400).json({ error: 'Student is not available for meetings' });
+        }
+
+        // Check volunteer performance restrictions
+        const performanceQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
+                COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
+                COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
+                COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled
+            FROM meetings 
+            WHERE volunteer_id = $1 AND scheduled_time < NOW()
+        `;
+        
+        const { rows: performanceRows } = await pool.query(performanceQuery, [volunteerId]);
+        const metrics = performanceRows[0];
+        
+        // Calculate rates for restriction check
+        const cancelledCalls = parseInt(metrics.cancelled_calls) + parseInt(metrics.cancelled_calls_alt);
+        const completedCalls = parseInt(metrics.completed_calls);
+        const missedCalls = parseInt(metrics.missed_calls);
+        const totalScheduled = parseInt(metrics.total_scheduled);
+        
+        if (totalScheduled > 0) {
+            const cancelledRate = Math.round((cancelledCalls / totalScheduled) * 100);
+            const missedRate = Math.round((missedCalls / totalScheduled) * 100);
+            const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
+            
+            // Enforce restrictions based on performance
+            if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
+                return res.status(403).json({ 
+                    error: 'Account temporarily restricted',
+                    message: 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Please contact support to resolve this issue.',
+                    performanceData: {
+                        cancelledRate,
+                        missedRate,
+                        reputationScore,
+                        totalCalls: totalScheduled,
+                        restriction: 'critical'
+                    }
+                });
+            }
         }
         
         // Format the scheduled time from date and time fields

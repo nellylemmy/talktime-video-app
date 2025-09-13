@@ -9,12 +9,14 @@ let io;
  * @param {http.Server} server - HTTP server instance
  */
 export const initializeSocket = (server) => {
+    console.log('🔌 Initializing Socket.IO...');
     io = new Server(server, {
         cors: {
             origin: '*', // In production, this should be restricted
             methods: ['GET', 'POST']
         }
     });
+    console.log('✅ Socket.IO initialized successfully');
 
     // Socket.IO connection event
     io.on('connection', (socket) => {
@@ -132,15 +134,65 @@ export const initializeSocket = (server) => {
 
         // Handle user joined call
         socket.on('user-joined-call', (data) => {
-            const { roomId, userId, userType } = data;
+            const { roomId, userId, userType, meetingId } = data;
             if (roomId) {
                 socket.join(`call-${roomId}`);
                 console.log(`${userType} ${userId} joined call room: call-${roomId}`);
                 
-                // Notify others in the room
+                // Store meeting info on socket
+                socket.meetingId = meetingId;
+                socket.roomId = roomId;
+                socket.participantId = userId;
+                socket.participantType = userType;
+                
+                // Get number of participants in the call room
+                const callRoom = io.sockets.adapter.rooms.get(`call-${roomId}`);
+                const participantCount = callRoom ? callRoom.size : 1;
+                
+                console.log(`📊 Call room call-${roomId} now has ${participantCount} participants`);
+                
+                // Notify others in the room about new participant
                 socket.to(`call-${roomId}`).emit('user-joined', {
                     userId,
                     userType,
+                    participantCount,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // If this is the second participant joining, start the 40-minute timer
+                if (participantCount === 2 && meetingId) {
+                    console.log(`🚀 Starting 40-minute timer for meeting ${meetingId} - both participants joined`);
+                    
+                    // Emit timer start event to all participants
+                    io.to(`call-${roomId}`).emit('meeting-timer-start', {
+                        meetingId,
+                        duration: 40 * 60, // 40 minutes in seconds
+                        startTime: new Date().toISOString(),
+                        message: '40-minute session timer started!'
+                    });
+                    
+                    // Trigger student call notification when volunteer joins
+                    if (userType === 'volunteer') {
+                        // Find student in the room and send them the incoming call notification
+                        setTimeout(() => {
+                            io.to(`call-${roomId}`).emit('student-incoming-call', {
+                                meetingId,
+                                volunteerName: data.volunteerName || 'Volunteer',
+                                volunteerId: userId,
+                                message: 'Your volunteer has joined the meeting!',
+                                timestamp: new Date().toISOString()
+                            });
+                        }, 1000); // Small delay to ensure student is ready
+                    }
+                }
+                
+                // Send participant joined event with meeting context
+                io.to(`call-${roomId}`).emit('participant-joined-room', {
+                    meetingId,
+                    participantId: userId,
+                    participantType: userType,
+                    participantCount,
+                    isSecondParticipant: participantCount === 2,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -157,6 +209,112 @@ export const initializeSocket = (server) => {
                 socket.to(`call-${roomId}`).emit('user-left', {
                     userId,
                     userType,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+
+        // Handle notification room join
+        socket.on('join-notification-room', (data) => {
+            const { userId, role } = data;
+            if (userId && role) {
+                const notificationRoom = `notifications_${role}_${userId}`;
+                socket.join(notificationRoom);
+                console.log(`Socket ${socket.id} joined notification room: ${notificationRoom}`);
+                
+                // Store notification room info
+                socket.notificationRoom = notificationRoom;
+                socket.userId = userId;
+                socket.userRole = role;
+            }
+        });
+
+        // Handle mark notification as read
+        socket.on('notification-read', (data) => {
+            const { notificationId, userId, role } = data;
+            // Broadcast to all sessions of this user that notification was read
+            const notificationRoom = `notifications_${role}_${userId}`;
+            socket.to(notificationRoom).emit('notification-marked-read', {
+                notificationId,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        // Handle mark all notifications as read
+        socket.on('notifications-read-all', (data) => {
+            const { userId, role } = data;
+            const notificationRoom = `notifications_${role}_${userId}`;
+            socket.to(notificationRoom).emit('notifications-marked-all-read', {
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        // ===== Meeting Timer Events =====
+        
+        // Handle meeting timer warnings (sent from frontend timer)
+        socket.on('meeting-timer-warning', (data) => {
+            const { roomId, meetingId, minutesRemaining, message } = data;
+            if (roomId) {
+                console.log(`⏰ Timer warning for meeting ${meetingId}: ${minutesRemaining} minutes remaining`);
+                
+                // Broadcast warning to all participants in the room
+                io.to(`call-${roomId}`).emit('meeting-timer-warning', {
+                    meetingId,
+                    minutesRemaining,
+                    message: message || `${minutesRemaining} minutes remaining in your session`,
+                    timestamp: new Date().toISOString(),
+                    urgency: minutesRemaining <= 2 ? 'high' : minutesRemaining <= 5 ? 'medium' : 'low'
+                });
+            }
+        });
+        
+        // Handle automatic meeting end when timer expires
+        socket.on('meeting-timer-expired', (data) => {
+            const { roomId, meetingId } = data;
+            if (roomId) {
+                console.log(`⏰ Timer expired for meeting ${meetingId} - auto-ending meeting`);
+                
+                // Broadcast auto-end event to all participants
+                io.to(`call-${roomId}`).emit('meeting-auto-end', {
+                    meetingId,
+                    reason: 'timer_expired',
+                    message: '40-minute session completed. Thank you for your participation!',
+                    redirectUrl: '/dashboard',
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Force disconnect all participants from the call room after a delay
+                setTimeout(() => {
+                    const callRoom = io.sockets.adapter.rooms.get(`call-${roomId}`);
+                    if (callRoom) {
+                        callRoom.forEach(socketId => {
+                            const participantSocket = io.sockets.sockets.get(socketId);
+                            if (participantSocket) {
+                                participantSocket.leave(`call-${roomId}`);
+                                participantSocket.emit('meeting-force-end', {
+                                    meetingId,
+                                    reason: 'session_timeout',
+                                    message: 'Session has ended automatically',
+                                    forceRedirect: true
+                                });
+                            }
+                        });
+                    }
+                }, 5000); // 5 second delay to allow UI updates
+            }
+        });
+        
+        // Handle manual meeting end
+        socket.on('end-meeting', (data) => {
+            const { roomId, meetingId, reason, endedBy } = data;
+            if (roomId) {
+                console.log(`🔚 Meeting ${meetingId} ended manually by ${endedBy}`);
+                
+                // Notify all participants
+                socket.to(`call-${roomId}`).emit('meeting-ended', {
+                    meetingId,
+                    reason: reason || 'ended_by_participant',
+                    endedBy,
                     timestamp: new Date().toISOString()
                 });
             }

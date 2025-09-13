@@ -18,9 +18,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <!-- JWT Authentication -->
-    <script src="/volunteer/js/jwt-auth.js"></script>
-    
-    <!-- Modal Utilities -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/realtime-notifications.js"></script>
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
     <script src="/volunteer/js/modal-utils.js"></script>
 
     <style>
@@ -45,6 +46,51 @@
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Multi-step form styles */
+        .step {
+            display: none;
+        }
+        
+        .step.active {
+            display: block;
+        }
+
+        .step-indicator {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .step-indicator.completed {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .step-indicator.current {
+            background-color: #6366f1;
+            color: white;
+        }
+
+        .step-indicator.pending {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .step-line {
+            height: 2px;
+            background-color: #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .step-line.completed {
+            background-color: #10b981;
         }
 
         /* Animated Blobs */
@@ -139,217 +185,314 @@
     </style>
 </head>
 <body class="gradient-bg">
-    <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
-        <nav class="container mx-auto flex items-center justify-between relative">
-            <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#4f46e5;" />
-                    <stop offset="100%" style="stop-color:#a855f7;" />
-                  </linearGradient>
-                </defs>
-                <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-              </svg>
-              <span class="gradient-text">TALK TIME</span>
-            </a>
-          
-            <!-- Back Button -->
-            <div class="hidden md:flex items-center space-x-4">
-              <a href="/" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back
-              </a>
-            </div>
-          
-            <!-- Mobile Menu Button -->
-            <div class="md:hidden">
-              <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6h16M4 12h16m-7 6h7"></path>
-                </svg>
-              </button>
-            </div>
-          
-            <!-- Mobile Menu -->
-            <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
-              <a href="/" class="block text-gray-700 hover:text-orange-500 transition-colors">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back
-              </a>
-            </div>
-          </nav>
-    </header>
     <!-- Background Blobs -->
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
 
     <!-- Main Container -->
     <div class="relative min-h-screen w-full flex flex-col items-center justify-center p-4">
-
         <!-- Signup Card -->
         <div class="w-full max-w-2xl my-10">
             <!-- Logo -->
-            <div class="flex justify-center mb-8">
-                 <a href="/" class="flex items-center text-3xl font-bold" aria-label="TalkTime Home">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mr-2" viewBox="0 0 24 24" fill="none">
-                        <defs>
-                          <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:#4f46e5;" />
-                            <stop offset="100%" style="stop-color:#a855f7;" />
-                          </linearGradient>
-                        </defs>
-                        <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-                    </svg>
-                    <span class="gradient-text font-poppins">TALKTIME</span>
-                </a>
+            <div class="text-center mb-8">
+                <div class="flex flex-col items-center justify-center">
+                    <a href="/" class="flex items-center text-2xl font-bold justify-center" aria-label="TalkTime Home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                        </svg>
+                        <span class="gradient-text">TALK TIME</span>
+                    </a>
+                    <div class="flex items-center justify-center gap-2 mt-0.5">
+                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                            Powered by ADEA Foundation
+                        </a>
+                    </div>
+                </div>
             </div>
-
             <div class="glass-card rounded-2xl shadow-xl p-6 md:p-10">
                 <div class="text-center mb-8">
                     <h1 class="font-poppins text-3xl font-bold text-gray-800">Become a Volunteer</h1>
-                    <p class="text-gray-600 mt-2">Excited to have you join our community!</p>
+                    <p class="text-gray-600 mt-2">Complete the steps below to join our community!</p>
+                </div>
+
+                <!-- Progress Indicator -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-center space-x-4">
+                        <div class="flex items-center">
+                            <div class="step-indicator current" id="step-indicator-1">1</div>
+                            <span class="ml-2 text-sm font-medium text-gray-700">Basic Info</span>
+                        </div>
+                        <div class="step-line w-16" id="step-line-1"></div>
+                        <div class="flex items-center">
+                            <div class="step-indicator pending" id="step-indicator-2">2</div>
+                            <span class="ml-2 text-sm font-medium text-gray-500">Personal</span>
+                        </div>
+                        <div class="step-line w-16" id="step-line-2"></div>
+                        <div class="flex items-center">
+                            <div class="step-indicator pending" id="step-indicator-3">3</div>
+                            <span class="ml-2 text-sm font-medium text-gray-500">Security</span>
+                        </div>
+                        <div class="step-line w-16" id="step-line-3"></div>
+                        <div class="flex items-center">
+                            <div class="step-indicator pending" id="step-indicator-4">4</div>
+                            <span class="ml-2 text-sm font-medium text-gray-500">Complete</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Signup Form -->
                 <form id="signup-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Full Name -->
-                        <div>
-                            <label for="full-name" class="text-sm font-medium text-gray-700">Full Name<span class="required-star">*</span></label>
-                            <input type="text" id="full-name" name="full-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="John Doe">
+                    <!-- Step 1: Basic Information -->
+                    <div class="step active" id="step-1">
+                        <div class="text-center mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800">Basic Information</h2>
+                            <p class="text-gray-600 text-sm mt-1">Let's start with your basic details</p>
                         </div>
 
-                        <!-- Email Address -->
-                        <div>
-                            <label for="email" class="text-sm font-medium text-gray-700">Email Address<span class="required-star">*</span></label>
-                            <input type="email" id="email" name="email" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="you@example.com">
-                        </div>
-                    </div>
-                    
+                        <div class="space-y-4">
+                            <!-- First Name and Last Name -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="first-name" class="text-sm font-medium text-gray-700">First Name<span class="required-star">*</span></label>
+                                    <p class="text-xs text-gray-500 mt-1 mb-2">Your first name</p>
+                                    <input type="text" id="first-name" name="first-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="John">
+                                </div>
+                                <div>
+                                    <label for="last-name" class="text-sm font-medium text-gray-700">Last Name<span class="required-star">*</span></label>
+                                    <p class="text-xs text-gray-500 mt-1 mb-2">Your last name</p>
+                                    <input type="text" id="last-name" name="last-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Doe">
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 -mt-2">Your legal name for official certificates and community service documentation</p>
 
+                            <!-- Username -->
+                            <div>
+                                <label for="username" class="text-sm font-medium text-gray-700">How would you like us to call you?<span class="required-star">*</span></label>
+                                <p class="text-xs text-gray-500 mt-1 mb-2">Your preferred name or nickname for casual conversations</p>
+                                <input type="text" id="username" name="username" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., John, Johnny, J">
+                            </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <!-- Age -->
-                        <div>
-                            <label for="age" class="text-sm font-medium text-gray-700">Age<span class="required-star">*</span></label>
-                            <input type="number" id="age" name="age" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., 17" min="10">
-                        </div>
-                        <!-- Gender -->
-                        <div>
-                            <label for="gender" class="text-sm font-medium text-gray-700">Gender<span class="required-star">*</span></label>
-                             <select id="gender" name="gender" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <option value="" disabled selected>Select your gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                                <option value="prefer_not_to_say">Prefer not to say</option>
-                            </select>
-                        </div>
-                    </div>
+                            <!-- Email Address -->
+                            <div>
+                                <label for="email" class="text-sm font-medium text-gray-700">Email Address<span class="required-star">*</span></label>
+                                <input type="email" id="email" name="email" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="you@example.com">
+                            </div>
 
-                    <!-- Phone Number -->
-                    <div>
-                        <label for="phone" class="text-sm font-medium text-gray-700">Phone Number<span class="required-star">*</span></label>
-                        <div class="mt-1 flex rounded-lg shadow-sm">
-                            <select id="country-code" name="country-code" required class="form-input custom-select block w-32 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <!-- Populated by JS -->
-                            </select>
-                            <input type="tel" id="phone" name="phone" required class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g. 712 345678">
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <!-- Password -->
-                        <div>
-                            <label for="password" class="text-sm font-medium text-gray-700">Password<span class="required-star">*</span></label>
-                            <input type="password" id="password" name="password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Create a password">
-                        </div>
-                        <!-- Confirm Password -->
-                        <div>
-                            <label for="confirm-password" class="text-sm font-medium text-gray-700">Confirm Password<span class="required-star">*</span></label>
-                            <input type="password" id="confirm-password" name="confirm-password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Confirm your password">
+                            <!-- Timezone Selection -->
+                            <div>
+                                <label for="timezone" class="text-sm font-medium text-gray-700">Your Timezone<span class="required-star">*</span></label>
+                                <p class="text-xs text-gray-500 mt-1 mb-2">This helps us schedule meetings at appropriate times for you</p>
+                                <select id="timezone" name="timezone" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                    <option value="" disabled selected>Detecting your timezone...</option>
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1" id="timezone-detection-note">We'll auto-detect your current timezone, but you can change it if needed.</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Parental Consent Section (Initially Hidden) -->
-                    <div id="parental-consent-section">
-                        <div class="p-4 rounded-lg bg-indigo-100/50 border border-indigo-200">
-                             <p class="text-sm text-indigo-800 text-center font-semibold mb-4">
-                                <i class="fas fa-shield-alt mr-2"></i>For your safety, volunteers under 18 require parental consent.
-                            </p>
+                    <!-- Step 2: Personal Details -->
+                    <div class="step" id="step-2">
+                        <div class="text-center mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800">Personal Details</h2>
+                            <p class="text-gray-600 text-sm mt-1">Tell us a bit more about yourself</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Age -->
+                                <div>
+                                    <label for="age" class="text-sm font-medium text-gray-700">Age<span class="required-star">*</span></label>
+                                    <input type="number" id="age" name="age" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., 17" min="10">
+                                </div>
+                                
+                                <!-- Gender -->
+                                <div>
+                                    <label for="gender" class="text-sm font-medium text-gray-700">Gender<span class="required-star">*</span></label>
+                                    <select id="gender" name="gender" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="" disabled selected>Select your gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                        <option value="prefer_not_to_say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div>
+                                <label for="phone" class="text-sm font-medium text-gray-700">Phone Number<span class="required-star">*</span></label>
+                                <div class="mt-1 flex rounded-lg shadow-sm">
+                                    <select id="country-code" name="country-code" required class="form-input custom-select block w-32 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <!-- Populated by JS -->
+                                    </select>
+                                    <input type="tel" id="phone" name="phone" required class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g. 712 345678">
+                                </div>
+                            </div>
+
+                            <!-- Volunteer Type Selection -->
                             <div class="space-y-4">
-                                 <div>
-                                    <label for="parent-email" class="text-sm font-medium text-gray-700">Parent/Guardian Email<span class="required-star">*</span></label>
-                                    <input type="email" id="parent-email" name="parent-email" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="parent@example.com">
-                                </div>
-                                 <div>
-                                    <label for="parent-phone" class="text-sm font-medium text-gray-700">Parent/Guardian Phone<span class="required-star">*</span></label>
-                                    <input type="tel" id="parent-phone" name="parent-phone" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Parent's phone number">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Volunteer Type Selection -->
-                    <div class="space-y-4">
-                        <label class="block text-sm font-medium text-gray-700">Volunteer Type<span class="required-star">*</span></label>
-                        <div class="space-y-3">
-                            <div class="flex items-start p-4 border border-gray-200 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-                                <input type="radio" id="standard-volunteer" name="volunteer-type" value="standard" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1" checked>
-                                <div class="ml-3">
-                                    <label for="standard-volunteer" class="block text-sm font-semibold text-gray-800">Standard Volunteer</label>
-                                    <p class="text-xs text-gray-600 mt-1">Help Maasai students practice English through conversation</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50/50 hover:bg-purple-50/70 transition-colors">
-                                <input type="radio" id="student-volunteer" name="volunteer-type" value="student" class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500 mt-1">
-                                <div class="ml-3">
-                                    <label for="student-volunteer" class="block text-sm font-semibold text-gray-800">Student Volunteer</label>
-                                    <p class="text-xs text-gray-600 mt-1">Get community service hours and official documentation for your volunteer work</p>
-                                    <div class="flex items-center mt-2 text-xs text-purple-700">
-                                        <i class="fas fa-star mr-1"></i>
-                                        <span>Enhanced benefits: Certificates, impact tracking, school recognition</span>
+                                <label class="block text-sm font-medium text-gray-700">Volunteer Type<span class="required-star">*</span></label>
+                                <div class="space-y-3">
+                                    <div class="flex items-start p-4 border border-gray-200 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                                        <input type="radio" id="standard-volunteer" name="volunteer-type" value="standard" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1" checked>
+                                        <div class="ml-3">
+                                            <label for="standard-volunteer" class="block text-sm font-semibold text-gray-800">Standard Volunteer</label>
+                                            <p class="text-xs text-gray-600 mt-1">Help Maasai students practice English through conversation</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50/50 hover:bg-purple-50/70 transition-colors">
+                                        <input type="radio" id="student-volunteer" name="volunteer-type" value="student" class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500 mt-1">
+                                        <div class="ml-3">
+                                            <label for="student-volunteer" class="block text-sm font-semibold text-gray-800">Student Volunteer</label>
+                                            <p class="text-xs text-gray-600 mt-1">Get community service hours and official documentation for your volunteer work</p>
+                                            <div class="flex items-center mt-2 text-xs text-purple-700">
+                                                <i class="fas fa-star mr-1"></i>
+                                                <span>Enhanced benefits: Certificates, impact tracking, school recognition</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- School Name (Conditional) -->
-                    <div id="school-info-section">
-                        <label for="school-name" class="text-sm font-medium text-gray-700">School Name<span class="required-star">*</span></label>
-                        <input type="text" id="school-name" name="school-name" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., Maasai High School">
-                    </div>
+                    <!-- Step 3: Account Security -->
+                    <div class="step" id="step-3">
+                        <div class="text-center mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800">Account Security</h2>
+                            <p class="text-gray-600 text-sm mt-1">Create a secure password and setup recovery questions</p>
+                        </div>
 
-                    <!-- Availability -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Availability<span class="required-star">*</span> <span class="text-gray-500 font-normal">(Select at least one)</span></label>
-                        <div id="availability-group" class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="mon" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Monday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="tue" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Tuesday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="wed" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Wednesday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="thu" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Thursday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="fri" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Friday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="sat" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Saturday</label>
-                            <label class="flex items-center p-3 border border-gray-300/50 rounded-lg hover:bg-white/60 cursor-pointer transition"><input type="checkbox" name="availability[]" value="sun" class="h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500 mr-3">Sunday</label>
+                        <div class="space-y-6">
+                            <!-- Password Section -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Password -->
+                                <div>
+                                    <label for="password" class="text-sm font-medium text-gray-700">Password<span class="required-star">*</span></label>
+                                    <input type="password" id="password" name="password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Create a password">
+                                </div>
+                                
+                                <!-- Confirm Password -->
+                                <div>
+                                    <label for="confirm-password" class="text-sm font-medium text-gray-700">Confirm Password<span class="required-star">*</span></label>
+                                    <input type="password" id="confirm-password" name="confirm-password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Confirm your password">
+                                </div>
+                            </div>
+
+                            <!-- Security Questions for Password Recovery -->
+                            <div class="space-y-4">
+                                <div class="text-center">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Security Questions</h3>
+                                    <p class="text-sm text-gray-600">These will help you recover your password if you forget it</p>
+                                </div>
+                                
+                                <!-- Security Question 1 -->
+                                <div>
+                                    <label for="security-question-1" class="text-sm font-medium text-gray-700">Security Question 1<span class="required-star">*</span></label>
+                                    <select id="security-question-1" name="security-question-1" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="" disabled selected>Choose a question</option>
+                                        <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                                        <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                        <option value="What city were you born in?">What city were you born in?</option>
+                                        <option value="What was the name of your elementary school?">What was the name of your elementary school?</option>
+                                        <option value="What is your favorite color?">What is your favorite color?</option>
+                                    </select>
+                                    <input type="text" id="security-answer-1" name="security-answer-1" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
+                                </div>
+
+                                <!-- Security Question 2 -->
+                                <div>
+                                    <label for="security-question-2" class="text-sm font-medium text-gray-700">Security Question 2<span class="required-star">*</span></label>
+                                    <select id="security-question-2" name="security-question-2" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="" disabled selected>Choose a question</option>
+                                        <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                                        <option value="What is the name of your best friend from childhood?">What is the name of your best friend from childhood?</option>
+                                        <option value="What was the make of your first car?">What was the make of your first car?</option>
+                                        <option value="What is your favorite book?">What is your favorite book?</option>
+                                        <option value="What is your favorite food?">What is your favorite food?</option>
+                                    </select>
+                                    <input type="text" id="security-answer-2" name="security-answer-2" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
+                                </div>
+
+                                <!-- Security Question 3 -->
+                                <div>
+                                    <label for="security-question-3" class="text-sm font-medium text-gray-700">Security Question 3<span class="required-star">*</span></label>
+                                    <select id="security-question-3" name="security-question-3" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="" disabled selected>Choose a question</option>
+                                        <option value="What is the name of the street you grew up on?">What is the name of the street you grew up on?</option>
+                                        <option value="What was your favorite subject in school?">What was your favorite subject in school?</option>
+                                        <option value="What is your father's middle name?">What is your father's middle name?</option>
+                                        <option value="What was the name of your first teacher?">What was the name of your first teacher?</option>
+                                        <option value="What is your favorite movie?">What is your favorite movie?</option>
+                                    </select>
+                                    <input type="text" id="security-answer-3" name="security-answer-3" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Terms -->
-                    <div class="flex items-center">
-                        <input id="terms" name="terms" type="checkbox" required class="form-input h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500">
-                        <label for="terms" class="ml-2 block text-sm text-gray-700">I agree to the <a href="/common/terms-and-conditions" class="font-semibold text-indigo-600 hover:underline">Terms and Conditions</a><span class="required-star">*</span></label>
+                    <!-- Step 4: Additional Information -->
+                    <div class="step" id="step-4">
+                        <div class="text-center mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800">Additional Information</h2>
+                            <p class="text-gray-600 text-sm mt-1">Final details based on your selections</p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- Parental Consent Section (Initially Hidden) -->
+                            <div id="parental-consent-section">
+                                <div class="p-4 rounded-lg bg-indigo-100/50 border border-indigo-200">
+                                    <p class="text-sm text-indigo-800 text-center font-semibold mb-4">
+                                        <i class="fas fa-shield-alt mr-2"></i>For your safety, volunteers under 18 require parental consent.
+                                    </p>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label for="parent-email" class="text-sm font-medium text-gray-700">Parent/Guardian Email<span class="required-star">*</span></label>
+                                            <input type="email" id="parent-email" name="parent-email" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="parent@example.com">
+                                        </div>
+                                        <div>
+                                            <label for="parent-phone" class="text-sm font-medium text-gray-700">Parent/Guardian Phone<span class="required-star">*</span></label>
+                                            <div class="mt-1 flex rounded-lg shadow-sm">
+                                                <select id="parent-country-code" name="parent-country-code" required class="form-input custom-select block w-40 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                                    <!-- Populated by JS -->
+                                                </select>
+                                                <input type="tel" id="parent-phone" name="parent-phone" class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Parent's phone number">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- School Name (Conditional) -->
+                            <div id="school-info-section">
+                                <label for="school-name" class="text-sm font-medium text-gray-700">School Name<span class="required-star">*</span></label>
+                                <input type="text" id="school-name" name="school-name" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., Maasai High School">
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Submit Button -->
-                    <div>
-                        <button type="submit" id="submit-button" disabled class="w-full font-bold py-3 px-4 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg">
-                            Create Account
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between items-center mt-8">
+                        <button type="button" id="prev-button" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors" style="display: none;">
+                            <i class="fas fa-arrow-left mr-2"></i>Previous
                         </button>
+                        
+                        <button type="button" id="next-button" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            Next<i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        
+                        <button type="submit" id="submit-button" class="px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all font-semibold" style="display: none;">
+                            <i class="fas fa-user-plus mr-2"></i>Create Account
+                        </button>
+                    </div>
+
+                    <!-- Terms (shown on final step) -->
+                    <div id="terms-section" class="flex items-center mt-4" style="display: none;">
+                        <input id="terms" name="terms" type="checkbox" required class="form-input h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">I agree to the <a href="/common/terms-and-conditions" class="font-semibold text-indigo-600 hover:underline">Terms and Conditions</a><span class="required-star">*</span></label>
                     </div>
                 </form>
                 
@@ -368,247 +511,682 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- COUNTRY CODE POPULATION ---
             const countries = [
-                { name: "Kenya", code: "+254", flag: "🇰🇪" },
-                { name: "United States", code: "+1", flag: "🇺🇸" },
-                { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
-                { name: "Canada", code: "+1", flag: "🇨🇦" },
-                { name: "Australia", code: "+61", flag: "🇦🇺" },
-                { name: "Germany", code: "+49", flag: "🇩🇪" },
-                { name: "France", code: "+33", flag: "🇫🇷" },
-                { name: "India", code: "+91", flag: "🇮🇳" },
-                { name: "China", code: "+86", flag: "🇨🇳" },
-                { name: "Japan", code: "+81", flag: "🇯🇵" },
-                { name: "Brazil", code: "+55", flag: "🇧🇷" },
-                { name: "South Africa", code: "+27", flag: "🇿🇦" },
-                { name: "Nigeria", code: "+234", flag: "🇳🇬" },
-                { name: "Afghanistan", code: "+93", flag: "🇦🇫" },
-                { name: "Albania", code: "+355", flag: "🇦🇱" },
-                { name: "Algeria", code: "+213", flag: "🇩🇿" },
-                { name: "Argentina", code: "+54", flag: "🇦🇷" },
-                { name: "Austria", code: "+43", flag: "🇦🇹" },
-                { name: "Bangladesh", code: "+880", flag: "🇧🇩" },
-                { name: "Belgium", code: "+32", flag: "🇧🇪" },
-                { name: "Colombia", code: "+57", flag: "🇨🇴" },
-                { name: "Egypt", code: "+20", flag: "🇪🇬" },
-                { name: "Ethiopia", code: "+251", flag: "🇪🇹" },
-                { name: "Ghana", code: "+233", flag: "🇬🇭" },
-                { name: "Greece", code: "+30", flag: "🇬🇷" },
-                { name: "Indonesia", code: "+62", flag: "🇮🇩" },
-                { name: "Iran", code: "+98", flag: "🇮🇷" },
-                { name: "Iraq", code: "+964", flag: "🇮🇶" },
-                { name: "Ireland", code: "+353", flag: "🇮🇪" },
-                { name: "Israel", code: "+972", flag: "🇮🇱" },
-                { name: "Italy", code: "+39", flag: "🇮🇹" },
-                { name: "Mexico", code: "+52", flag: "🇲🇽" },
-                { name: "Netherlands", code: "+31", flag: "🇳🇱" },
-                { name: "New Zealand", code: "+64", flag: "🇳🇿" },
-                { name: "Norway", code: "+47", flag: "🇳🇴" },
-                { name: "Pakistan", code: "+92", flag: "🇵🇰" },
-                { name: "Philippines", code: "+63", flag: "🇵🇭" },
-                { name: "Poland", code: "+48", flag: "🇵🇱" },
-                { name: "Portugal", code: "+351", flag: "🇵🇹" },
-                { name: "Russia", code: "+7", flag: "🇷🇺" },
-                { name: "Saudi Arabia", code: "+966", flag: "🇸🇦" },
-                { name: "Singapore", code: "+65", flag: "🇸🇬" },
-                { name: "South Korea", code: "+82", flag: "🇰🇷" },
-                { name: "Spain", code: "+34", flag: "🇪🇸" },
-                { name: "Sweden", code: "+46", flag: "🇸🇪" },
-                { name: "Switzerland", code: "+41", flag: "🇨🇭" },
-                { name: "Tanzania", code: "+255", flag: "🇹🇿" },
-                { name: "Thailand", code: "+66", flag: "🇹🇭" },
-                { name: "Turkey", code: "+90", flag: "🇹🇷" },
-                { name: "Uganda", code: "+256", flag: "🇺🇬" },
-                { name: "Ukraine", code: "+380", flag: "🇺🇦" },
-                { name: "United Arab Emirates", code: "+971", flag: "🇦🇪" },
-                { name: "Vietnam", code: "+84", flag: "🇻🇳" }
-            ].sort((a, b) => a.name.localeCompare(b.name));
+                { name: "United States", shortName: "US", code: "+1", flag: "🇺🇸" },
+                { name: "Afghanistan", shortName: "AF", code: "+93", flag: "🇦🇫" },
+                { name: "Albania", shortName: "AL", code: "+355", flag: "🇦🇱" },
+                { name: "Algeria", shortName: "DZ", code: "+213", flag: "🇩🇿" },
+                { name: "American Samoa", shortName: "AS", code: "+1684", flag: "🇦🇸" },
+                { name: "Andorra", shortName: "AD", code: "+376", flag: "🇦🇩" },
+                { name: "Angola", shortName: "AO", code: "+244", flag: "🇦🇴" },
+                { name: "Anguilla", shortName: "AI", code: "+1264", flag: "🇦🇮" },
+                { name: "Antarctica", shortName: "AQ", code: "+672", flag: "🇦🇶" },
+                { name: "Antigua and Barbuda", shortName: "AG", code: "+1268", flag: "🇦🇬" },
+                { name: "Argentina", shortName: "AR", code: "+54", flag: "🇦🇷" },
+                { name: "Armenia", shortName: "AM", code: "+374", flag: "🇦🇲" },
+                { name: "Aruba", shortName: "AW", code: "+297", flag: "🇦🇼" },
+                { name: "Australia", shortName: "AU", code: "+61", flag: "🇦🇺" },
+                { name: "Austria", shortName: "AT", code: "+43", flag: "🇦🇹" },
+                { name: "Azerbaijan", shortName: "AZ", code: "+994", flag: "🇦🇿" },
+                { name: "Bahamas", shortName: "BS", code: "+1242", flag: "🇧🇸" },
+                { name: "Bahrain", shortName: "BH", code: "+973", flag: "🇧🇭" },
+                { name: "Bangladesh", shortName: "BD", code: "+880", flag: "🇧🇩" },
+                { name: "Barbados", shortName: "BB", code: "+1246", flag: "🇧🇧" },
+                { name: "Belarus", shortName: "BY", code: "+375", flag: "🇧🇾" },
+                { name: "Belgium", shortName: "BE", code: "+32", flag: "🇧🇪" },
+                { name: "Belize", shortName: "BZ", code: "+501", flag: "🇧🇿" },
+                { name: "Benin", shortName: "BJ", code: "+229", flag: "🇧🇯" },
+                { name: "Bermuda", shortName: "BM", code: "+1441", flag: "🇧🇲" },
+                { name: "Bhutan", shortName: "BT", code: "+975", flag: "🇧🇹" },
+                { name: "Bolivia", shortName: "BO", code: "+591", flag: "🇧🇴" },
+                { name: "Bosnia and Herzegovina", shortName: "BA", code: "+387", flag: "🇧🇦" },
+                { name: "Botswana", shortName: "BW", code: "+267", flag: "🇧🇼" },
+                { name: "Brazil", shortName: "BR", code: "+55", flag: "🇧🇷" },
+                { name: "British Virgin Islands", shortName: "VG", code: "+1284", flag: "🇻🇬" },
+                { name: "Brunei", shortName: "BN", code: "+673", flag: "🇧🇳" },
+                { name: "Bulgaria", shortName: "BG", code: "+359", flag: "🇧🇬" },
+                { name: "Burkina Faso", shortName: "BF", code: "+226", flag: "🇧🇫" },
+                { name: "Burundi", shortName: "BI", code: "+257", flag: "🇧🇮" },
+                { name: "Cambodia", shortName: "KH", code: "+855", flag: "🇰🇭" },
+                { name: "Cameroon", shortName: "CM", code: "+237", flag: "🇨🇲" },
+                { name: "Canada", shortName: "CA", code: "+1", flag: "🇨🇦" },
+                { name: "Cape Verde", shortName: "CV", code: "+238", flag: "🇨🇻" },
+                { name: "Cayman Islands", shortName: "KY", code: "+1345", flag: "🇰🇾" },
+                { name: "Central African Republic", shortName: "CF", code: "+236", flag: "🇨🇫" },
+                { name: "Chad", shortName: "TD", code: "+235", flag: "🇹🇩" },
+                { name: "Chile", shortName: "CL", code: "+56", flag: "🇨🇱" },
+                { name: "China", shortName: "CN", code: "+86", flag: "🇨🇳" },
+                { name: "Christmas Island", shortName: "CX", code: "+61", flag: "🇨🇽" },
+                { name: "Cocos Islands", shortName: "CC", code: "+61", flag: "🇨🇨" },
+                { name: "Colombia", shortName: "CO", code: "+57", flag: "🇨🇴" },
+                { name: "Comoros", shortName: "KM", code: "+269", flag: "🇰🇲" },
+                { name: "Cook Islands", shortName: "CK", code: "+682", flag: "🇨🇰" },
+                { name: "Costa Rica", shortName: "CR", code: "+506", flag: "🇨🇷" },
+                { name: "Croatia", shortName: "HR", code: "+385", flag: "🇭🇷" },
+                { name: "Cuba", shortName: "CU", code: "+53", flag: "🇨🇺" },
+                { name: "Curaçao", shortName: "CW", code: "+599", flag: "🇨🇼" },
+                { name: "Cyprus", shortName: "CY", code: "+357", flag: "🇨🇾" },
+                { name: "Czech Republic", shortName: "CZ", code: "+420", flag: "🇨🇿" },
+                { name: "Democratic Republic of the Congo", shortName: "CD", code: "+243", flag: "🇨🇩" },
+                { name: "Denmark", shortName: "DK", code: "+45", flag: "🇩🇰" },
+                { name: "Djibouti", shortName: "DJ", code: "+253", flag: "🇩🇯" },
+                { name: "Dominica", shortName: "DM", code: "+1767", flag: "🇩🇲" },
+                { name: "Dominican Republic", shortName: "DO", code: "+1809", flag: "🇩🇴" },
+                { name: "East Timor", shortName: "TL", code: "+670", flag: "🇹🇱" },
+                { name: "Ecuador", shortName: "EC", code: "+593", flag: "🇪🇨" },
+                { name: "Egypt", shortName: "EG", code: "+20", flag: "🇪🇬" },
+                { name: "El Salvador", shortName: "SV", code: "+503", flag: "🇸🇻" },
+                { name: "Equatorial Guinea", shortName: "GQ", code: "+240", flag: "🇬🇶" },
+                { name: "Eritrea", shortName: "ER", code: "+291", flag: "🇪🇷" },
+                { name: "Estonia", shortName: "EE", code: "+372", flag: "🇪🇪" },
+                { name: "Ethiopia", shortName: "ET", code: "+251", flag: "🇪🇹" },
+                { name: "Falkland Islands", shortName: "FK", code: "+500", flag: "🇫🇰" },
+                { name: "Faroe Islands", shortName: "FO", code: "+298", flag: "🇫🇴" },
+                { name: "Fiji", shortName: "FJ", code: "+679", flag: "🇫🇯" },
+                { name: "Finland", shortName: "FI", code: "+358", flag: "🇫🇮" },
+                { name: "France", shortName: "FR", code: "+33", flag: "🇫🇷" },
+                { name: "French Polynesia", shortName: "PF", code: "+689", flag: "🇵🇫" },
+                { name: "Gabon", shortName: "GA", code: "+241", flag: "🇬🇦" },
+                { name: "Gambia", shortName: "GM", code: "+220", flag: "🇬🇲" },
+                { name: "Georgia", shortName: "GE", code: "+995", flag: "🇬🇪" },
+                { name: "Germany", shortName: "DE", code: "+49", flag: "🇩🇪" },
+                { name: "Ghana", shortName: "GH", code: "+233", flag: "🇬🇭" },
+                { name: "Gibraltar", shortName: "GI", code: "+350", flag: "🇬🇮" },
+                { name: "Greece", shortName: "GR", code: "+30", flag: "🇬🇷" },
+                { name: "Greenland", shortName: "GL", code: "+299", flag: "🇬🇱" },
+                { name: "Grenada", shortName: "GD", code: "+1473", flag: "🇬🇩" },
+                { name: "Guam", shortName: "GU", code: "+1671", flag: "🇬🇺" },
+                { name: "Guatemala", shortName: "GT", code: "+502", flag: "🇬🇹" },
+                { name: "Guernsey", shortName: "GG", code: "+44", flag: "🇬🇬" },
+                { name: "Guinea", shortName: "GN", code: "+224", flag: "🇬🇳" },
+                { name: "Guinea-Bissau", shortName: "GW", code: "+245", flag: "🇬🇼" },
+                { name: "Guyana", shortName: "GY", code: "+592", flag: "🇬🇾" },
+                { name: "Haiti", shortName: "HT", code: "+509", flag: "🇭🇹" },
+                { name: "Honduras", shortName: "HN", code: "+504", flag: "🇭🇳" },
+                { name: "Hong Kong", shortName: "HK", code: "+852", flag: "🇭🇰" },
+                { name: "Hungary", shortName: "HU", code: "+36", flag: "🇭🇺" },
+                { name: "Iceland", shortName: "IS", code: "+354", flag: "🇮🇸" },
+                { name: "India", shortName: "IN", code: "+91", flag: "🇮🇳" },
+                { name: "Indonesia", shortName: "ID", code: "+62", flag: "🇮🇩" },
+                { name: "Iran", shortName: "IR", code: "+98", flag: "🇮🇷" },
+                { name: "Iraq", shortName: "IQ", code: "+964", flag: "🇮🇶" },
+                { name: "Ireland", shortName: "IE", code: "+353", flag: "🇮🇪" },
+                { name: "Isle of Man", shortName: "IM", code: "+44", flag: "🇮🇲" },
+                { name: "Israel", shortName: "IL", code: "+972", flag: "🇮🇱" },
+                { name: "Italy", shortName: "IT", code: "+39", flag: "🇮🇹" },
+                { name: "Ivory Coast", shortName: "CI", code: "+225", flag: "🇨🇮" },
+                { name: "Jamaica", shortName: "JM", code: "+1876", flag: "🇯🇲" },
+                { name: "Japan", shortName: "JP", code: "+81", flag: "🇯🇵" },
+                { name: "Jersey", shortName: "JE", code: "+44", flag: "🇯🇪" },
+                { name: "Jordan", shortName: "JO", code: "+962", flag: "🇯🇴" },
+                { name: "Kazakhstan", shortName: "KZ", code: "+7", flag: "🇰🇿" },
+                { name: "Kenya", shortName: "KE", code: "+254", flag: "🇰🇪" },
+                { name: "Kiribati", shortName: "KI", code: "+686", flag: "🇰🇮" },
+                { name: "Kosovo", shortName: "XK", code: "+383", flag: "🇽🇰" },
+                { name: "Kuwait", shortName: "KW", code: "+965", flag: "🇰🇼" },
+                { name: "Kyrgyzstan", shortName: "KG", code: "+996", flag: "🇰🇬" },
+                { name: "Laos", shortName: "LA", code: "+856", flag: "🇱🇦" },
+                { name: "Latvia", shortName: "LV", code: "+371", flag: "🇱🇻" },
+                { name: "Lebanon", shortName: "LB", code: "+961", flag: "🇱🇧" },
+                { name: "Lesotho", shortName: "LS", code: "+266", flag: "🇱🇸" },
+                { name: "Liberia", shortName: "LR", code: "+231", flag: "🇱🇷" },
+                { name: "Libya", shortName: "LY", code: "+218", flag: "🇱🇾" },
+                { name: "Liechtenstein", shortName: "LI", code: "+423", flag: "🇱🇮" },
+                { name: "Lithuania", shortName: "LT", code: "+370", flag: "🇱🇹" },
+                { name: "Luxembourg", shortName: "LU", code: "+352", flag: "🇱🇺" },
+                { name: "Macao", shortName: "MO", code: "+853", flag: "🇲🇴" },
+                { name: "Macedonia", shortName: "MK", code: "+389", flag: "🇲🇰" },
+                { name: "Madagascar", shortName: "MG", code: "+261", flag: "🇲🇬" },
+                { name: "Malawi", shortName: "MW", code: "+265", flag: "🇲🇼" },
+                { name: "Malaysia", shortName: "MY", code: "+60", flag: "🇲🇾" },
+                { name: "Maldives", shortName: "MV", code: "+960", flag: "🇲🇻" },
+                { name: "Mali", shortName: "ML", code: "+223", flag: "🇲🇱" },
+                { name: "Malta", shortName: "MT", code: "+356", flag: "🇲🇹" },
+                { name: "Marshall Islands", shortName: "MH", code: "+692", flag: "🇲🇭" },
+                { name: "Mauritania", shortName: "MR", code: "+222", flag: "🇲🇷" },
+                { name: "Mauritius", shortName: "MU", code: "+230", flag: "🇲🇺" },
+                { name: "Mayotte", shortName: "YT", code: "+262", flag: "🇾🇹" },
+                { name: "Mexico", shortName: "MX", code: "+52", flag: "🇲🇽" },
+                { name: "Micronesia", shortName: "FM", code: "+691", flag: "🇫🇲" },
+                { name: "Moldova", shortName: "MD", code: "+373", flag: "🇲🇩" },
+                { name: "Monaco", shortName: "MC", code: "+377", flag: "🇲🇨" },
+                { name: "Mongolia", shortName: "MN", code: "+976", flag: "🇲🇳" },
+                { name: "Montenegro", shortName: "ME", code: "+382", flag: "🇲🇪" },
+                { name: "Montserrat", shortName: "MS", code: "+1664", flag: "🇲🇸" },
+                { name: "Morocco", shortName: "MA", code: "+212", flag: "🇲🇦" },
+                { name: "Mozambique", shortName: "MZ", code: "+258", flag: "🇲🇿" },
+                { name: "Myanmar", shortName: "MM", code: "+95", flag: "🇲🇲" },
+                { name: "Namibia", shortName: "NA", code: "+264", flag: "🇳🇦" },
+                { name: "Nauru", shortName: "NR", code: "+674", flag: "🇳🇷" },
+                { name: "Nepal", shortName: "NP", code: "+977", flag: "🇳🇵" },
+                { name: "Netherlands", shortName: "NL", code: "+31", flag: "🇳🇱" },
+                { name: "New Caledonia", shortName: "NC", code: "+687", flag: "🇳🇨" },
+                { name: "New Zealand", shortName: "NZ", code: "+64", flag: "🇳🇿" },
+                { name: "Nicaragua", shortName: "NI", code: "+505", flag: "🇳🇮" },
+                { name: "Niger", shortName: "NE", code: "+227", flag: "🇳🇪" },
+                { name: "Nigeria", shortName: "NG", code: "+234", flag: "🇳🇬" },
+                { name: "Niue", shortName: "NU", code: "+683", flag: "🇳🇺" },
+                { name: "Norfolk Island", shortName: "NF", code: "+672", flag: "🇳🇫" },
+                { name: "North Korea", shortName: "KP", code: "+850", flag: "🇰🇵" },
+                { name: "Northern Mariana Islands", shortName: "MP", code: "+1670", flag: "🇲🇵" },
+                { name: "Norway", shortName: "NO", code: "+47", flag: "🇳🇴" },
+                { name: "Oman", shortName: "OM", code: "+968", flag: "🇴🇲" },
+                { name: "Pakistan", shortName: "PK", code: "+92", flag: "🇵🇰" },
+                { name: "Palau", shortName: "PW", code: "+680", flag: "🇵🇼" },
+                { name: "Palestine", shortName: "PS", code: "+970", flag: "🇵🇸" },
+                { name: "Panama", shortName: "PA", code: "+507", flag: "🇵🇦" },
+                { name: "Papua New Guinea", shortName: "PG", code: "+675", flag: "🇵🇬" },
+                { name: "Paraguay", shortName: "PY", code: "+595", flag: "🇵🇾" },
+                { name: "Peru", shortName: "PE", code: "+51", flag: "🇵🇪" },
+                { name: "Philippines", shortName: "PH", code: "+63", flag: "🇵🇭" },
+                { name: "Pitcairn", shortName: "PN", code: "+64", flag: "🇵🇳" },
+                { name: "Poland", shortName: "PL", code: "+48", flag: "🇵🇱" },
+                { name: "Portugal", shortName: "PT", code: "+351", flag: "🇵🇹" },
+                { name: "Puerto Rico", shortName: "PR", code: "+1787", flag: "🇵🇷" },
+                { name: "Qatar", shortName: "QA", code: "+974", flag: "🇶🇦" },
+                { name: "Republic of the Congo", shortName: "CG", code: "+242", flag: "🇨🇬" },
+                { name: "Reunion", shortName: "RE", code: "+262", flag: "🇷🇪" },
+                { name: "Romania", shortName: "RO", code: "+40", flag: "🇷🇴" },
+                { name: "Russia", shortName: "RU", code: "+7", flag: "🇷🇺" },
+                { name: "Rwanda", shortName: "RW", code: "+250", flag: "🇷🇼" },
+                { name: "Saint Barthelemy", shortName: "BL", code: "+590", flag: "🇧🇱" },
+                { name: "Saint Helena", shortName: "SH", code: "+290", flag: "🇸🇭" },
+                { name: "Saint Kitts and Nevis", shortName: "KN", code: "+1869", flag: "🇰🇳" },
+                { name: "Saint Lucia", shortName: "LC", code: "+1758", flag: "🇱🇨" },
+                { name: "Saint Martin", shortName: "MF", code: "+590", flag: "🇲🇫" },
+                { name: "Saint Pierre and Miquelon", shortName: "PM", code: "+508", flag: "🇵🇲" },
+                { name: "Saint Vincent and the Grenadines", shortName: "VC", code: "+1784", flag: "🇻🇨" },
+                { name: "Samoa", shortName: "WS", code: "+685", flag: "🇼🇸" },
+                { name: "San Marino", shortName: "SM", code: "+378", flag: "🇸🇲" },
+                { name: "Sao Tome and Principe", shortName: "ST", code: "+239", flag: "🇸🇹" },
+                { name: "Saudi Arabia", shortName: "SA", code: "+966", flag: "🇸🇦" },
+                { name: "Senegal", shortName: "SN", code: "+221", flag: "🇸🇳" },
+                { name: "Serbia", shortName: "RS", code: "+381", flag: "🇷🇸" },
+                { name: "Seychelles", shortName: "SC", code: "+248", flag: "🇸🇨" },
+                { name: "Sierra Leone", shortName: "SL", code: "+232", flag: "🇸🇱" },
+                { name: "Singapore", shortName: "SG", code: "+65", flag: "🇸🇬" },
+                { name: "Sint Maarten", shortName: "SX", code: "+1721", flag: "🇸🇽" },
+                { name: "Slovakia", shortName: "SK", code: "+421", flag: "🇸🇰" },
+                { name: "Slovenia", shortName: "SI", code: "+386", flag: "🇸🇮" },
+                { name: "Solomon Islands", shortName: "SB", code: "+677", flag: "🇸🇧" },
+                { name: "Somalia", shortName: "SO", code: "+252", flag: "🇸🇴" },
+                { name: "South Africa", shortName: "ZA", code: "+27", flag: "🇿🇦" },
+                { name: "South Korea", shortName: "KR", code: "+82", flag: "🇰🇷" },
+                { name: "South Sudan", shortName: "SS", code: "+211", flag: "🇸🇸" },
+                { name: "Spain", shortName: "ES", code: "+34", flag: "🇪🇸" },
+                { name: "Sri Lanka", shortName: "LK", code: "+94", flag: "🇱🇰" },
+                { name: "Sudan", shortName: "SD", code: "+249", flag: "🇸🇩" },
+                { name: "Suriname", shortName: "SR", code: "+597", flag: "🇸🇷" },
+                { name: "Svalbard and Jan Mayen", shortName: "SJ", code: "+47", flag: "🇸🇯" },
+                { name: "Swaziland", shortName: "SZ", code: "+268", flag: "🇸🇿" },
+                { name: "Sweden", shortName: "SE", code: "+46", flag: "🇸🇪" },
+                { name: "Switzerland", shortName: "CH", code: "+41", flag: "🇨🇭" },
+                { name: "Syria", shortName: "SY", code: "+963", flag: "🇸🇾" },
+                { name: "Taiwan", shortName: "TW", code: "+886", flag: "🇹🇼" },
+                { name: "Tajikistan", shortName: "TJ", code: "+992", flag: "🇹🇯" },
+                { name: "Tanzania", shortName: "TZ", code: "+255", flag: "🇹🇿" },
+                { name: "Thailand", shortName: "TH", code: "+66", flag: "🇹🇭" },
+                { name: "Togo", shortName: "TG", code: "+228", flag: "🇹🇬" },
+                { name: "Tokelau", shortName: "TK", code: "+690", flag: "🇹🇰" },
+                { name: "Tonga", shortName: "TO", code: "+676", flag: "🇹🇴" },
+                { name: "Trinidad and Tobago", shortName: "TT", code: "+1868", flag: "🇹🇹" },
+                { name: "Tunisia", shortName: "TN", code: "+216", flag: "🇹🇳" },
+                { name: "Turkey", shortName: "TR", code: "+90", flag: "🇹🇷" },
+                { name: "Turkmenistan", shortName: "TM", code: "+993", flag: "🇹🇲" },
+                { name: "Turks and Caicos Islands", shortName: "TC", code: "+1649", flag: "🇹🇨" },
+                { name: "Tuvalu", shortName: "TV", code: "+688", flag: "🇹🇻" },
+                { name: "U.S. Virgin Islands", shortName: "VI", code: "+1340", flag: "🇻🇮" },
+                { name: "Uganda", shortName: "UG", code: "+256", flag: "🇺🇬" },
+                { name: "Ukraine", shortName: "UA", code: "+380", flag: "🇺🇦" },
+                { name: "United Arab Emirates", shortName: "AE", code: "+971", flag: "🇦🇪" },
+                { name: "United Kingdom", shortName: "GB", code: "+44", flag: "🇬🇧" },
+                { name: "Uruguay", shortName: "UY", code: "+598", flag: "🇺🇾" },
+                { name: "Uzbekistan", shortName: "UZ", code: "+998", flag: "🇺🇿" },
+                { name: "Vanuatu", shortName: "VU", code: "+678", flag: "🇻🇺" },
+                { name: "Vatican", shortName: "VA", code: "+39", flag: "🇻🇦" },
+                { name: "Venezuela", shortName: "VE", code: "+58", flag: "🇻🇪" },
+                { name: "Vietnam", shortName: "VN", code: "+84", flag: "🇻🇳" },
+                { name: "Wallis and Futuna", shortName: "WF", code: "+681", flag: "🇼🇫" },
+                { name: "Western Sahara", shortName: "EH", code: "+212", flag: "🇪🇭" },
+                { name: "Yemen", shortName: "YE", code: "+967", flag: "🇾🇪" },
+                { name: "Zambia", shortName: "ZM", code: "+260", flag: "🇿🇲" },
+                { name: "Zimbabwe", shortName: "ZW", code: "+263", flag: "🇿🇼" }
+            ];
+
+            // Populate main phone number country selector
+            function populateCountrySelector(selectElement) {
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country.code;
+                    option.textContent = `${country.flag} ${country.code} ${country.shortName}`;
+                    option.setAttribute('data-name', country.name);
+                    selectElement.appendChild(option);
+                });
+                // Set United States as default
+                selectElement.value = "+1";
+            }
 
             const countryCodeSelect = document.getElementById('country-code');
-            countries.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country.code;
-                option.textContent = `${country.flag} ${country.code}`;
-                countryCodeSelect.appendChild(option);
-            });
-            countryCodeSelect.value = "+254";
+            const parentCountryCodeSelect = document.getElementById('parent-country-code');
+            
+            // Populate both country selectors
+            populateCountrySelector(countryCodeSelect);
+            populateCountrySelector(parentCountryCodeSelect);
+            
+            // --- TIMEZONE DETECTION AND POPULATION ---
+            const commonTimezones = [
+                { value: 'America/New_York', label: 'Eastern Time (US & Canada)', region: 'North America' },
+                { value: 'America/Chicago', label: 'Central Time (US & Canada)', region: 'North America' },
+                { value: 'America/Denver', label: 'Mountain Time (US & Canada)', region: 'North America' },
+                { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)', region: 'North America' },
+                { value: 'America/Phoenix', label: 'Arizona', region: 'North America' },
+                { value: 'America/Anchorage', label: 'Alaska', region: 'North America' },
+                { value: 'America/Honolulu', label: 'Hawaii', region: 'North America' },
+                { value: 'America/Toronto', label: 'Toronto, Montreal', region: 'North America' },
+                { value: 'America/Mexico_City', label: 'Mexico City', region: 'North America' },
+                { value: 'America/Sao_Paulo', label: 'São Paulo, Brazil', region: 'South America' },
+                { value: 'America/Buenos_Aires', label: 'Buenos Aires, Argentina', region: 'South America' },
+                { value: 'Europe/London', label: 'London, Dublin', region: 'Europe' },
+                { value: 'Europe/Paris', label: 'Paris, Berlin, Rome, Madrid', region: 'Europe' },
+                { value: 'Europe/Amsterdam', label: 'Amsterdam, Brussels', region: 'Europe' },
+                { value: 'Europe/Stockholm', label: 'Stockholm, Copenhagen', region: 'Europe' },
+                { value: 'Europe/Moscow', label: 'Moscow', region: 'Europe' },
+                { value: 'Africa/Cairo', label: 'Cairo', region: 'Africa' },
+                { value: 'Africa/Nairobi', label: 'Nairobi, Kenya (EAT)', region: 'Africa' },
+                { value: 'Africa/Lagos', label: 'Lagos, Nigeria', region: 'Africa' },
+                { value: 'Africa/Johannesburg', label: 'Johannesburg, Cape Town', region: 'Africa' },
+                { value: 'Asia/Dubai', label: 'Dubai, Abu Dhabi', region: 'Middle East' },
+                { value: 'Asia/Kolkata', label: 'Mumbai, Delhi, Kolkata', region: 'Asia' },
+                { value: 'Asia/Shanghai', label: 'Beijing, Shanghai', region: 'Asia' },
+                { value: 'Asia/Tokyo', label: 'Tokyo, Osaka', region: 'Asia' },
+                { value: 'Asia/Seoul', label: 'Seoul', region: 'Asia' },
+                { value: 'Asia/Singapore', label: 'Singapore, Kuala Lumpur', region: 'Asia' },
+                { value: 'Asia/Bangkok', label: 'Bangkok, Jakarta', region: 'Asia' },
+                { value: 'Australia/Sydney', label: 'Sydney, Melbourne', region: 'Australia' },
+                { value: 'Australia/Perth', label: 'Perth', region: 'Australia' },
+                { value: 'Pacific/Auckland', label: 'Auckland, New Zealand', region: 'Pacific' }
+            ];
 
-            // --- FORM ELEMENTS & VALIDATION ---
-            const form = document.getElementById('signup-form');
-            const submitButton = document.getElementById('submit-button');
-            const formInputs = form.querySelectorAll('.form-input');
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('confirm-password');
-            const availabilityGroup = document.getElementById('availability-group');
-            const ageInput = document.getElementById('age');
-            const parentalConsentSection = document.getElementById('parental-consent-section');
-            const parentEmailInput = document.getElementById('parent-email');
-            const parentPhoneInput = document.getElementById('parent-phone');
-            const standardVolunteerRadio = document.getElementById('standard-volunteer');
-            const studentVolunteerRadio = document.getElementById('student-volunteer');
-            const schoolInfoSection = document.getElementById('school-info-section');
-            const schoolNameInput = document.getElementById('school-name');
-
-            function handleVolunteerTypeChange() {
-                if (studentVolunteerRadio && studentVolunteerRadio.checked) {
-                    if (schoolInfoSection) {
-                        schoolInfoSection.classList.add('show');
-                    }
-                    if (schoolNameInput) {
-                        schoolNameInput.required = true;
-                    }
-                } else {
-                    if (schoolInfoSection) {
-                        schoolInfoSection.classList.remove('show');
-                    }
-                    if (schoolNameInput) {
-                        schoolNameInput.required = false;
-                    }
+            function detectCurrentTimezone() {
+                try {
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+                } catch (error) {
+                    console.warn('Timezone detection failed:', error);
+                    return 'America/New_York'; // fallback
                 }
-                validateForm();
             }
 
-            function handleAgeChange() {
-                const age = parseInt(ageInput.value, 10);
-
-                if (!isNaN(age) && age >= 10 && age < 18) {
-                    parentalConsentSection.classList.add('show');
-                    parentEmailInput.required = true;
-                    parentPhoneInput.required = true;
-                } else {
-                    parentalConsentSection.classList.remove('show');
-                    parentEmailInput.required = false;
-                    parentPhoneInput.required = false;
-                }
-                validateForm(); // Re-validate after showing/hiding fields
-            }
-
-            function validateForm() {
-                let isFormValid = true;
-
-                // Check all inputs that have the 'required' attribute
-                form.querySelectorAll('[required]').forEach(input => {
-                     if (input.type === 'checkbox') {
-                        if (!input.checked) isFormValid = false;
-                    } else if (!input.value.trim()) {
-                        isFormValid = false;
+            function populateTimezoneSelector() {
+                const timezoneSelect = document.getElementById('timezone');
+                const detectedTimezone = detectCurrentTimezone();
+                
+                // Clear existing options
+                timezoneSelect.innerHTML = '';
+                
+                // Group timezones by region
+                const regionGroups = {};
+                commonTimezones.forEach(tz => {
+                    if (!regionGroups[tz.region]) {
+                        regionGroups[tz.region] = [];
                     }
+                    regionGroups[tz.region].push(tz);
                 });
                 
-                // Specific check for age value
-                const age = parseInt(ageInput.value, 10);
-                if(isNaN(age) || age < 10) {
-                    isFormValid = false;
+                // Add timezone options grouped by region
+                Object.keys(regionGroups).forEach(region => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = region;
+                    
+                    regionGroups[region].forEach(timezone => {
+                        const option = document.createElement('option');
+                        option.value = timezone.value;
+                        option.textContent = timezone.label;
+                        
+                        // Mark as selected if this matches detected timezone
+                        if (timezone.value === detectedTimezone) {
+                            option.selected = true;
+                        }
+                        
+                        optgroup.appendChild(option);
+                    });
+                    
+                    timezoneSelect.appendChild(optgroup);
+                });
+                
+                // Update the detection note
+                const detectionNote = document.getElementById('timezone-detection-note');
+                const selectedTimezone = commonTimezones.find(tz => tz.value === detectedTimezone);
+                if (selectedTimezone) {
+                    detectionNote.textContent = `✓ Detected: ${selectedTimezone.label}. You can change this if needed.`;
+                    detectionNote.classList.add('text-green-600');
+                } else {
+                    detectionNote.textContent = `Detected timezone: ${detectedTimezone}. Please select your preferred timezone from the list.`;
                 }
-
-                // Check if passwords match
-                if (passwordInput.value !== confirmPasswordInput.value) {
-                    isFormValid = false;
-                }
-
-                // Check if at least one availability checkbox is checked
-                if (!availabilityGroup.querySelector('input[type="checkbox"]:checked')) {
-                    isFormValid = false;
-                }
-
-                // Enable or disable the submit button
-                submitButton.disabled = !isFormValid;
             }
 
-            // Add event listeners
-            formInputs.forEach(input => {
-                input.addEventListener('input', validateForm);
-            });
-            availabilityGroup.addEventListener('change', validateForm);
-            ageInput.addEventListener('input', handleAgeChange);
-            if (standardVolunteerRadio) {
-                standardVolunteerRadio.addEventListener('change', handleVolunteerTypeChange);
-            }
-            if (studentVolunteerRadio) {
-                studentVolunteerRadio.addEventListener('change', handleVolunteerTypeChange);
+            function validateTimezone(timezone) {
+                if (!timezone) return false;
+                try {
+                    // Test if timezone is valid by creating a date with it
+                    new Intl.DateTimeFormat('en', { timeZone: timezone });
+                    return true;
+                } catch (error) {
+                    return false;
+                }
             }
 
-            // Initial validation check
-            validateForm();
+            // Initialize timezone selector
+            populateTimezoneSelector();
             
-            // Handle JWT-based form submission
-            const signupForm = document.getElementById('signup-form');
-            signupForm.addEventListener('submit', async (e) => {
+            // Add timezone validation to form validation
+            document.getElementById('timezone').addEventListener('change', function() {
+                const selectedTimezone = this.value;
+                if (!validateTimezone(selectedTimezone)) {
+                    this.setCustomValidity('Please select a valid timezone');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            
+            // --- CONDITIONAL SECTIONS LOGIC ---
+            function updateConditionalSections() {
+                const age = parseInt(document.getElementById('age').value) || 0;
+                const volunteerType = document.querySelector('input[name="volunteer-type"]:checked')?.value;
+                
+                const parentalConsentSection = document.getElementById('parental-consent-section');
+                const schoolInfoSection = document.getElementById('school-info-section');
+                
+                // Show parental consent if under 18 OR student volunteer
+                const needsParentalApproval = age < 18 || volunteerType === 'student';
+                
+                if (needsParentalApproval) {
+                    parentalConsentSection.classList.add('show');
+                    document.getElementById('parent-email').required = true;
+                    document.getElementById('parent-phone').required = true;
+                } else {
+                    parentalConsentSection.classList.remove('show');
+                    document.getElementById('parent-email').required = false;
+                    document.getElementById('parent-phone').required = false;
+                }
+                
+                // Show school info if student volunteer
+                if (volunteerType === 'student') {
+                    schoolInfoSection.classList.add('show');
+                    document.getElementById('school-name').required = true;
+                } else {
+                    schoolInfoSection.classList.remove('show');
+                    document.getElementById('school-name').required = false;
+                }
+            }
+            
+            // Listen for changes that affect conditional sections
+            document.getElementById('age').addEventListener('change', updateConditionalSections);
+            document.querySelectorAll('input[name="volunteer-type"]').forEach(radio => {
+                radio.addEventListener('change', updateConditionalSections);
+            });
+
+            // --- MULTI-STEP FORM NAVIGATION ---
+            let currentStep = 1;
+            const totalSteps = 4;
+            
+            const form = document.getElementById('signup-form');
+            const formSubmitButton = document.getElementById('submit-button');
+            const nextButton = document.getElementById('next-button');
+            const prevButton = document.getElementById('prev-button');
+            const termsSection = document.getElementById('terms-section');
+            
+            // Step navigation functions
+            function showStep(stepNumber) {
+                // Hide all steps
+                for (let i = 1; i <= totalSteps; i++) {
+                    const step = document.getElementById(`step-${i}`);
+                    const indicator = document.getElementById(`step-indicator-${i}`);
+                    const line = document.getElementById(`step-line-${i}`);
+                    
+                    if (step) step.classList.remove('active');
+                    
+                    if (indicator) {
+                        indicator.classList.remove('current', 'completed', 'pending');
+                        if (i < stepNumber) {
+                            indicator.classList.add('completed');
+                            indicator.innerHTML = '<i class="fas fa-check"></i>';
+                        } else if (i === stepNumber) {
+                            indicator.classList.add('current');
+                            indicator.textContent = i;
+                        } else {
+                            indicator.classList.add('pending');
+                            indicator.textContent = i;
+                        }
+                    }
+                    
+                    if (line) {
+                        line.classList.remove('completed');
+                        if (i < stepNumber) {
+                            line.classList.add('completed');
+                        }
+                    }
+                }
+                
+                // Show current step
+                const currentStepElement = document.getElementById(`step-${stepNumber}`);
+                if (currentStepElement) {
+                    currentStepElement.classList.add('active');
+                }
+                
+                // Update button visibility
+                prevButton.style.display = stepNumber > 1 ? 'block' : 'none';
+                nextButton.style.display = stepNumber < totalSteps ? 'block' : 'none';
+                formSubmitButton.style.display = stepNumber === totalSteps ? 'block' : 'none';
+                termsSection.style.display = stepNumber === totalSteps ? 'block' : 'none';
+            }
+            
+            function validateCurrentStep() {
+                const currentStepElement = document.getElementById(`step-${currentStep}`);
+                const inputs = currentStepElement.querySelectorAll('input[required], select[required]');
+                
+                for (let input of inputs) {
+                    if (!input.value.trim()) {
+                        input.focus();
+                        input.classList.add('border-red-500');
+                        setTimeout(() => input.classList.remove('border-red-500'), 3000);
+                        return false;
+                    }
+                }
+                
+                // Special validation for step 1 (first and last name)
+                if (currentStep === 1) {
+                    const firstName = document.getElementById('first-name').value.trim();
+                    const lastName = document.getElementById('last-name').value.trim();
+                    
+                    if (!firstName) {
+                        document.getElementById('first-name').focus();
+                        document.getElementById('first-name').classList.add('border-red-500');
+                        setTimeout(() => document.getElementById('first-name').classList.remove('border-red-500'), 3000);
+                        return false;
+                    }
+                    
+                    if (!lastName) {
+                        document.getElementById('last-name').focus();
+                        document.getElementById('last-name').classList.add('border-red-500');
+                        setTimeout(() => document.getElementById('last-name').classList.remove('border-red-500'), 3000);
+                        return false;
+                    }
+                }
+                
+                // Special validation for step 3 (password confirmation)
+                if (currentStep === 3) {
+                    const password = document.getElementById('password').value;
+                    const confirmPassword = document.getElementById('confirm-password').value;
+                    
+                    if (password !== confirmPassword) {
+                        document.getElementById('confirm-password').focus();
+                        document.getElementById('confirm-password').classList.add('border-red-500');
+                        setTimeout(() => document.getElementById('confirm-password').classList.remove('border-red-500'), 3000);
+                        return false;
+                    }
+                    
+                    if (password.length < 8) {
+                        document.getElementById('password').focus();
+                        document.getElementById('password').classList.add('border-red-500');
+                        setTimeout(() => document.getElementById('password').classList.remove('border-red-500'), 3000);
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            // Navigation event listeners
+            nextButton.addEventListener('click', () => {
+                if (validateCurrentStep()) {
+                    if (currentStep < totalSteps) {
+                        currentStep++;
+                        showStep(currentStep);
+                        
+                        // Check conditional sections for step 4
+                        if (currentStep === 4) {
+                            updateConditionalSections();
+                        }
+                    }
+                }
+            });
+            
+            prevButton.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+            
+            // Initialize first step
+            showStep(1);
+
+            // --- FORM SUBMISSION ---
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                console.log('JWT Signup form submitted');
                 
-                // Collect form data
-                const formData = new FormData(signupForm);
-                const fullName = formData.get('full-name');
-                const isUnder18 = formData.get('age') === 'under-18';
-                const isStudentVolunteer = formData.get('volunteer-type') === 'student';
+                // Final validation including terms
+                if (!document.getElementById('terms').checked) {
+                    alert('Please accept the Terms and Conditions');
+                    return;
+                }
                 
-                const userData = {
-                    username: fullName,
+                // Collect form data from all steps
+                const firstName = document.getElementById('first-name').value.trim();
+                const lastName = document.getElementById('last-name').value.trim();
+                const fullName = `${firstName} ${lastName}`.trim();
+                
+                // Validate that we have both first and last name
+                if (!firstName || !lastName) {
+                    alert('Please provide both first and last name');
+                    return;
+                }
+                
+                const formData = {
+                    username: document.getElementById('username').value,
                     full_name: fullName,
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    is_under_18: isUnder18,
-                    is_student_volunteer: isStudentVolunteer,
-                    volunteer_type: isStudentVolunteer ? 'student_volunteer' : 'standard',
-                    parent_email: formData.get('parent-email') || null,
-                    parent_phone: formData.get('parent-phone') || null,
-                    school_name: formData.get('school-name') || null,
-                    phone: formData.get('phone') || null,
-                    gender: formData.get('gender') || null
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                    age: parseInt(document.getElementById('age').value),
+                    gender: document.getElementById('gender').value,
+                    phone: `${document.getElementById('country-code').value}${document.getElementById('phone').value}`,
+                    timezone: document.getElementById('timezone').value,
+                    volunteer_type: document.querySelector('input[name="volunteer-type"]:checked').value === 'student' ? 'student_volunteer' : 'standard'
                 };
                 
-                // Disable submit button during signup
-                const submitButton = signupForm.querySelector('button[type="submit"]');
-                const originalText = submitButton.textContent;
-                submitButton.disabled = true;
-                submitButton.textContent = 'Creating Account...';
+                // Add conditional fields
+                const parentEmail = document.getElementById('parent-email').value;
+                const parentPhone = document.getElementById('parent-phone').value;
+                const schoolName = document.getElementById('school-name').value;
+                
+                if (parentEmail) formData.parent_email = parentEmail;
+                if (parentPhone) formData.parent_phone = parentPhone;
+                if (schoolName) formData.school_name = schoolName;
+                
+                // Collect security questions
+                formData.security_questions = [
+                    {
+                        question: document.getElementById('security-question-1').value,
+                        answer: document.getElementById('security-answer-1').value
+                    },
+                    {
+                        question: document.getElementById('security-question-2').value,
+                        answer: document.getElementById('security-answer-2').value
+                    },
+                    {
+                        question: document.getElementById('security-question-3').value,
+                        answer: document.getElementById('security-answer-3').value
+                    }
+                ];
+                
+                console.log('Form submission data:', formData);
+                
+                // Disable submit button during submission
+                formSubmitButton.disabled = true;
+                formSubmitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...';
                 
                 try {
-                    const result = await window.jwtAuth.signup(userData);
+                    const response = await fetch('/api/v1/jwt-auth/volunteer/signup', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
                     
-                    if (result.success) {
-                        console.log('JWT Signup successful:', result.user);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Store tokens
+                        localStorage.setItem('accessToken', data.accessToken);
+                        localStorage.setItem('refreshToken', data.refreshToken);
                         
-                        // Show success message with professional modal
-                        showNotification(
-                            'Account created successfully! Welcome to TalkTime! You will be redirected to your dashboard shortly.',
-                            'success',
-                            {
-                                title: 'Welcome to TalkTime!',
-                                duration: 3000
-                            }
-                        );
+                        alert('Account created successfully! Welcome to TalkTime!');
                         
-                        // Handle post-login redirect after a short delay
+                        // Redirect after brief delay
                         setTimeout(() => {
-                            window.jwtAuth.handlePostLoginRedirect();
-                        }, 2000);
-                    } else {
-                        showNotification(
-                            result.error || 'Signup failed. Please try again.',
-                            'error',
-                            {
-                                title: 'Signup Failed',
-                                autoClose: false
+                            if (formData.volunteer_type === 'student_volunteer' && (formData.age < 18 || formData.parent_email)) {
+                                window.location.href = '/volunteer/pending-approval.html';
+                            } else {
+                                window.location.href = '/volunteer/dashboard/students.html';
                             }
-                        );
+                        }, 1000);
+                    } else {
+                        throw new Error(data.error || 'Registration failed');
                     }
                 } catch (error) {
-                    console.error('JWT Signup error:', error);
-                    showNotification(
-                        'An unexpected error occurred during signup. Please check your connection and try again.',
-                        'error',
-                        {
-                            title: 'Connection Error',
-                            autoClose: false
-                        }
-                    );
+                    console.error('Registration error:', error);
+                    alert(error.message || 'Registration failed. Please try again.');
                 } finally {
                     // Re-enable submit button
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalText;
+                    formSubmitButton.disabled = false;
+                    formSubmitButton.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Create Account';
                 }
             });
+
+            // --- MOBILE MENU ---
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuToggle && mobileMenu) {
+                mobileMenuToggle.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+        
+        // Keyboard navigation support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type !== 'submit') {
+                e.preventDefault();
+                const nextBtn = document.getElementById('next-button');
+                const submitBtn = document.getElementById('submit-button');
+                
+                if (nextBtn.style.display !== 'none') {
+                    nextBtn.click();
+                } else if (submitBtn.style.display !== 'none') {
+                    submitBtn.click();
+                }
+            }
         });
     </script>
 </body>

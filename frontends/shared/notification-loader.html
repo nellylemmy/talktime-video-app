@@ -1,0 +1,302 @@
+<!-- 
+TalkTime Universal Notification Loader
+Include this in the <head> section of EVERY page
+This ensures notification permissions are checked on every page load
+-->
+
+<!-- Notification Permission Modal Styles -->
+<style id="talktime-notification-styles">
+    /* Fade animations for notification elements */
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+    
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Notification status indicator styles */
+    #talktime-notification-status {
+        animation: slideInUp 0.3s ease-out;
+    }
+    
+    #notification-reminder {
+        animation: slideInUp 0.3s ease-out;
+        transition: all 0.3s ease;
+    }
+    
+    #notification-reminder:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+        #talktime-notification-status {
+            top: 5px;
+            right: 5px;
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+        
+        #notification-reminder {
+            bottom: 10px;
+            right: 10px;
+            max-width: 260px;
+            font-size: 12px;
+        }
+    }
+</style>
+
+<!-- Load notification scripts in order -->
+<script>
+    // TalkTime Notification System Loader
+    (function() {
+        'use strict';
+        
+        console.log('🔔 TalkTime Notification System - Universal Loader Starting');
+        
+        // Configuration
+        const NOTIFICATION_CONFIG = {
+            enforceOnAllPages: true,
+            modalScriptPath: '/shared/js/notification-permission-modal.js',
+            enforcerScriptPath: '/shared/js/notification-enforcer.js',
+            loadTimeout: 15000,
+            retryAttempts: 3
+        };
+        
+        let loadAttempt = 0;
+        let scriptsLoaded = {
+            modal: false,
+            enforcer: false
+        };
+        
+        // Browser support check
+        function checkBrowserSupport() {
+            const support = {
+                notifications: 'Notification' in window,
+                serviceWorker: 'serviceWorker' in navigator,
+                pushManager: 'PushManager' in window
+            };
+            
+            console.log('🔍 Browser Support Check:', support);
+            
+            if (!support.notifications) {
+                console.warn('⚠️ Browser does not support Web Notifications');
+                showUnsupportedBrowserMessage();
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Show message for unsupported browsers
+        function showUnsupportedBrowserMessage() {
+            const message = document.createElement('div');
+            message.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #fed7d7;
+                border: 1px solid #fc8181;
+                color: #742a2a;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 10000;
+                max-width: 90%;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            `;
+            message.innerHTML = `
+                🚫 Your browser doesn't support notifications.<br>
+                <small>For the best TalkTime experience, please use a modern browser.</small>
+            `;
+            
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => message.remove(), 300);
+            }, 5000);
+        }
+        
+        // Load script with retry mechanism
+        function loadScript(src, identifier, callback) {
+            loadAttempt++;
+            console.log(`📥 Loading ${identifier} script (attempt ${loadAttempt}): ${src}`);
+            
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            
+            script.onload = function() {
+                console.log(`✅ ${identifier} script loaded successfully`);
+                scriptsLoaded[identifier] = true;
+                callback(true);
+            };
+            
+            script.onerror = function() {
+                console.error(`❌ Failed to load ${identifier} script: ${src}`);
+                
+                if (loadAttempt < NOTIFICATION_CONFIG.retryAttempts) {
+                    console.log(`🔄 Retrying ${identifier} script load in 2 seconds...`);
+                    setTimeout(() => loadScript(src, identifier, callback), 2000);
+                } else {
+                    console.error(`💥 Failed to load ${identifier} script after ${NOTIFICATION_CONFIG.retryAttempts} attempts`);
+                    callback(false);
+                }
+            };
+            
+            document.head.appendChild(script);
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (!scriptsLoaded[identifier]) {
+                    console.warn(`⏰ ${identifier} script load timeout`);
+                    script.onerror();
+                }
+            }, NOTIFICATION_CONFIG.loadTimeout);
+        }
+        
+        // Initialize notification system
+        function initializeNotificationSystem() {
+            if (!checkBrowserSupport()) {
+                return;
+            }
+            
+            console.log('🚀 Initializing TalkTime Notification System');
+            
+            // Load modal script first
+            loadScript(NOTIFICATION_CONFIG.modalScriptPath, 'modal', (modalLoaded) => {
+                if (!modalLoaded) {
+                    console.error('❌ Cannot proceed without notification modal');
+                    return;
+                }
+                
+                // Load enforcer script
+                loadScript(NOTIFICATION_CONFIG.enforcerScriptPath, 'enforcer', (enforcerLoaded) => {
+                    if (enforcerLoaded) {
+                        console.log('🎉 TalkTime Notification System fully loaded');
+                        
+                        // Emit event for other scripts
+                        document.dispatchEvent(new CustomEvent('talktimeNotificationSystemReady', {
+                            detail: {
+                                timestamp: new Date().toISOString(),
+                                version: '1.0.0'
+                            }
+                        }));
+                    } else {
+                        console.error('❌ TalkTime Notification System failed to load completely');
+                        showLoadErrorMessage();
+                    }
+                });
+            });
+        }
+        
+        // Show error message if scripts fail to load
+        function showLoadErrorMessage() {
+            const errorMsg = document.createElement('div');
+            errorMsg.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: #fed7d7;
+                border: 1px solid #fc8181;
+                color: #742a2a;
+                padding: 12px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+                max-width: 300px;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            `;
+            errorMsg.innerHTML = `
+                ⚠️ <strong>Notification System Error</strong><br>
+                <small>Some features may not work properly. Please refresh the page.</small>
+            `;
+            
+            document.body.appendChild(errorMsg);
+            
+            setTimeout(() => {
+                if (errorMsg.parentNode) {
+                    errorMsg.style.animation = 'fadeOut 0.3s ease-out';
+                    setTimeout(() => errorMsg.remove(), 300);
+                }
+            }, 8000);
+        }
+        
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeNotificationSystem);
+        } else {
+            // DOM is already ready
+            setTimeout(initializeNotificationSystem, 100);
+        }
+        
+        // Global utility functions
+        window.TalkTimeNotifications = {
+            isReady: function() {
+                return scriptsLoaded.modal && scriptsLoaded.enforcer && 
+                       window.talkTimeNotificationEnforcer && 
+                       window.talkTimeNotificationEnforcer.initialized;
+            },
+            
+            getPermissionStatus: function() {
+                if (!('Notification' in window)) return 'unsupported';
+                return Notification.permission;
+            },
+            
+            requestPermission: function() {
+                if (window.talkTimeNotificationEnforcer) {
+                    window.talkTimeNotificationEnforcer.showPermissionModal();
+                } else {
+                    console.warn('Notification enforcer not ready');
+                }
+            },
+            
+            sendTestNotification: function(title = 'TalkTime Test', message = 'This is a test notification') {
+                if (Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: message,
+                        icon: '/favicon.ico',
+                        tag: 'talktime-test'
+                    });
+                } else {
+                    console.warn('Notification permission not granted');
+                }
+            }
+        };
+        
+        console.log('📋 TalkTime Notification Universal Loader Ready');
+        
+    })();
+</script>
+
+<!-- 
+Usage Instructions:
+1. Include this file in the <head> section of every HTML page
+2. Use one of these methods:
+
+Method 1 - Direct include:
+<script src="/shared/js/notification-universal-loader.js"></script>
+
+Method 2 - Server-side include (recommended):
+<?php include 'shared/notification-loader.html'; ?>
+
+Method 3 - Copy this entire content into each page's <head>
+
+The system will automatically:
+- Check browser support
+- Load required scripts
+- Show permission modal if needed
+- Initialize notification features
+- Provide global utility functions
+-->
+
+<!-- Optional: Preload notification scripts for faster loading -->
+<link rel="preload" href="/shared/js/notification-permission-modal.js" as="script">
+<link rel="preload" href="/shared/js/notification-enforcer.js" as="script">

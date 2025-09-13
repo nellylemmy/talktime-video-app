@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - TalkTime by ADEA Foundation</title>
+    <meta name="description" content="Manage your TalkTime volunteer profile, view your community service hours, and download official certificates.">
+    <link rel="canonical" href="/volunteer/profile">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="css/main.css" />
+    
+    <style>
+        /* Tab styling */
+        .profile-tab.active {
+            border-color: #7c3aed !important;
+            color: #7c3aed !important;
+        }
+        
+        .tab-panel {
+            display: block;
+        }
+        
+        .tab-panel.hidden {
+            display: none;
+        }
+    </style>
+    <!-- JWT Authentication Utility -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Initialize TalkTimeAuth -->
+    <script>
+        if (typeof TalkTimeJWTAuth !== 'undefined') {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        }
+    </script>
+</head>
+<body class="gradient-bg text-gray-800 min-h-screen">
+    <!-- Background Blobs -->
+    <div class="blob w-96 h-96 bg-purple-300 top-[-10rem] left-[-10rem]"></div>
+    <div class="blob w-96 h-96 bg-blue-300 bottom-[-5rem] right-[-10rem]"></div>
+    <div class="blob w-72 h-72 bg-pink-300 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
+
+    <!-- Header Navigation (same as other pages) -->
+    <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
+        <nav class="container mx-auto flex items-center justify-between relative">
+            <div class="flex flex-col">
+                <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                        <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                        <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                    </svg>
+                    <span class="gradient-text">TALK TIME</span>
+                </a>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                        Powered by ADEA Foundation
+                    </a>
+                </div>
+            </div>
+          
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <a href="/volunteer/who-we-are.html" class="px-4 py-2 text-gray-700 hover:text-purple-600 transition-colors font-medium">
+                    <i class="fas fa-heart mr-2"></i>Who We Are
+                </a>
+                <a href="/volunteer/dashboard/students.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+            </div>
+            
+            <!-- Profile Section -->
+            <div id="nav-profile-section" class="flex items-center space-x-4">
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <a href="/volunteer/notifications.html" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Bell body -->
+                            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            
+                            <!-- Bell clapper -->
+                            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span id="notification-badge" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"></span>
+                    </a>
+                </div>
+                <div class="relative">
+                    <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
+                        <span id="volunteer-greeting" class="font-semibold sm:inline">Welcome, nelly!</span>
+                        <div class="relative">
+                            <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
+                            <div id="volunteer-initial" class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">N</div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
+                        <a href="/volunteer/who-we-are.html" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 hover:text-purple-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-heart mr-2"></i>Who We Are
+                        </a>
+                        <a href="/volunteer/profile.html" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-user mr-2"></i>My Profile
+                        </a>
+                        <a href="/volunteer/settings" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </a>
+                        <hr class="my-2 border-gray-200">
+                        <a href="#" id="logout-link" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+                <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+          
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
+                <a href="/volunteer/dashboard/students.html" class="block py-2 px-4 text-gray-800 hover:text-blue-600">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+                <a href="/volunteer/profile" class="block py-2 px-4 text-gray-800 hover:text-purple-600 font-semibold">
+                    <i class="fas fa-user mr-2"></i>My Profile
+                </a>
+                <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="pt-24 pb-12 px-4">
+        <div class="container mx-auto max-w-3xl py-20">
+            <!-- Loading State -->
+            <div id="loading-spinner" class="flex justify-center items-center min-h-screen">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>
+            </div>
+
+            <!-- Profile Content -->
+            <div id="profile-content" class="hidden">
+                <!-- Profile Header -->
+                <div class="glass-card rounded-2xl p-8 mb-8 fade-in-up">
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <!-- Profile Info Section (Left Side) -->
+                        <div class="flex flex-col md:flex-row items-center gap-6 flex-1">
+                            <div class="relative cursor-pointer group" id="avatar-upload-trigger">
+                                <div id="profile-picture" class="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg group-hover:shadow-xl transition-all duration-200">
+                                    V
+                                </div>
+                                <img id="profile-image" alt="Profile" class="w-24 h-24 rounded-full shadow-lg object-cover hidden group-hover:shadow-xl transition-all duration-200">
+                                
+                                <!-- Edit indicator overlay -->
+                                <div class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <i class="fas fa-camera text-white text-xl"></i>
+                                </div>
+                                
+                                <!-- Edit badge -->
+                                <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                                    <i class="fas fa-pencil-alt text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-center md:text-left flex-1">
+                                <h1 id="profile-name" class="text-3xl font-bold text-gray-800 mb-2">Loading...</h1>
+                                <p id="profile-email" class="text-gray-600 mb-4">Loading...</p>
+                                <div id="volunteer-type-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700">
+                                    <i class="fas fa-user mr-2"></i>
+                                    <span id="volunteer-type-text">Volunteer</span>
+                                </div>
+
+                                <!-- Profile Completion Section (Middle) -->
+                                <div class="mt-4 w-full lg:w-48 flex-shrink-0">
+                                    <h3 class="text-sm font-medium text-gray-800 mb-1" id="completion-title">
+                                        <i class="fas fa-chart-line text-blue-500 mr-1 text-xs" id="completion-icon"></i>
+                                        <span id="completion-title-text">Profile Completion</span>
+                                    </h3>
+                                    <div class="mb-1" id="completion-percentage-container">
+                                        <div class="text-xl font-bold text-blue-600" id="completion-percentage">0%</div>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5 mb-1" id="completion-progress-container">
+                                        <div id="completion-progress-bar" class="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                    <div id="completion-fields-container">
+                                        <span class="text-gray-600 text-xs" id="fields-completed">0 of 0 fields completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Section (Right Side) -->
+                        <div class="w-full lg:w-64 flex-shrink-0" id="performance-section">
+                            <div id="performance-loading" class="text-center">
+                                <i class="fas fa-spinner fa-spin text-gray-400 text-lg mb-2"></i>
+                                <p class="text-xs text-gray-500">Loading performance...</p>
+                            </div>
+                            
+                            <div id="performance-content" class="hidden">
+                                <!-- Reputation Score -->
+                                <div class="text-center mb-4">
+                                    <div class="flex items-center justify-center mb-2">
+                                        <i id="performance-tier-icon" class="fas fa-star text-green-600 mr-2"></i>
+                                        <span id="performance-tier" class="text-sm font-semibold text-green-600">Excellent</span>
+                                    </div>
+                                    <div id="reputation-score" class="text-2xl font-bold text-gray-800">95</div>
+                                    <div class="text-xs text-gray-600">Reputation Score</div>
+                                </div>
+
+                                <!-- Quick Stats -->
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    <div class="text-center bg-green-50 rounded-lg p-2">
+                                        <div id="completed-stat" class="text-lg font-bold text-green-600">12</div>
+                                        <div class="text-xs text-green-700">Success</div>
+                                    </div>
+                                    <div class="text-center bg-yellow-50 rounded-lg p-2">
+                                        <div id="cancelled-stat" class="text-lg font-bold text-yellow-600">2</div>
+                                        <div class="text-xs text-yellow-700">Cancel</div>
+                                    </div>
+                                    <div class="text-center bg-red-50 rounded-lg p-2">
+                                        <div id="missed-stat" class="text-lg font-bold text-red-600">1</div>
+                                        <div class="text-xs text-red-700">Missed</div>
+                                    </div>
+                                </div>
+
+                                <!-- Warning Message -->
+                                <div id="warning-message" class="hidden mb-3 p-2 rounded-lg text-xs">
+                                    <div id="warning-text"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Settings Section -->
+                    <div class="mt-8 pt-8 border-t border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                            <i class="fas fa-user-edit text-gray-500 mr-3"></i>
+                            Profile Settings
+                        </h2>
+                        <!-- Tab Navigation -->
+                        <div class="border-b border-gray-200 mb-6">
+                            <nav class="-mb-px flex space-x-8">
+                                <button id="tab-basic" class="profile-tab active py-2 px-1 border-b-2 border-purple-500 font-medium text-sm text-purple-600 whitespace-nowrap">
+                                    <i class="fas fa-user mr-2"></i>Basic Info
+                                </button>
+                                <button id="tab-about" class="profile-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
+                                    <i class="fas fa-heart mr-2"></i>About Me
+                                </button>
+                                <button id="tab-account" class="profile-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
+                                    <i class="fas fa-lock mr-2"></i>Account
+                                </button>
+                                <button id="tab-security" class="profile-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
+                                    <i class="fas fa-shield-alt mr-2"></i>Security
+                                </button>
+                                <button id="tab-student" class="profile-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap hidden">
+                                    <i class="fas fa-graduation-cap mr-2"></i>Student Info
+                                </button>
+                            </nav>
+                        </div>
+                        <!-- Tab Content -->
+                        <div class="tab-content">
+                            <!-- Basic Info Tab -->
+                            <div id="content-basic" class="tab-panel active">
+                                <div class="p-6">
+                                    <div class="space-y-4">
+
+
+                                        <div>
+                                            <label for="edit-name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                            <input type="text" id="edit-name" name="fullName" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                        </div>
+                                        <div>
+                                            <label for="edit-username" class="block text-sm font-medium text-gray-700 mb-2">How would you like to be called?</label>
+                                            <input type="text" id="edit-username" name="username" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                                <input type="email" id="edit-email" name="email" 
+                                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                                <input id="edit-phone" type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                            </div>
+                                        </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                                                <input id="edit-location" type="text" placeholder="City, Country" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                                                <select id="edit-timezone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                                    <option value="">Select timezone</option>
+                                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                                    <option value="America/Chicago">Central Time (CT)</option>
+                                                    <option value="America/Denver">Mountain Time (MT)</option>
+                                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                                    <option value="Europe/London">London (GMT)</option>
+                                                    <option value="Europe/Paris">Central Europe (CET)</option>
+                                                    <option value="Africa/Nairobi">East Africa Time (EAT)</option>
+                                                    <option value="Asia/Tokyo">Japan (JST)</option>
+                                                    <option value="Australia/Sydney">Australia Eastern (AET)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- About Me Tab -->
+                                <div id="content-about" class="tab-panel hidden">
+                                    <div class="space-y-6">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                                                <input id="edit-age" type="number" min="13" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                                <select id="edit-gender" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900">
+                                                    <option value="">Select gender</option>
+                                                    <option value="male">Male</option>
+                                                    <option value="female">Female</option>
+                                                    <option value="other">Other</option>
+                                                    <option value="prefer_not_to_say">Prefer not to say</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Interests & Hobbies</label>
+                                            <textarea id="edit-interests" rows="4" placeholder="What are your interests and hobbies?" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Account Tab -->
+                                <div id="content-account" class="tab-panel hidden">
+                                    <div class="space-y-6">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                            <div class="flex">
+                                                <i class="fas fa-info-circle text-yellow-400 mr-2 mt-0.5"></i>
+                                                <div>
+                                                    <h4 class="text-sm font-medium text-yellow-800">Password Change</h4>
+                                                    <p class="text-sm text-yellow-700 mt-1">Leave password fields empty if you don't want to change your password</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                            <input id="edit-current-password" type="password" placeholder="Enter current password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                            <input id="edit-new-password" type="password" placeholder="Enter new password (min 8 characters)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                                            <input id="edit-confirm-password" type="password" placeholder="Confirm new password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Security Tab -->
+                                <div id="content-security" class="tab-panel hidden">
+                                    <div class="space-y-6">
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <div class="flex">
+                                                <i class="fas fa-shield-alt text-blue-400 mr-2 mt-0.5"></i>
+                                                <div>
+                                                    <h4 class="text-sm font-medium text-blue-800">Security Questions</h4>
+                                                    <p class="text-sm text-blue-700 mt-1">These help secure your account and assist with password recovery</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Security Question 1 -->
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Security Question 1</label>
+                                            <select id="edit-security-question-1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                                <option value="">Select a question</option>
+                                                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                                <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                                                <option value="What is your favorite book?">What is your favorite book?</option>
+                                                <option value="In what city were you born?">In what city were you born?</option>
+                                                <option value="What is your favorite food?">What is your favorite food?</option>
+                                            </select>
+                                            <input id="edit-security-answer-1" type="text" placeholder="Your answer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+
+                                        <!-- Security Question 2 -->
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Security Question 2</label>
+                                            <select id="edit-security-question-2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                                <option value="">Select a question</option>
+                                                <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                                                <option value="What is the name of your best friend?">What is the name of your best friend?</option>
+                                                <option value="What was your first car?">What was your first car?</option>
+                                                <option value="What is your favorite movie?">What is your favorite movie?</option>
+                                                <option value="What street did you live on in third grade?">What street did you live on in third grade?</option>
+                                            </select>
+                                            <input id="edit-security-answer-2" type="text" placeholder="Your answer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+
+                                        <!-- Security Question 3 -->
+                                        <div class="space-y-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Security Question 3</label>
+                                            <select id="edit-security-question-3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                                <option value="">Select a question</option>
+                                                <option value="What is your favorite color?">What is your favorite color?</option>
+                                                <option value="What was the model of your first phone?">What was the model of your first phone?</option>
+                                                <option value="What is your dream destination?">What is your dream destination?</option>
+                                                <option value="What was your first job?">What was your first job?</option>
+                                                <option value="What is your favorite season?">What is your favorite season?</option>
+                                            </select>
+                                            <input id="edit-security-answer-3" type="text" placeholder="Your answer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Student Info Tab -->
+                                <div id="content-student" class="tab-panel hidden">
+                                    <div class="space-y-6">
+                                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                            <div class="flex">
+                                                <i class="fas fa-graduation-cap text-purple-400 mr-2 mt-0.5"></i>
+                                                <div>
+                                                    <h4 class="text-sm font-medium text-purple-800">Student Volunteer Information</h4>
+                                                    <p class="text-sm text-purple-700 mt-1">Additional information for student volunteers</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">School Name</label>
+                                            <input id="edit-school-name" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Email</label>
+                                            <input id="edit-parent-email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Phone</label>
+                                            <input id="edit-parent-phone" type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-8 pt-6 border-t border-gray-200">
+                                <!-- Edit Mode Button (shown by default) -->
+                                <button id="edit-profile-btn" class="bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-edit mr-2"></i>Edit Profile
+                                </button>
+                                
+                                <!-- Save/Cancel Buttons (hidden by default) -->
+                                <button id="save-profile-btn" class="hidden bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-save mr-2"></i>Save All Changes
+                                </button>
+                                <button id="cancel-profile-btn" class="hidden ml-4 bg-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-colors">
+                                    <i class="fas fa-times mr-2"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volunteer Performance Dashboard -->
+                <div class="glass-card rounded-2xl p-8 mb-8 fade-in-up">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-chart-bar text-indigo-500 mr-3"></i>
+                            Performance Dashboard
+                        </h2>
+                        <div id="performance-trend" class="flex items-center space-x-2">
+                            <i id="trend-icon" class="fas fa-arrow-up text-green-500"></i>
+                            <span id="trend-text" class="text-sm font-medium text-green-600">Improving</span>
+                        </div>
+                    </div>
+
+                    <!-- Performance Loading State -->
+                    <div id="performance-dashboard-loading" class="flex justify-center items-center py-16">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                            <p class="text-gray-600">Loading your performance metrics...</p>
+                        </div>
+                    </div>
+
+                    <!-- Main Performance Content -->
+                    <div id="performance-dashboard-content" class="hidden">
+                        <!-- Top Metrics Row -->
+                        <div class="grid md:grid-cols-4 gap-6 mb-8">
+                            <!-- Reputation Score -->
+                            <div class="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl p-6 text-center">
+                                <div class="flex items-center justify-center mb-3">
+                                    <i id="reputation-tier-icon" class="fas fa-crown text-3xl text-emerald-600"></i>
+                                </div>
+                                <div id="reputation-score-large" class="text-4xl font-bold text-emerald-700 mb-1">100</div>
+                                <div class="text-emerald-700 font-semibold mb-1">Reputation Score</div>
+                                <div id="reputation-tier-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-200 text-emerald-800">
+                                    Exceptional
+                                </div>
+                            </div>
+
+                            <!-- Success Rate -->
+                            <div class="bg-white bg-opacity-60 rounded-xl p-6 text-center">
+                                <div class="text-3xl font-bold text-blue-600 mb-2" id="success-rate-display">95%</div>
+                                <div class="text-gray-600 font-medium mb-2">Success Rate</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="success-rate-bar" class="h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500" style="width: 95%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Students Impacted -->
+                            <div class="bg-white bg-opacity-60 rounded-xl p-6 text-center">
+                                <div class="text-3xl font-bold text-purple-600 mb-2" id="students-impacted-large">12</div>
+                                <div class="text-gray-600 font-medium mb-2">Students Helped</div>
+                                <div class="text-xs text-purple-600" id="learning-hours-display">24.5 hours provided</div>
+                            </div>
+
+                            <!-- Total Calls -->
+                            <div class="bg-white bg-opacity-60 rounded-xl p-6 text-center">
+                                <div class="text-3xl font-bold text-indigo-600 mb-2" id="total-calls-display">15</div>
+                                <div class="text-gray-600 font-medium mb-2">Total Calls</div>
+                                <div class="flex justify-center space-x-4 text-xs">
+                                    <span class="text-green-600" id="completed-mini">✓ 12</span>
+                                    <span class="text-yellow-600" id="cancelled-mini">⚠ 2</span>
+                                    <span class="text-red-600" id="missed-mini">✗ 1</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Warning System -->
+                        <div id="warning-system" class="mb-8 hidden">
+                            <div id="warning-card" class="rounded-xl p-6">
+                                <div class="flex items-start space-x-4">
+                                    <i id="warning-icon" class="fas fa-exclamation-triangle text-2xl flex-shrink-0 mt-1"></i>
+                                    <div class="flex-1">
+                                        <h3 id="warning-title" class="font-bold text-lg mb-2">Performance Alert</h3>
+                                        <p id="warning-message-full" class="text-sm leading-relaxed"></p>
+                                        <div id="restriction-notice" class="hidden mt-4 p-3 rounded-lg bg-red-100 border border-red-300">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-ban text-red-600 mr-2"></i>
+                                                <span class="text-red-800 font-semibold text-sm">Account Restricted</span>
+                                            </div>
+                                            <p class="text-red-700 text-xs mt-1">You cannot schedule new calls until performance improves.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detailed Breakdown -->
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <!-- Performance Breakdown Chart -->
+                            <div class="bg-white bg-opacity-60 rounded-xl p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-pie-chart text-indigo-500 mr-2"></i>
+                                    Call Distribution
+                                </h3>
+                                <div class="space-y-4">
+                                    <!-- Completed Calls -->
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                                            <span class="text-gray-700">Completed</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span id="completed-calls-detail" class="font-semibold">12</span>
+                                            <div class="w-20 h-2 bg-gray-200 rounded">
+                                                <div id="completed-bar" class="h-2 bg-green-500 rounded transition-all duration-500" style="width: 80%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cancelled Calls -->
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-4 h-4 bg-yellow-500 rounded mr-3"></div>
+                                            <span class="text-gray-700">Cancelled</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span id="cancelled-calls-detail" class="font-semibold">2</span>
+                                            <div class="w-20 h-2 bg-gray-200 rounded">
+                                                <div id="cancelled-bar" class="h-2 bg-yellow-500 rounded transition-all duration-500" style="width: 13%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Missed Calls -->
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-4 h-4 bg-red-500 rounded mr-3"></div>
+                                            <span class="text-gray-700">Missed</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span id="missed-calls-detail" class="font-semibold">1</span>
+                                            <div class="w-20 h-2 bg-gray-200 rounded">
+                                                <div id="missed-bar" class="h-2 bg-red-500 rounded transition-all duration-500" style="width: 7%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Performance Rates -->
+                                <div class="mt-6 pt-6 border-t border-gray-200">
+                                    <div class="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <div id="success-rate-percent" class="text-lg font-bold text-green-600">80%</div>
+                                            <div class="text-xs text-gray-600">Success</div>
+                                        </div>
+                                        <div>
+                                            <div id="cancelled-rate-percent" class="text-lg font-bold text-yellow-600">13%</div>
+                                            <div class="text-xs text-gray-600">Cancelled</div>
+                                        </div>
+                                        <div>
+                                            <div id="missed-rate-percent" class="text-lg font-bold text-red-600">7%</div>
+                                            <div class="text-xs text-gray-600">Missed</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Impact & Motivation -->
+                            <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-heart text-indigo-500 mr-2"></i>
+                                    Your Impact
+                                </h3>
+                                
+                                <!-- Positive Impact Messages -->
+                                <div id="positive-impact" class="space-y-3 mb-6">
+                                    <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                        <p id="impact-message-1" class="text-sm text-gray-700 leading-relaxed">
+                                            🌟 You've positively impacted 12 students' English learning journey
+                                        </p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                        <p id="impact-message-2" class="text-sm text-gray-700 leading-relaxed">
+                                            ⭐ Your 12 completed calls have provided 8.0 hours of valuable learning
+                                        </p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                        <p id="impact-message-3" class="text-sm text-gray-700 leading-relaxed">
+                                            💝 Students depend on your commitment - you're making a real difference!
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Improvement Messages (shown when performance is poor) -->
+                                <div id="improvement-messages" class="space-y-3 hidden">
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <p class="text-sm text-yellow-800 leading-relaxed">
+                                            😞 Each cancelled call disappoints a student who was looking forward to learning
+                                        </p>
+                                    </div>
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <p class="text-sm text-red-800 leading-relaxed">
+                                            💔 Missing calls breaks trust and disrupts students' learning momentum
+                                        </p>
+                                    </div>
+                                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                        <p class="text-sm text-orange-800 leading-relaxed">
+                                            ⚖️ Your reliability directly affects students' confidence and progress
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Recent Activity -->
+                                <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-3">Recent Activity (30 days)</h4>
+                                    <div class="grid grid-cols-3 gap-3 text-center">
+                                        <div>
+                                            <div id="recent-completed" class="text-lg font-bold text-green-600">5</div>
+                                            <div class="text-xs text-green-700">Completed</div>
+                                        </div>
+                                        <div>
+                                            <div id="recent-cancelled" class="text-lg font-bold text-yellow-600">1</div>
+                                            <div class="text-xs text-yellow-700">Cancelled</div>
+                                        </div>
+                                        <div>
+                                            <div id="recent-missed" class="text-lg font-bold text-red-600">0</div>
+                                            <div class="text-xs text-red-700">Missed</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Volunteer Credits Section -->
+                <div id="student-volunteer-section" class="hidden mb-8">
+                    <div class="glass-card rounded-2xl p-8 fade-in-up">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">
+                                <i class="fas fa-certificate text-yellow-500 mr-3"></i>
+                                Community Service Credits
+                            </h2>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-award text-yellow-500"></i>
+                                <span id="total-credits" class="text-2xl font-bold text-yellow-600">0</span>
+                                <span class="text-gray-600">Hours</span>
+                            </div>
+                        </div>
+
+                        <!-- Community Service Credits Explanation -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8">
+                            <div class="mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                    <i class="fas fa-graduation-cap text-indigo-600 mr-2"></i>
+                                    What are Community Service Credits?
+                                </h3>
+                                <p class="text-gray-700 text-sm leading-relaxed mb-4">
+                                    Community Service Credits are official recognition of your volunteer contributions to help students improve their English skills. These credits are calculated based on your completed calls and are widely accepted by educational institutions, scholarship programs, and universities worldwide.
+                                </p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                            How Credits are Earned
+                                        </h4>
+                                        <ul class="text-xs text-gray-600 space-y-1">
+                                            <li>• Complete scheduled calls with students</li>
+                                            <li>• Each completed call = credit hours based on duration</li>
+                                            <li>• Consistent participation increases impact score</li>
+                                            <li>• Quality interactions boost overall rating</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="bg-white bg-opacity-70 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                                            <i class="fas fa-star text-yellow-500 mr-2"></i>
+                                            Credit Recognition
+                                        </h4>
+                                        <ul class="text-xs text-gray-600 space-y-1">
+                                            <li>• Official certificates for college applications</li>
+                                            <li>• Verified community service hours</li>
+                                            <li>• International recognition by institutions</li>
+                                            <li>• Personal development portfolio building</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Important Data Display -->
+                            <div class="border-t border-yellow-200 pt-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white bg-opacity-80 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-blue-600" id="total-minutes">0</div>
+                                        <div class="text-xs text-gray-600">Total Minutes Contributed</div>
+                                    </div>
+                                    <div class="bg-white bg-opacity-80 rounded-lg p-3 text-center">
+                                        <div class="text-2xl font-bold text-purple-600" id="impact-score">0</div>
+                                        <div class="text-xs text-gray-600">Community Impact Score</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Certificate Download Section -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-download text-blue-500 mr-2"></i>
+                                Official Service Certificates
+                            </h3>
+                            <p class="text-gray-600 mb-6">
+                                Download your official community service certificate recognized by educational institutions worldwide.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <button id="download-certificate-btn" class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fas fa-file-pdf mr-2"></i>
+                                    Download Certificate (PDF)
+                                </button>
+                                <button id="preview-certificate-btn" class="flex-1 bg-white border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-all flex items-center justify-center">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    Preview Certificate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+
+        </div>
+    </div>
+
+    <!-- Certificate Preview Modal -->
+    <div id="certificate-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Certificate Preview</h3>
+                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="certificate-preview" class="border border-gray-200 rounded-lg p-8 bg-gray-50">
+                    <!-- Certificate content will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div id="imageUploadModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-glass-bg rounded-2xl max-w-md w-full p-6 transform transition-all duration-300 scale-95" id="imageUploadModalContent">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Update Profile Photo</h3>
+                <button id="closeImageModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Current Avatar Preview -->
+            <div class="flex justify-center mb-6">
+                <div class="relative">
+                    <div id="modalCurrentAvatar" class="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold">
+                        V
+                    </div>
+                    <img id="modalProfileImage" class="w-24 h-24 rounded-full object-cover hidden" alt="Profile">
+                </div>
+            </div>
+            
+            <!-- Upload Area -->
+            <div id="modalImageDropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <div id="modalDropZoneContent">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-600 mb-1">Drop your photo here or <span class="text-blue-500 font-medium">browse</span></p>
+                    <p class="text-sm text-gray-500">PNG, JPG, WEBP up to 5MB</p>
+                </div>
+                <div id="modalUploadProgress" class="hidden">
+                    <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mb-3"></i>
+                    <p class="text-blue-600">Uploading...</p>
+                </div>
+            </div>
+            <input type="file" id="modalProfileImageInput" accept=".jpg,.jpeg,.png,.webp" class="hidden">
+            
+            <!-- Action buttons -->
+            <div class="flex justify-between items-center mt-6">
+                <button id="modalRemoveImageBtn" type="button" class="text-red-500 hover:text-red-600 text-sm font-medium transition-colors hidden">
+                    <i class="fas fa-trash mr-2"></i>Remove Photo
+                </button>
+                <div class="flex gap-3">
+                    <button id="modalCancelBtn" type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+            
+            <div id="modalUploadStatus" class="text-sm mt-3 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Initialize authentication and load profile data
+        let currentUser = null;
+        let profileData = null;
+
+        async function initializePage() {
+            console.log('Initializing profile page...');
+            
+            // Wait for TalkTimeAuth to be available
+            let attempts = 0;
+            while (!window.TalkTimeAuth && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.TalkTimeAuth) {
+                console.error('TalkTimeAuth not available');
+                window.location.href = '/volunteer/login';
+                return;
+            }
+            
+            // Check authentication
+            if (!window.TalkTimeAuth.isAuthenticated()) {
+                window.location.href = '/volunteer/login';
+                return;
+            }
+            
+            try {
+                // Verify token and load profile data
+                const isValid = await window.TalkTimeAuth.verifyToken();
+                if (!isValid) {
+                    window.location.href = '/volunteer/login';
+                    return;
+                }
+                
+                currentUser = window.TalkTimeAuth.getUser();
+                await loadProfileData();
+                
+            } catch (error) {
+                console.error('Authentication error:', error);
+                window.location.href = '/volunteer/login';
+            }
+        }
+
+        async function loadProfileData() {
+            try {
+                // Load basic profile data
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile', {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load profile data');
+                }
+
+                profileData = await response.json();
+                
+                // Fix field name mismatch - backend returns profileImage, frontend expects profile_image
+                profileData.profile_image = profileData.profileImage;
+                
+                // Load credit data for student volunteers
+                if (profileData.isStudentVolunteer) {
+                    await loadCreditData();
+                }
+                
+                renderProfile();
+                
+                // Load profile completion data
+                await loadProfileCompletion();
+                
+                // Load performance data
+                await loadPerformanceData();
+                
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+                showErrorMessage('Failed to load profile data');
+            }
+        }
+
+        async function loadCreditData() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/credits', {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const creditData = await response.json();
+                    profileData.credits = creditData;
+                }
+            } catch (error) {
+                console.error('Error loading credit data:', error);
+            }
+        }
+
+        async function loadPerformanceData() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/performance', {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const performanceData = await response.json();
+                    profileData.performance = performanceData.performance;
+                    renderPerformanceData();
+                } else {
+                    console.error('Failed to load performance data');
+                    // Hide performance sections if data fails to load
+                    document.getElementById('performance-section').style.display = 'none';
+                    document.getElementById('performance-dashboard-loading').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading performance data:', error);
+                // Hide performance sections if data fails to load
+                document.getElementById('performance-section').style.display = 'none';
+                document.getElementById('performance-dashboard-loading').style.display = 'none';
+            }
+        }
+
+        function renderPerformanceData() {
+            const performance = profileData.performance;
+            if (!performance) return;
+
+            // Hide loading states and show content
+            document.getElementById('performance-loading').classList.add('hidden');
+            document.getElementById('performance-content').classList.remove('hidden');
+            document.getElementById('performance-dashboard-loading').classList.add('hidden');
+            document.getElementById('performance-dashboard-content').classList.remove('hidden');
+
+            // Update mini performance section (top right)
+            document.getElementById('reputation-score').textContent = performance.reputationScore;
+            document.getElementById('performance-tier').textContent = performance.performanceTier;
+            document.getElementById('performance-tier').className = `text-sm font-semibold ${performance.tierColor}`;
+            document.getElementById('performance-tier-icon').className = `${performance.tierIcon} ${performance.tierColor} mr-2`;
+            
+            document.getElementById('completed-stat').textContent = performance.completedCalls;
+            document.getElementById('cancelled-stat').textContent = performance.cancelledCalls;
+            document.getElementById('missed-stat').textContent = performance.missedCalls;
+            
+            // Safely update elements that might not exist after UI changes
+            const studentsImpactedEl = document.getElementById('students-impacted');
+            const learningHoursEl = document.getElementById('learning-hours');
+            
+            if (studentsImpactedEl) {
+                studentsImpactedEl.textContent = performance.studentsImpacted;
+            }
+            if (learningHoursEl) {
+                learningHoursEl.textContent = performance.learningHoursProvided;
+            }
+
+            // Update main dashboard
+            document.getElementById('reputation-score-large').textContent = performance.reputationScore;
+            document.getElementById('reputation-tier-badge').textContent = performance.performanceTier;
+            document.getElementById('reputation-tier-icon').className = `${performance.tierIcon} text-3xl ${performance.tierColor}`;
+            
+            // Update reputation section colors based on score
+            const reputationSection = document.querySelector('.bg-gradient-to-br.from-emerald-50.to-green-100');
+            if (reputationSection) {
+                if (performance.reputationScore < 50) {
+                    reputationSection.className = 'bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 text-center';
+                } else if (performance.reputationScore < 75) {
+                    reputationSection.className = 'bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl p-6 text-center';
+                }
+            }
+
+            // Update success rate
+            document.getElementById('success-rate-display').textContent = performance.successRate + '%';
+            document.getElementById('success-rate-bar').style.width = performance.successRate + '%';
+
+            // Update totals
+            document.getElementById('students-impacted-large').textContent = performance.studentsImpacted;
+            document.getElementById('learning-hours-display').textContent = performance.learningHoursProvided + ' hours provided';
+            document.getElementById('total-calls-display').textContent = performance.totalScheduled;
+
+            // Update mini stats
+            document.getElementById('completed-mini').textContent = `✓ ${performance.completedCalls}`;
+            document.getElementById('cancelled-mini').textContent = `⚠ ${performance.cancelledCalls}`;
+            document.getElementById('missed-mini').textContent = `✗ ${performance.missedCalls}`;
+
+            // Update detailed breakdown
+            document.getElementById('completed-calls-detail').textContent = performance.completedCalls;
+            document.getElementById('cancelled-calls-detail').textContent = performance.cancelledCalls;
+            document.getElementById('missed-calls-detail').textContent = performance.missedCalls;
+
+            // Calculate bar widths for breakdown chart
+            const total = Math.max(performance.totalScheduled, 1);
+            document.getElementById('completed-bar').style.width = (performance.completedCalls / total * 100) + '%';
+            document.getElementById('cancelled-bar').style.width = (performance.cancelledCalls / total * 100) + '%';
+            document.getElementById('missed-bar').style.width = (performance.missedCalls / total * 100) + '%';
+
+            // Update percentage rates
+            document.getElementById('success-rate-percent').textContent = performance.successRate + '%';
+            document.getElementById('cancelled-rate-percent').textContent = performance.cancelledRate + '%';
+            document.getElementById('missed-rate-percent').textContent = performance.missedRate + '%';
+
+            // Update recent activity
+            document.getElementById('recent-completed').textContent = performance.recentCompleted;
+            document.getElementById('recent-cancelled').textContent = performance.recentCancelled;
+            document.getElementById('recent-missed').textContent = performance.recentMissed;
+
+            // Update performance trend
+            const trendIcon = document.getElementById('trend-icon');
+            const trendText = document.getElementById('trend-text');
+            switch (performance.performanceTrend) {
+                case 'improving':
+                    trendIcon.className = 'fas fa-arrow-up text-green-500';
+                    trendText.textContent = 'Improving';
+                    trendText.className = 'text-sm font-medium text-green-600';
+                    break;
+                case 'declining':
+                    trendIcon.className = 'fas fa-arrow-down text-red-500';
+                    trendText.textContent = 'Declining';
+                    trendText.className = 'text-sm font-medium text-red-600';
+                    break;
+                default:
+                    trendIcon.className = 'fas fa-arrow-right text-blue-500';
+                    trendText.textContent = 'Stable';
+                    trendText.className = 'text-sm font-medium text-blue-600';
+            }
+
+            // Handle warning system
+            const warningSystem = document.getElementById('warning-system');
+            const warningCard = document.getElementById('warning-card');
+            const warningIcon = document.getElementById('warning-icon');
+            const warningTitle = document.getElementById('warning-title');
+            const warningMessage = document.getElementById('warning-message-full');
+            const restrictionNotice = document.getElementById('restriction-notice');
+            const topWarningMessage = document.getElementById('warning-message');
+            const topWarningText = document.getElementById('warning-text');
+
+            if (performance.warningStatus !== 'none') {
+                warningSystem.classList.remove('hidden');
+                topWarningMessage.classList.remove('hidden');
+                
+                // Configure warning styling based on severity
+                let cardClass, iconClass, titleText;
+                switch (performance.warningStatus) {
+                    case 'critical':
+                        cardClass = 'bg-red-50 border-2 border-red-200';
+                        iconClass = 'fas fa-ban text-red-600';
+                        titleText = 'Critical Performance Alert';
+                        topWarningMessage.className = 'mb-3 p-2 rounded-lg text-xs bg-red-50 border border-red-200';
+                        break;
+                    case 'severe':
+                        cardClass = 'bg-red-50 border-2 border-red-200';
+                        iconClass = 'fas fa-exclamation-triangle text-red-600';
+                        titleText = 'Severe Performance Warning';
+                        topWarningMessage.className = 'mb-3 p-2 rounded-lg text-xs bg-red-50 border border-red-200';
+                        break;
+                    case 'moderate':
+                        cardClass = 'bg-yellow-50 border-2 border-yellow-200';
+                        iconClass = 'fas fa-exclamation-triangle text-yellow-600';
+                        titleText = 'Performance Notice';
+                        topWarningMessage.className = 'mb-3 p-2 rounded-lg text-xs bg-yellow-50 border border-yellow-200';
+                        break;
+                    case 'minor':
+                        cardClass = 'bg-blue-50 border-2 border-blue-200';
+                        iconClass = 'fas fa-info-circle text-blue-600';
+                        titleText = 'Performance Tip';
+                        topWarningMessage.className = 'mb-3 p-2 rounded-lg text-xs bg-blue-50 border border-blue-200';
+                        break;
+                }
+
+                warningCard.className = `rounded-xl p-6 ${cardClass}`;
+                warningIcon.className = `${iconClass} text-2xl flex-shrink-0 mt-1`;
+                warningTitle.textContent = titleText;
+                warningMessage.textContent = performance.warningMessage;
+                topWarningText.textContent = performance.warningMessage;
+
+                // Show restriction notice if account is restricted
+                if (performance.isRestricted) {
+                    restrictionNotice.classList.remove('hidden');
+                }
+            }
+
+            // Update impact messages
+            if (performance.impactMessages) {
+                const positiveImpact = document.getElementById('positive-impact');
+                const improvementMessages = document.getElementById('improvement-messages');
+                
+                if (performance.warningStatus === 'none' || performance.warningStatus === 'minor') {
+                    // Show positive messages for good performers
+                    positiveImpact.classList.remove('hidden');
+                    improvementMessages.classList.add('hidden');
+                    
+                    document.getElementById('impact-message-1').textContent = '🌟 ' + performance.impactMessages.positive[0];
+                    document.getElementById('impact-message-2').textContent = '⭐ ' + performance.impactMessages.positive[1];
+                    document.getElementById('impact-message-3').textContent = '💝 ' + performance.impactMessages.positive[2];
+                } else {
+                    // Show improvement messages for poor performers
+                    positiveImpact.classList.add('hidden');
+                    improvementMessages.classList.remove('hidden');
+                }
+            }
+
+            console.log('Performance data rendered successfully');
+        }
+
+        function renderProfile() {
+            // Hide loading spinner and show content
+            document.getElementById('loading-spinner').classList.add('hidden');
+            document.getElementById('profile-content').classList.remove('hidden');
+            
+            // Update profile header
+            const fullName = profileData.volunteer?.name || profileData.name || currentUser.full_name || currentUser.fullName || 'Volunteer';
+            const email = profileData.volunteer?.email || profileData.email || currentUser.email || '';
+            const volunteer = profileData.volunteer || profileData;
+            
+            // Populate Basic Info tab fields with null checks
+            const setElementValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = value || '';
+                } else {
+                    console.warn(`Element with ID '${id}' not found`);
+                }
+            };
+            
+            setElementValue('edit-username', profileData.username || volunteer.username);
+            setElementValue('edit-name', fullName);
+            setElementValue('edit-email', email);
+            setElementValue('edit-age', volunteer.age);
+            setElementValue('edit-gender', volunteer.gender);
+            setElementValue('edit-phone', volunteer.phone);
+            setElementValue('edit-location', volunteer.location);
+            setElementValue('edit-timezone', volunteer.timezone);
+            
+            // Populate About Me tab fields
+            setElementValue('edit-interests', volunteer.interests);
+            
+            // Populate Security tab fields (questions only, not answers)
+            setElementValue('edit-security-question-1', volunteer.securityQuestion1);
+            setElementValue('edit-security-question-2', volunteer.securityQuestion2);
+            setElementValue('edit-security-question-3', volunteer.securityQuestion3);
+            
+            // Clear password fields
+            setElementValue('edit-current-password', '');
+            setElementValue('edit-new-password', '');
+            setElementValue('edit-confirm-password', '');
+            
+            // Show placeholder for security answers if they exist (for privacy)
+            const answer1Field = document.getElementById('edit-security-answer-1');
+            const answer2Field = document.getElementById('edit-security-answer-2');
+            const answer3Field = document.getElementById('edit-security-answer-3');
+            
+            if (answer1Field) {
+                if (profileData.hasSecurityAnswer1) {
+                    answer1Field.placeholder = "Answer saved (hidden for security)";
+                    answer1Field.value = "";
+                } else {
+                    answer1Field.placeholder = "Your answer";
+                    answer1Field.value = "";
+                }
+            }
+            
+            if (answer2Field) {
+                if (profileData.hasSecurityAnswer2) {
+                    answer2Field.placeholder = "Answer saved (hidden for security)";
+                    answer2Field.value = "";
+                } else {
+                    answer2Field.placeholder = "Your answer";
+                    answer2Field.value = "";
+                }
+            }
+            
+            if (answer3Field) {
+                if (profileData.hasSecurityAnswer3) {
+                    answer3Field.placeholder = "Answer saved (hidden for security)";
+                    answer3Field.value = "";
+                } else {
+                    answer3Field.placeholder = "Your answer";
+                    answer3Field.value = "";
+                }
+            }
+            
+            // Update avatar display
+            updateAvatarDisplay();
+            
+            console.log('Profile loaded - Avatar display updated with image:', profileData.profile_image);
+            
+            // Show/hide student volunteer tab and populate fields if applicable
+            const studentTab = document.getElementById('tab-student');
+            if (volunteer.schoolName || volunteer.parentEmail || volunteer.parentPhone) {
+                if (studentTab) studentTab.classList.remove('hidden');
+                setElementValue('edit-school-name', volunteer.schoolName);
+                setElementValue('edit-parent-email', volunteer.parentEmail);
+                setElementValue('edit-parent-phone', volunteer.parentPhone);
+            } else {
+                if (studentTab) studentTab.classList.add('hidden');
+            }
+            
+            // Update profile header display
+            const profileNameEl = document.getElementById('profile-name');
+            const profileEmailEl = document.getElementById('profile-email');
+            
+            if (profileNameEl) {
+                profileNameEl.textContent = fullName;
+            }
+            if (profileEmailEl) {
+                profileEmailEl.textContent = email;
+            }
+            
+            // Update navigation greeting
+            const volunteerGreeting = document.getElementById('volunteer-greeting');
+            if (volunteerGreeting) {
+                const displayName = currentUser.username || fullName.split(' ')[0] || 'Volunteer';
+                volunteerGreeting.textContent = `Welcome, ${displayName}!`;
+            }
+            
+            // Set up profile avatar
+            const letterAvatar = document.getElementById('letter-avatar');
+            const profilePicture = document.getElementById('profile-picture');
+            
+            if (fullName) {
+                // Use nickname/username first letter if available, otherwise fall back to full name first letter
+                const nickname = currentUser.username || volunteer.username;
+                const avatarLetter = nickname ? nickname[0].toUpperCase() : fullName[0].toUpperCase();
+                
+                if (letterAvatar) {
+                    letterAvatar.textContent = avatarLetter;
+                    letterAvatar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    letterAvatar.classList.remove('hidden');
+                }
+                
+                if (profilePicture) {
+                    profilePicture.textContent = avatarLetter;
+                }
+            }
+            
+            // Show/hide student volunteer section
+            if (profileData?.isStudentVolunteer || profileData?.credits) {
+                const studentSection = document.getElementById('student-volunteer-section');
+                if (studentSection) {
+                    studentSection.classList.remove('hidden');
+                }
+                const volunteerTypeText = document.getElementById('volunteer-type-text');
+                if (volunteerTypeText) {
+                    volunteerTypeText.textContent = 'Student Volunteer';
+                }
+                const volunteerTypeBadge = document.getElementById('volunteer-type-badge');
+                if (volunteerTypeBadge) {
+                    volunteerTypeBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800';
+                }
+                
+                // Render credits data if available
+                renderCredits();
+            }
+        }
+
+        function renderCredits() {
+            if (!profileData.credits) return;
+            
+            const credits = profileData.credits;
+            document.getElementById('total-credits').textContent = Math.floor(credits.totalMinutes / 60) || 0;
+            
+            // Only update elements that still exist after UI changes
+            const totalMinutesEl = document.getElementById('total-minutes');
+            const impactScoreEl = document.getElementById('impact-score');
+            
+            if (totalMinutesEl) {
+                totalMinutesEl.textContent = credits.totalMinutes || 0;
+            }
+            if (impactScoreEl) {
+                impactScoreEl.textContent = credits.impactScore || 0;
+            }
+            
+            // Enable certificate download if user has credits
+            const downloadBtn = document.getElementById('download-certificate-btn');
+            if (downloadBtn) {
+                if (credits.completedCalls > 0) {
+                    downloadBtn.disabled = false;
+                } else {
+                    downloadBtn.disabled = true;
+                    downloadBtn.innerHTML = '<i class="fas fa-lock mr-2"></i>Complete calls to unlock';
+                }
+            }
+        }
+
+        function renderRecentActivity() {
+            const activityList = document.getElementById('recent-activity-list');
+            
+            // Placeholder activity data
+            const activities = [
+                {
+                    type: 'call_completed',
+                    description: 'Completed call with student',
+                    time: '2 hours ago',
+                    icon: 'fas fa-phone text-green-500'
+                },
+                {
+                    type: 'profile_updated',
+                    description: 'Updated profile information',
+                    time: '1 day ago',
+                    icon: 'fas fa-user-edit text-blue-500'
+                }
+            ];
+            
+            activityList.innerHTML = activities.map(activity => `
+                <div class="flex items-center space-x-4 p-4 bg-white bg-opacity-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                        <i class="${activity.icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-800 font-medium">${activity.description}</p>
+                        <p class="text-gray-600 text-sm">${activity.time}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Certificate functionality
+        document.getElementById('preview-certificate-btn').addEventListener('click', async () => {
+            await showCertificatePreview();
+        });
+
+        document.getElementById('download-certificate-btn').addEventListener('click', async () => {
+            await downloadCertificate();
+        });
+
+        async function showCertificatePreview() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/certificate/preview', {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate certificate preview');
+                }
+
+                const certificateHtml = await response.text();
+                document.getElementById('certificate-preview').innerHTML = certificateHtml;
+                document.getElementById('certificate-modal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error previewing certificate:', error);
+                showErrorMessage('Failed to preview certificate');
+            }
+        }
+
+        async function downloadCertificate() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/certificate/download', {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to download certificate');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `TalkTime_Certificate_${currentUser.full_name || 'Volunteer'}_${new Date().getFullYear()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Error downloading certificate:', error);
+                showErrorMessage('Failed to download certificate');
+            }
+        }
+
+        // Modal controls
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('certificate-modal').classList.add('hidden');
+        });
+
+        // Profile management
+        document.getElementById('save-profile-btn').addEventListener('click', async () => {
+            // Collect all form data
+            const formData = {
+                username: document.getElementById('edit-username').value.trim(),
+                fullName: document.getElementById('edit-name').value.trim(),
+                age: document.getElementById('edit-age').value,
+                gender: document.getElementById('edit-gender').value,
+                phone: document.getElementById('edit-phone').value.trim(),
+                location: document.getElementById('edit-location').value.trim(),
+                timezone: document.getElementById('edit-timezone').value,
+                interests: document.getElementById('edit-interests').value.trim()
+            };
+            
+            // Add student volunteer fields if visible
+            const studentVolunteerFields = document.getElementById('content-student');
+            if (studentVolunteerFields && !studentVolunteerFields.classList.contains('hidden')) {
+                const schoolNameField = document.getElementById('edit-school-name');
+                const parentEmailField = document.getElementById('edit-parent-email');
+                const parentPhoneField = document.getElementById('edit-parent-phone');
+                
+                if (schoolNameField) formData.schoolName = schoolNameField.value.trim();
+                if (parentEmailField) formData.parentEmail = parentEmailField.value.trim();
+                if (parentPhoneField) formData.parentPhone = parentPhoneField.value.trim();
+            }
+            
+            // Add security questions and answers
+            const securityQ1Element = document.getElementById('edit-security-question-1');
+            const securityA1Element = document.getElementById('edit-security-answer-1');
+            const securityQ2Element = document.getElementById('edit-security-question-2');
+            const securityA2Element = document.getElementById('edit-security-answer-2');
+            const securityQ3Element = document.getElementById('edit-security-question-3');
+            const securityA3Element = document.getElementById('edit-security-answer-3');
+            
+            const securityQ1 = securityQ1Element ? securityQ1Element.value : '';
+            const securityA1 = securityA1Element ? securityA1Element.value.trim() : '';
+            const securityQ2 = securityQ2Element ? securityQ2Element.value : '';
+            const securityA2 = securityA2Element ? securityA2Element.value.trim() : '';
+            const securityQ3 = securityQ3Element ? securityQ3Element.value : '';
+            const securityA3 = securityA3Element ? securityA3Element.value.trim() : '';
+            
+            if (securityQ1) {
+                formData.securityQuestion1 = securityQ1;
+                if (securityA1) formData.securityAnswer1 = securityA1;
+            }
+            if (securityQ2) {
+                formData.securityQuestion2 = securityQ2;
+                if (securityA2) formData.securityAnswer2 = securityA2;
+            }
+            if (securityQ3) {
+                formData.securityQuestion3 = securityQ3;
+                if (securityA3) formData.securityAnswer3 = securityA3;
+            }
+            
+            // Handle password change validation
+            const currentPassword = document.getElementById('edit-current-password').value;
+            const newPassword = document.getElementById('edit-new-password').value;
+            const confirmPassword = document.getElementById('edit-confirm-password').value;
+            
+            if (newPassword || currentPassword || confirmPassword) {
+                if (!currentPassword) {
+                    showErrorMessage('Current password is required to change password');
+                    return;
+                }
+                if (!newPassword) {
+                    showErrorMessage('New password is required');
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showErrorMessage('New passwords do not match');
+                    return;
+                }
+                if (newPassword.length < 8) {
+                    showErrorMessage('New password must be at least 8 characters long');
+                    return;
+                }
+                
+                formData.currentPassword = currentPassword;
+                formData.newPassword = newPassword;
+            }
+            
+            // Validate required fields (compulsory fields that cannot be blank)
+            const requiredFields = [
+                { field: 'fullName', name: 'Full name' },
+                { field: 'age', name: 'Age' },
+                { field: 'gender', name: 'Gender' }
+            ];
+            
+            for (const { field, name } of requiredFields) {
+                if (!formData[field] || formData[field].toString().trim() === '') {
+                    showErrorMessage(`${name} is required and cannot be left blank`);
+                    return;
+                }
+            }
+            
+            // Validate age is a number and within reasonable range
+            const age = parseInt(formData.age);
+            if (isNaN(age) || age < 13 || age > 100) {
+                showErrorMessage('Please enter a valid age between 13 and 100');
+                return;
+            }
+            
+            // Validate email format if provided (optional field but must be valid if filled)
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (formData.parentEmail && !emailRegex.test(formData.parentEmail)) {
+                showErrorMessage('Please enter a valid parent email address');
+                return;
+            }
+            
+            // Validate phone format if provided (optional but must be valid if filled)
+            const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+            if (formData.phone && formData.phone.length > 0 && !phoneRegex.test(formData.phone)) {
+                showErrorMessage('Please enter a valid phone number');
+                return;
+            }
+            if (formData.parentPhone && formData.parentPhone.length > 0 && !phoneRegex.test(formData.parentPhone)) {
+                showErrorMessage('Please enter a valid parent phone number');
+                return;
+            }
+            
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const updatedProfile = await response.json();
+                    console.log('Profile update successful, exiting edit mode...');
+                    
+                    showSuccessMessage('Profile updated successfully');
+                    
+                    // Update local data
+                    Object.assign(profileData, updatedProfile.volunteer);
+                    currentUser.full_name = formData.fullName;
+                    
+                    // Update local data first
+                    Object.assign(profileData, updatedProfile.volunteer);
+                    
+                    // Reload profile completion to reflect changes
+                    await loadProfileCompletion();
+                    
+                    // Exit edit mode by switching button visibility
+                    const editBtn = document.getElementById('edit-profile-btn');
+                    const saveBtn = document.getElementById('save-profile-btn');
+                    const cancelBtn = document.getElementById('cancel-profile-btn');
+                    
+                    if (editBtn && saveBtn && cancelBtn) {
+                        editBtn.classList.remove('hidden');
+                        saveBtn.classList.add('hidden');
+                        cancelBtn.classList.add('hidden');
+                        console.log('Successfully exited edit mode');
+                    } else {
+                        console.error('Could not find edit mode buttons');
+                    }
+                    
+                    // Update the display values without re-rendering the entire form
+                    const profileNameElement = document.getElementById('profile-name');
+                    if (profileNameElement) {
+                        profileNameElement.textContent = formData.fullName;
+                    }
+                    
+                    // Update navigation greeting if it exists
+                    const volunteerGreeting = document.getElementById('volunteer-greeting');
+                    if (volunteerGreeting) {
+                        const displayName = formData.fullName.split(' ')[0] || 'Volunteer';
+                        volunteerGreeting.textContent = `Welcome, ${displayName}!`;
+                    }
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update profile');
+                }
+                
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showErrorMessage('Failed to update profile');
+            }
+        });
+
+        // Edit Profile button functionality
+        document.getElementById('edit-profile-btn').addEventListener('click', () => {
+            // Enter edit mode by switching button visibility
+            const editBtn = document.getElementById('edit-profile-btn');
+            const saveBtn = document.getElementById('save-profile-btn');
+            const cancelBtn = document.getElementById('cancel-profile-btn');
+            
+            if (editBtn && saveBtn && cancelBtn) {
+                editBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                console.log('Entered edit mode');
+            }
+        });
+
+        // Cancel button functionality
+        document.getElementById('cancel-profile-btn').addEventListener('click', () => {
+            // Exit edit mode
+            const editBtn = document.getElementById('edit-profile-btn');
+            const saveBtn = document.getElementById('save-profile-btn');
+            const cancelBtn = document.getElementById('cancel-profile-btn');
+            
+            if (editBtn && saveBtn && cancelBtn) {
+                editBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+            }
+            
+            // Reset form to original values
+            renderProfile();
+            showSuccessMessage('Changes cancelled');
+        });
+
+        function showErrorMessage(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        }
+
+        function showSuccessMessage(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        }
+
+        // Profile Completion Functionality
+        async function loadProfileCompletion() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile/completion', {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const completionData = await response.json();
+                    renderProfileCompletion(completionData);
+                } else {
+                    console.error('Failed to load profile completion');
+                }
+            } catch (error) {
+                console.error('Error loading profile completion:', error);
+            }
+        }
+
+        function renderProfileCompletion(data) {
+            const { completion } = data;
+            
+            const percentageElement = document.getElementById('completion-percentage');
+            const progressContainer = document.getElementById('completion-progress-container');
+            const fieldsContainer = document.getElementById('completion-fields-container');
+            const completionIcon = document.getElementById('completion-icon');
+            const completionTitleText = document.getElementById('completion-title-text');
+            
+            if (completion.isComplete && completion.percentage === 100) {
+                // 100% completion - show green check badge and hide other elements
+                if (percentageElement) {
+                    percentageElement.innerHTML = '<i class="fas fa-check-circle text-green-500 text-2xl"></i>';
+                    percentageElement.className = 'flex items-center justify-center mb-2';
+                }
+                
+                if (completionIcon) {
+                    completionIcon.className = 'fas fa-check-circle text-green-500 mr-1 text-xs';
+                }
+                
+                if (completionTitleText) {
+                    completionTitleText.textContent = 'Profile Completed';
+                }
+                
+                // Hide progress bar and fields completed text
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+                if (fieldsContainer) {
+                    fieldsContainer.style.display = 'none';
+                }
+            } else {
+                // Less than 100% - show normal completion view
+                if (percentageElement) {
+                    percentageElement.textContent = `${completion.percentage}%`;
+                    
+                    // Update color based on completion level
+                    if (completion.percentage >= 75) {
+                        percentageElement.className = 'text-xl font-bold text-blue-600 mb-2';
+                    } else if (completion.percentage >= 50) {
+                        percentageElement.className = 'text-xl font-bold text-yellow-600 mb-2';
+                    } else {
+                        percentageElement.className = 'text-xl font-bold text-gray-600 mb-2';
+                    }
+                }
+                
+                if (completionIcon) {
+                    completionIcon.className = 'fas fa-chart-line text-blue-500 mr-1 text-xs';
+                }
+                
+                if (completionTitleText) {
+                    completionTitleText.textContent = 'Profile Completion';
+                }
+                
+                // Show progress bar and fields completed text (reset from hidden state)
+                if (progressContainer) {
+                    progressContainer.style.display = 'block';
+                }
+                if (fieldsContainer) {
+                    fieldsContainer.style.display = 'block';
+                }
+                
+                // Reset percentage container display in case it was modified
+                const percentageContainer = document.getElementById('completion-percentage-container');
+                if (percentageContainer) {
+                    percentageContainer.style.display = 'block';
+                }
+                
+                // Update progress bar
+                const progressBar = document.getElementById('completion-progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${completion.percentage}%`;
+                    
+                    // Update progress bar color based on completion
+                    if (completion.percentage >= 75) {
+                        progressBar.className = 'h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500';
+                    } else if (completion.percentage >= 50) {
+                        progressBar.className = 'h-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-600 transition-all duration-500';
+                    } else {
+                        progressBar.className = 'h-1.5 rounded-full bg-gradient-to-r from-gray-400 to-gray-500 transition-all duration-500';
+                    }
+                }
+                
+                // Update fields completed text
+                const fieldsCompleted = document.getElementById('fields-completed');
+                if (fieldsCompleted) {
+                    fieldsCompleted.textContent = `${completion.completedFields} of ${completion.totalFields} fields completed`;
+                }
+            }
+        }
+
+        function getCategoryColor(category) {
+            const colors = {
+                'required': 'red',
+                'basic': 'blue', 
+                'profile': 'purple',
+                'security': 'green',
+                'student': 'yellow'
+            };
+            return colors[category] || 'gray';
+        }
+
+        // Modal Image Upload Functionality
+        function initializeImageUploadModal() {
+            const avatarTrigger = document.getElementById('avatar-upload-trigger');
+            const modal = document.getElementById('imageUploadModal');
+            const modalContent = document.getElementById('imageUploadModalContent');
+            const closeBtn = document.getElementById('closeImageModal');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+            const dropZone = document.getElementById('modalImageDropZone');
+            const fileInput = document.getElementById('modalProfileImageInput');
+            const removeBtn = document.getElementById('modalRemoveImageBtn');
+            
+            // Open modal when avatar is clicked
+            avatarTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                openImageUploadModal();
+            });
+            
+            // Close modal handlers
+            closeBtn.addEventListener('click', closeImageUploadModal);
+            cancelBtn.addEventListener('click', closeImageUploadModal);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeImageUploadModal();
+                }
+            });
+            
+            // Prevent modal content click from closing modal
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // Drop zone click to browse
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Drag and drop handlers
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-blue-400', 'bg-blue-50');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleModalImageUpload(files[0]);
+                }
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleModalImageUpload(e.target.files[0]);
+                }
+            });
+            
+            // Remove image
+            removeBtn.addEventListener('click', () => {
+                removeProfileImageModal();
+            });
+        }
+        
+        function openImageUploadModal() {
+            const modal = document.getElementById('imageUploadModal');
+            const modalContent = document.getElementById('imageUploadModalContent');
+            
+            // Update modal avatar to match current profile
+            updateModalAvatar();
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+            }, 10);
+        }
+        
+        function closeImageUploadModal() {
+            const modal = document.getElementById('imageUploadModal');
+            const modalContent = document.getElementById('imageUploadModalContent');
+            
+            modalContent.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+        
+        function updateModalAvatar() {
+            const modalCurrentAvatar = document.getElementById('modalCurrentAvatar');
+            const modalProfileImage = document.getElementById('modalProfileImage');
+            const removeBtn = document.getElementById('modalRemoveImageBtn');
+            
+            if (profileData && profileData.profile_image) {
+                // Extract filename from path
+                const filename = profileData.profile_image.split('/').pop();
+                modalProfileImage.src = `/api/v1/volunteer/profile/image/${filename}`;
+                modalProfileImage.classList.remove('hidden');
+                modalCurrentAvatar.classList.add('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                modalProfileImage.classList.add('hidden');
+                modalCurrentAvatar.classList.remove('hidden');
+                removeBtn.classList.add('hidden');
+                
+                // Get avatar letter from current user data
+                const userName = profileData?.full_name || profileData?.name || currentUser?.full_name || 'V';
+                const avatarLetter = userName.charAt(0).toUpperCase();
+                modalCurrentAvatar.textContent = avatarLetter;
+            }
+        }
+        
+        async function handleModalImageUpload(file) {
+            // Validate file
+            if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+                showModalError('Please upload a valid image file (JPEG, PNG, or WebP)');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                showModalError('Image size must be less than 5MB');
+                return;
+            }
+            
+            try {
+                // Show upload progress
+                document.getElementById('modalDropZoneContent').classList.add('hidden');
+                document.getElementById('modalUploadProgress').classList.remove('hidden');
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append('profileImage', file);
+                
+                // Upload image - don't set Content-Type for FormData
+                const token = window.TalkTimeAuth.getAccessToken();
+                const response = await fetch('/api/v1/volunteer/profile/image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                        // Don't set Content-Type - let browser set it with boundary for FormData
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showModalSuccess('Profile image uploaded successfully!');
+                    
+                    // Update profile data
+                    profileData.profile_image = result.profileImage;
+                    
+                    // Update main avatar displays
+                    updateAvatarDisplay();
+                    
+                    // Update modal avatar
+                    updateModalAvatar();
+                    
+                    // Reload profile completion to update percentage
+                    await loadProfileCompletion();
+                    
+                    // Auto-close modal after success
+                    setTimeout(() => {
+                        closeImageUploadModal();
+                    }, 1500);
+                    
+                } else {
+                    throw new Error('Upload failed');
+                }
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showModalError(error.message || 'Failed to upload image');
+            } finally {
+                // Reset upload UI
+                document.getElementById('modalDropZoneContent').classList.remove('hidden');
+                document.getElementById('modalUploadProgress').classList.add('hidden');
+            }
+        }
+        
+        async function removeProfileImageModal() {
+            if (confirm('Are you sure you want to remove your profile photo?')) {
+                try {
+                    showModalLoading('Removing photo...');
+                    
+                    const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile/image', {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to delete image');
+                    }
+                    
+                    // Update local data and UI
+                    profileData.profile_image = null;
+                    profileData.profileImage = null; // Also clear backend field
+                    updateAvatarDisplay();
+                    updateModalAvatar();
+                    showModalSuccess('Profile photo removed successfully');
+                    
+                    // Reload profile completion to update percentage
+                    await loadProfileCompletion();
+                    
+                    console.log('✅ Profile image deleted from server and database');
+                    
+                    // Auto-close modal after removal
+                    setTimeout(() => {
+                        closeImageUploadModal();
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Error removing profile image:', error);
+                    showModalError('Failed to remove profile photo: ' + error.message);
+                }
+            }
+        }
+        
+        function showModalLoading(message) {
+            const statusDiv = document.getElementById('modalUploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'text-sm mt-3 text-center text-blue-600';
+        }
+        
+        function showModalSuccess(message) {
+            const statusDiv = document.getElementById('modalUploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'text-sm mt-3 text-center text-green-600';
+        }
+        
+        function showModalError(message) {
+            const statusDiv = document.getElementById('modalUploadStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'text-sm mt-3 text-center text-red-600';
+        }
+        
+        
+        function updateAvatarDisplay() {
+            const profilePicture = document.getElementById('profile-picture');
+            const profileImage = document.getElementById('profile-image');
+            
+            if (profileData && profileData.profile_image) {
+                // Show profile image - extract filename from path
+                const filename = profileData.profile_image.split('/').pop();
+                profileImage.src = `/api/v1/volunteer/profile/image/${filename}`;
+                profileImage.classList.remove('hidden');
+                profilePicture.classList.add('hidden');
+            } else {
+                // Show avatar letter
+                profileImage.classList.add('hidden');
+                profilePicture.classList.remove('hidden');
+                
+                // Get avatar letter from nickname/username or full name
+                const userName = profileData?.full_name || profileData?.name || currentUser?.full_name || 'V';
+                const avatarLetter = userName.charAt(0).toUpperCase();
+                profilePicture.textContent = avatarLetter;
+            }
+        }
+
+        // Header scroll behavior
+        const header = document.getElementById('main-header');
+        const handleScroll = () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+      
+        if (menuToggle && mobileMenu) {
+            menuToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Profile dropdown functionality
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', (e) => {
+                console.log('Profile button clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isHidden = profileDropdown.classList.contains('hidden');
+                console.log('Dropdown is currently hidden:', isHidden);
+                
+                if (isHidden) {
+                    // Show dropdown
+                    profileDropdown.classList.remove('hidden');
+                    profileDropdown.classList.remove('opacity-0');
+                    profileDropdown.classList.remove('-translate-y-2');
+                    console.log('Showing dropdown');
+                } else {
+                    // Hide dropdown
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                    profileDropdown.classList.add('-translate-y-2');
+                    console.log('Hiding dropdown');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!profileDropdown.classList.contains('hidden') && 
+                    !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    console.log('Clicking outside, closing dropdown');
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                    profileDropdown.classList.add('-translate-y-2');
+                }
+            });
+            
+            profileDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            console.log('Profile dropdown event listeners attached successfully');
+        } else {
+            console.error('Profile button or dropdown not found!', {
+                profileBtn: !!profileBtn,
+                profileDropdown: !!profileDropdown
+            });
+        }
+
+        // Logout functionality
+        const logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.TalkTimeAuth?.logout();
+                window.location.href = '/volunteer/';
+            });
+        }
+
+        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.TalkTimeAuth?.logout();
+                window.location.href = '/volunteer/';
+            });
+        }
+
+        // Initialize tabs functionality
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.profile-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active from all tabs
+                    tabs.forEach(t => {
+                        t.classList.remove('active', 'border-purple-500', 'text-purple-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // Hide all panels
+                    panels.forEach(p => {
+                        p.classList.add('hidden');
+                        p.classList.remove('active');
+                    });
+                    
+                    // Activate clicked tab
+                    this.classList.add('active');
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    this.classList.add('border-purple-500', 'text-purple-600');
+                    
+                    // Show corresponding panel
+                    const tabId = this.id.replace('tab-', 'content-');
+                    const panel = document.getElementById(tabId);
+                    if (panel) {
+                        panel.classList.remove('hidden');
+                        panel.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Initialize page when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            initializeTabs();
+            initializeImageUploadModal();
+        });
+    </script>
+</body>
+</html>

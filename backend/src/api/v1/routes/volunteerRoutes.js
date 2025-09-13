@@ -14,6 +14,13 @@ import * as volunteerController from '../controllers/volunteerController.js';
 router.get('/dashboard-data', volunteerController.getDashboardData);
 
 /**
+ * @route   GET /api/v1/volunteers/performance
+ * @desc    Get volunteer performance metrics, reputation score, and impact data
+ * @access  Private (Volunteers only)
+ */
+router.get('/performance', volunteerController.getVolunteerPerformance);
+
+/**
  * @route   GET /api/v1/volunteers/test
  * @desc    Test endpoint to verify route registration
  * @access  Private (Volunteers only)

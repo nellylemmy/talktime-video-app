@@ -11,11 +11,13 @@ class VolunteerNavLoader {
     }
 
     /**
-     * Ensure modal utilities are loaded
+     * Ensure modal utilities and notification system are loaded
      */
     async ensureModalUtils() {
         if (window.showConfirmation && window.showNotification) {
             this.modalUtilsLoaded = true;
+            // Also ensure notification sound system is loaded
+            await this.ensureNotificationSoundSystem();
             return true;
         }
 
@@ -26,8 +28,10 @@ class VolunteerNavLoader {
             script.async = true;
             
             return new Promise((resolve) => {
-                script.onload = () => {
+                script.onload = async () => {
                     this.modalUtilsLoaded = true;
+                    // Load notification sound system after modal utils
+                    await this.ensureNotificationSoundSystem();
                     resolve(true);
                 };
                 script.onerror = () => {
@@ -42,6 +46,62 @@ class VolunteerNavLoader {
             this.modalUtilsLoaded = false;
             return false;
         }
+    }
+
+    /**
+     * Ensure notification sound system is loaded
+     */
+    async ensureNotificationSoundSystem() {
+        const requiredScripts = [
+            { src: '/shared/js/notification-permission-modal.js', check: 'NotificationPermissionModal' },
+            { src: '/shared/js/notification-sound-manager.js', check: 'TalkTimeNotificationSoundManager' },
+            { src: '/shared/js/notification-enforcer.js', check: 'TalkTimeNotificationEnforcer' },
+            { src: '/shared/js/realtime-notifications.js', check: 'RealtimeNotifications' },
+            { src: '/shared/js/notification-sound-integration.js', check: 'TalkTimeNotificationSoundIntegration' }
+        ];
+
+        console.log('🔊 Loading notification sound system...');
+
+        for (const scriptInfo of requiredScripts) {
+            if (!window[scriptInfo.check]) {
+                try {
+                    await this.loadScript(scriptInfo.src);
+                    console.log(`✅ Loaded ${scriptInfo.src}`);
+                } catch (error) {
+                    console.warn(`⚠️ Failed to load ${scriptInfo.src}:`, error);
+                }
+            } else {
+                console.log(`✅ ${scriptInfo.src} already loaded`);
+            }
+        }
+
+        // Wait for sound system to initialize
+        if (window.TalkTimeNotificationSoundManager) {
+            console.log('🔊 Notification sound system ready');
+        }
+    }
+
+    /**
+     * Load script dynamically
+     */
+    loadScript(src) {
+        return new Promise((resolve, reject) => {
+            // Check if script already exists
+            const existingScript = document.querySelector(`script[src="${src}"]`);
+            if (existingScript) {
+                resolve();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+            
+            document.head.appendChild(script);
+        });
     }
 
     /**
@@ -141,6 +201,8 @@ class VolunteerNavLoader {
                         // Use setTimeout to ensure DOM elements are ready
                         setTimeout(() => {
                             this.updateUserInfo();
+                            this.loadNotificationCount();
+                            this.setupRealtimeNotifications();
                         }, 100);
                     }
                 }, 50);
@@ -165,21 +227,20 @@ class VolunteerNavLoader {
         const initialElement = document.getElementById('volunteer-initial');
         const navProfileImage = document.getElementById('nav-profile-image');
 
-        // Get the volunteer's name from various possible fields
-        const volunteerName = this.userInfo.fullName || 
-                             this.userInfo.name || 
-                             this.userInfo.firstName || 
-                             this.userInfo.username || 
-                             this.userInfo.email || 
-                             'Volunteer';
+        console.log('Updating navigation with user info:', this.userInfo);
 
-        console.log('Updating navigation with volunteer name:', volunteerName);
-
-        // Update greeting text
+        // Update greeting text with prioritized field selection
         if (greetingElement) {
-            // If we have a full name, use just the first name for greeting
-            let displayName = volunteerName;
-            if (displayName.includes(' ')) {
+            // Prioritize username, then name, then other fields
+            let displayName = this.userInfo.username || 
+                             this.userInfo.name || 
+                             this.userInfo.full_name || 
+                             this.userInfo.fullName || 
+                             this.userInfo.firstName || 
+                             'Volunteer';
+            
+            // If using full name and it has spaces, use just the first name
+            if (!this.userInfo.username && displayName.includes(' ')) {
                 displayName = displayName.split(' ')[0]; // Use first name only
             } else if (displayName.includes('@')) {
                 // If it's an email, use the part before @
@@ -188,30 +249,148 @@ class VolunteerNavLoader {
             
             greetingElement.textContent = `Welcome, ${displayName}!`;
             greetingElement.classList.remove('hidden'); // Ensure it's visible
+            console.log('Updated greeting to:', `Welcome, ${displayName}!`);
         } else {
             console.log('Greeting element not found');
         }
 
-        // Update profile image or initial
-        if (this.userInfo.profile_image && navProfileImage) {
-            navProfileImage.src = `/api/v1/profile/image/${this.userInfo.profile_image}`;
+        // Update profile image or initial with correct API path
+        if ((this.userInfo.profile_image || this.userInfo.profileImage) && navProfileImage) {
+            const profileImagePath = this.userInfo.profile_image || this.userInfo.profileImage;
+            navProfileImage.src = `/api/v1/volunteer/profile/image/${profileImagePath}`;
             navProfileImage.classList.remove('hidden');
             if (initialElement) {
                 initialElement.classList.add('hidden');
             }
-        } else if (initialElement && volunteerName) {
-            const firstLetter = volunteerName.charAt(0).toUpperCase();
+            console.log('Updated profile image to:', profileImagePath);
+        } else if (initialElement) {
+            // Use username or name for initial letter
+            const nameForInitial = this.userInfo.username || 
+                                  this.userInfo.name || 
+                                  this.userInfo.full_name || 
+                                  this.userInfo.fullName || 
+                                  'V';
+            const firstLetter = nameForInitial.charAt(0).toUpperCase();
             initialElement.textContent = firstLetter;
             initialElement.classList.remove('hidden');
             if (navProfileImage) {
                 navProfileImage.classList.add('hidden');
             }
+            console.log('Updated initial to:', firstLetter, 'from name:', nameForInitial);
         }
 
         // Also update any other name displays in mobile menu or dropdowns
         const mobileGreeting = document.querySelector('#mobile-menu .volunteer-name');
         if (mobileGreeting) {
-            mobileGreeting.textContent = volunteerName;
+            const displayName = this.userInfo.username || this.userInfo.name || 'Volunteer';
+            mobileGreeting.textContent = displayName;
+        }
+    }
+
+    /**
+     * Load notification count and update badge
+     */
+    async loadNotificationCount() {
+        try {
+            if (!window.TalkTimeAuth || !window.TalkTimeAuth.isAuthenticated()) {
+                return;
+            }
+
+            // Check if the page already has its own notification loading
+            if (window.loadNotificationCount || window.updateNotificationBadge) {
+                console.log('Page already has notification loading, skipping nav-loader notification setup');
+                return;
+            }
+
+            const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/unread-count');
+            if (response.ok) {
+                const data = await response.json();
+                this.updateNotificationBadge(data.unread_count);
+                console.log('Notification count loaded by nav-loader:', data.unread_count);
+            } else {
+                console.error('Failed to load notification count:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading notification count:', error);
+        }
+    }
+
+    /**
+     * Update notification badge with count
+     */
+    updateNotificationBadge(count) {
+        // Try to find the notification badge (volunteer pages use 'notification-badge')
+        const badge = document.getElementById('notification-badge');
+        // Also try to find student notification count (student pages use 'notificationCount') 
+        const studentBadge = document.getElementById('notificationCount');
+        
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count.toString();
+                badge.classList.remove('hidden');
+                console.log('Notification badge updated to:', count);
+            } else {
+                badge.classList.add('hidden');
+                console.log('Notification badge hidden (no unread notifications)');
+            }
+        }
+        
+        if (studentBadge) {
+            if (count > 0) {
+                studentBadge.textContent = count > 99 ? '99+' : count.toString();
+                studentBadge.classList.remove('hidden');
+                console.log('Student notification count updated to:', count);
+            } else {
+                studentBadge.classList.add('hidden');
+                console.log('Student notification count hidden (no unread notifications)');
+            }
+        }
+        
+        if (!badge && !studentBadge) {
+            console.log('No notification badge elements found');
+        }
+    }
+
+    /**
+     * Setup real-time notification updates
+     */
+    setupRealtimeNotifications() {
+        // Only set up real-time updates if user is authenticated
+        if (!this.isAuthenticated || !this.userInfo) {
+            return;
+        }
+
+        try {
+            // Initialize real-time notifications if available
+            if (window.realtimeNotifications) {
+                console.log('Setting up real-time notification updates for nav badge');
+                
+                // Listen for new notifications
+                window.realtimeNotifications.on('new-notification', (data) => {
+                    console.log('New notification received, refreshing badge count');
+                    this.loadNotificationCount();
+                });
+
+                // Listen for notification read status changes
+                window.realtimeNotifications.on('notification-read', (data) => {
+                    console.log('Notification read status changed, refreshing badge count');
+                    this.loadNotificationCount();
+                });
+
+                // Listen for badge updates
+                window.realtimeNotifications.on('notification-badge-update', (data) => {
+                    console.log('Badge update received:', data);
+                    if (data.unread_count !== undefined) {
+                        this.updateNotificationBadge(data.unread_count);
+                    } else {
+                        this.loadNotificationCount();
+                    }
+                });
+            } else {
+                console.log('Real-time notifications not available, badge will update on page refresh');
+            }
+        } catch (error) {
+            console.error('Error setting up real-time notifications:', error);
         }
     }
 

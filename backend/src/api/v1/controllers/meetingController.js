@@ -124,6 +124,44 @@ export const createMeeting = async (req, res) => {
             return res.status(400).json({ error: 'Student ID and scheduled time are required' });
         }
         
+        // Validate scheduled time constraints
+        const now = new Date();
+        const scheduledDate = new Date(scheduledTime);
+        const threeMonthsFromNow = new Date();
+        threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+        
+        // Check if meeting is scheduled in the past
+        if (scheduledDate <= now) {
+            console.error('Cannot schedule meeting in the past:', {
+                scheduledTime,
+                currentTime: now
+            });
+            return res.status(400).json({ 
+                error: 'Cannot schedule meetings in the past. Please select a future date and time.',
+                scheduledTime,
+                currentTime: now
+            });
+        }
+        
+        // Check if meeting is beyond 3-month limit
+        if (scheduledDate > threeMonthsFromNow) {
+            console.error('Meeting scheduled too far in the future:', {
+                scheduledTime,
+                maxAllowedTime: threeMonthsFromNow
+            });
+            return res.status(400).json({ 
+                error: 'Meetings can only be scheduled up to 3 months in advance. Please select an earlier date.',
+                scheduledTime,
+                maxAllowedTime: threeMonthsFromNow
+            });
+        }
+        
+        console.log('Time validation passed:', {
+            scheduledTime,
+            currentTime: now,
+            maxAllowedTime: threeMonthsFromNow
+        });
+
         // Check if student exists
         const student = await User.findById(studentId);
         
@@ -139,8 +177,58 @@ export const createMeeting = async (req, res) => {
             console.error('Volunteer not found with ID:', volunteerId);
             return res.status(404).json({ error: 'Volunteer not found' });
         }
+
+        // Check volunteer performance restrictions
+        const performanceQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
+                COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
+                COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
+                COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled
+            FROM meetings 
+            WHERE volunteer_id = $1 AND scheduled_time < NOW()
+        `;
+        
+        const { rows: performanceRows } = await pool.query(performanceQuery, [volunteerId]);
+        const metrics = performanceRows[0];
+        
+        // Calculate rates for restriction check
+        const cancelledCalls = parseInt(metrics.cancelled_calls) + parseInt(metrics.cancelled_calls_alt);
+        const completedCalls = parseInt(metrics.completed_calls);
+        const missedCalls = parseInt(metrics.missed_calls);
+        const totalScheduled = parseInt(metrics.total_scheduled);
+        
+        if (totalScheduled > 0) {
+            const cancelledRate = Math.round((cancelledCalls / totalScheduled) * 100);
+            const missedRate = Math.round((missedCalls / totalScheduled) * 100);
+            const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
+            
+            // Enforce restrictions based on performance
+            if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
+                console.error('Volunteer account restricted due to poor performance:', {
+                    volunteerId,
+                    cancelledRate,
+                    missedRate,
+                    reputationScore,
+                    totalScheduled
+                });
+                return res.status(403).json({ 
+                    error: 'Account temporarily restricted',
+                    message: 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Please contact support to resolve this issue.',
+                    performanceData: {
+                        cancelledRate,
+                        missedRate,
+                        reputationScore,
+                        totalCalls: totalScheduled,
+                        restriction: 'critical'
+                    }
+                });
+            }
+        }
         
         // CRITICAL: Enforce 1-call-per-day rule - Check if student already has a meeting on this date
+        // IMPORTANT: Only consider 'scheduled' and 'in_progress' meetings as conflicts, NOT 'canceled' meetings
         const meetingDate = new Date(scheduledTime);
         const startOfDay = new Date(meetingDate.getFullYear(), meetingDate.getMonth(), meetingDate.getDate());
         const endOfDay = new Date(startOfDay);
@@ -174,6 +262,51 @@ export const createMeeting = async (req, res) => {
                 }
             });
         }
+        
+        // NEW: Check 3-meeting limit per volunteer-student pair
+        // First, check for any overdue meetings and mark them as missed (40+ minute timeout)
+        await pool.query(`
+            UPDATE meetings 
+            SET status = 'missed', 
+                updated_at = NOW()
+            WHERE volunteer_id = $1 
+            AND student_id = $2
+            AND status = 'scheduled' 
+            AND scheduled_time < NOW() - INTERVAL '40 minutes'
+        `, [volunteerId, studentId]);
+
+        // IMPORTANT: Count all active meetings (scheduled, completed, in_progress)
+        // Only exclude missed and canceled meetings
+        const volunteerStudentMeetingQuery = `
+            SELECT COUNT(*) as meeting_count
+            FROM meetings 
+            WHERE volunteer_id = $1 
+            AND student_id = $2 
+            AND status NOT IN ('missed', 'canceled', 'cancelled')
+        `;
+        
+        const volunteerStudentMeetingResult = await pool.query(volunteerStudentMeetingQuery, [volunteerId, studentId]);
+        const currentMeetingCount = parseInt(volunteerStudentMeetingResult.rows[0].meeting_count);
+        
+        if (currentMeetingCount >= 3) {
+            console.error('Volunteer has reached 3-meeting limit with this student:', {
+                volunteerId,
+                studentId,
+                currentMeetingCount
+            });
+            return res.status(403).json({ 
+                error: 'You have reached the 3-meeting limit with this student. This limit counts all active meetings (scheduled, ongoing, completed) to ensure all students get equal opportunities. Only missed and canceled meetings are excluded.',
+                meetingCount: currentMeetingCount,
+                limit: 3
+            });
+        }
+        
+        console.log('Meeting count check passed:', {
+            volunteerId,
+            studentId,
+            currentMeetingCount,
+            limit: 3
+        });
         
         // Generate unique room ID
         const roomId = uuidv4();
@@ -223,6 +356,53 @@ export const createMeeting = async (req, res) => {
         try {
             await notificationService.scheduleMeetingNotifications(meeting);
             console.log('Meeting notifications scheduled successfully');
+            
+            // Send immediate success notification to volunteer
+            await notificationService.sendNotification({
+                recipient_id: meeting.volunteer_id || meeting.volunteerId,
+                recipient_role: 'volunteer',
+                title: '✅ Meeting Scheduled Successfully!',
+                message: `Your meeting with ${studentName || 'student'} has been scheduled for ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleDateString()} at ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleTimeString()}. You'll receive reminders before the meeting starts.`,
+                type: 'meeting_scheduled',
+                priority: 'high',
+                metadata: {
+                    meeting_id: meeting.id,
+                    student_name: studentName,
+                    scheduled_time: meeting.scheduled_time || meeting.scheduledTime,
+                    meeting_link: meeting.roomUrl || secureAccessUrl
+                }
+            }, ['in-app', 'push'], {
+                persistent: true,
+                auto_delete_after: 1440, // 24 hours
+                require_interaction: false,
+                action_url: `/volunteer/dashboard/upcoming.html`,
+                tag: `meeting-scheduled-${meeting.id}`
+            });
+            
+            // Send notification to student
+            if (meeting.student_id || meeting.studentId) {
+                await notificationService.sendNotification({
+                    recipient_id: meeting.student_id || meeting.studentId,
+                    recipient_role: 'student',
+                    title: '🎉 New Meeting Scheduled!',
+                    message: `A volunteer has scheduled a meeting with you for ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleDateString()} at ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleTimeString()}. We'll send you reminders!`,
+                    type: 'meeting_scheduled',
+                    priority: 'high',
+                    metadata: {
+                        meeting_id: meeting.id,
+                        volunteer_name: req.user.full_name || req.user.fullName,
+                        scheduled_time: meeting.scheduled_time || meeting.scheduledTime,
+                        meeting_link: secureAccessUrl
+                    }
+                }, ['in-app', 'push'], {
+                    persistent: true,
+                    auto_delete_after: 1440, // 24 hours
+                    require_interaction: false,
+                    action_url: `/student/dashboard`,
+                    tag: `meeting-scheduled-${meeting.id}`
+                });
+            }
+            
         } catch (notificationError) {
             console.error('Error scheduling meeting notifications:', notificationError);
             // Don't fail the meeting creation if notifications fail
@@ -319,6 +499,7 @@ export const updateMeeting = async (req, res) => {
         
         // Update meeting
         const updatedMeeting = await Meeting.update(id, updateData);
+        console.log('DEBUG: updatedMeeting from Meeting.update:', JSON.stringify(updatedMeeting, null, 2));
         
         // If the meeting time changed, cancel old notifications and create new ones
         if (scheduledTime && scheduledTime !== meeting.scheduledTime) {
@@ -326,11 +507,23 @@ export const updateMeeting = async (req, res) => {
                 // Cancel existing notifications
                 await notificationService.cancelMeetingNotifications(id);
                 
-                // Schedule new notifications
-                await notificationService.scheduleMeetingNotifications(updatedMeeting);
+                // Get complete meeting data with participant information for notifications
+                const meetingWithParticipants = {
+                    id: updatedMeeting.id,
+                    volunteer_id: updatedMeeting.volunteer_id,
+                    student_id: updatedMeeting.student_id,
+                    scheduled_time: updatedMeeting.scheduled_time,
+                    duration: updatedMeeting.duration
+                };
                 
-                // Create a reschedule notification for the student
-                await createRescheduleNotification(updatedMeeting, req.user, meeting.scheduledTime, scheduledTime);
+                // Schedule new notifications
+                console.log('DEBUG: Calling scheduleMeetingNotifications with meeting:', JSON.stringify(meetingWithParticipants, null, 2));
+                await notificationService.scheduleMeetingNotifications(meetingWithParticipants);
+                
+                // Create a reschedule notification for both participants  
+                const originalScheduledTime = meeting.scheduled_time || meeting.scheduledTime;
+                console.log('DEBUG: Calling createRescheduleNotification with originalTime:', originalScheduledTime, 'newTime:', scheduledTime);
+                await createRescheduleNotification(meetingWithParticipants, req.user, originalScheduledTime, scheduledTime);
                 
             } catch (notificationError) {
                 console.error('Error rescheduling meeting notifications:', notificationError);
@@ -415,9 +608,11 @@ export const cancelMeeting = async (req, res) => {
             return res.status(403).json({ error: 'Not authorized to cancel this meeting' });
         }
         
-        // Cancel meeting
+        // Cancel meeting - Use 'canceled' to match frontend expectations
         await Meeting.update(id, {
-            status: 'cancelled'
+            status: 'canceled',
+            canceled_at: new Date(),
+            canceled_by: volunteerId
         });
         
         // Reset student availability after cancellation
@@ -434,23 +629,71 @@ export const cancelMeeting = async (req, res) => {
             
             if (student) {
                 await notificationService.sendNotification({
-                    userId: student.id,
-                    type: 'meeting-canceled',
-                    title: 'Meeting Canceled',
-                    message: `Your meeting scheduled for ${new Date(meeting.scheduledTime).toLocaleString()} has been canceled.`,
-                    priority: 'high'
-                }, ['in-app', 'email', 'sms']);
+                    recipient_id: student.id,
+                    recipient_role: 'student',
+                    title: '❌ Meeting Canceled',
+                    message: `Your meeting scheduled for ${new Date(meeting.scheduledTime).toLocaleString()} has been canceled by ${req.user.full_name || req.user.fullName}. You can schedule a new meeting anytime.`,
+                    type: 'meeting_canceled',
+                    priority: 'high',
+                    metadata: {
+                        meeting_id: id,
+                        canceled_by: req.user.full_name || req.user.fullName,
+                        canceled_at: new Date().toISOString(),
+                        original_time: meeting.scheduledTime
+                    }
+                }, ['in-app', 'push', 'email'], {
+                    persistent: true,
+                    auto_delete_after: 2880, // 48 hours
+                    require_interaction: false,
+                    action_url: `/student/dashboard`,
+                    tag: `meeting-canceled-${id}`
+                });
             }
             
             if (volunteer && volunteer.id !== req.user.id) {
                 await notificationService.sendNotification({
-                    userId: volunteer.id,
-                    type: 'meeting-canceled',
-                    title: 'Meeting Canceled',
-                    message: `Your meeting scheduled for ${new Date(meeting.scheduledTime).toLocaleString()} has been canceled.`,
-                    priority: 'high'
-                }, ['in-app', 'email', 'sms']);
+                    recipient_id: volunteer.id,
+                    recipient_role: 'volunteer',
+                    title: '❌ Meeting Canceled',
+                    message: `Your meeting scheduled for ${new Date(meeting.scheduledTime).toLocaleString()} has been canceled. You can schedule new meetings from your dashboard.`,
+                    type: 'meeting_canceled',
+                    priority: 'high',
+                    metadata: {
+                        meeting_id: id,
+                        canceled_by: req.user.full_name || req.user.fullName,
+                        canceled_at: new Date().toISOString(),
+                        original_time: meeting.scheduledTime
+                    }
+                }, ['in-app', 'push', 'email'], {
+                    persistent: true,
+                    auto_delete_after: 2880, // 48 hours
+                    require_interaction: false,
+                    action_url: `/volunteer/dashboard/students.html`,
+                    tag: `meeting-canceled-${id}`
+                });
             }
+            
+            // Send confirmation to the canceling user
+            await notificationService.sendNotification({
+                recipient_id: req.user.id,
+                recipient_role: req.user.role,
+                title: '✅ Meeting Canceled Successfully',
+                message: `Your meeting scheduled for ${new Date(meeting.scheduledTime).toLocaleString()} has been canceled. All participants have been notified.`,
+                type: 'meeting_canceled_confirmation',
+                priority: 'medium',
+                metadata: {
+                    meeting_id: id,
+                    canceled_at: new Date().toISOString(),
+                    original_time: meeting.scheduledTime
+                }
+            }, ['in-app', 'push'], {
+                persistent: false,
+                auto_delete_after: 60, // 1 hour
+                require_interaction: false,
+                action_url: req.user.role === 'volunteer' ? `/volunteer/dashboard/students.html` : `/student/dashboard`,
+                tag: `meeting-canceled-confirmation-${id}`
+            });
+            
         } catch (notificationError) {
             console.error('Error canceling meeting notifications:', notificationError);
             // Don't fail the meeting cancellation if notifications fail
@@ -492,43 +735,238 @@ export const getMeetingsByStudentId = async (req, res) => {
             actualStudentId = student.id;
             console.log('Found student with ID:', actualStudentId);
         }
-        
-        // Find the most recent active meeting for this student
-        console.log('Querying database for meetings with studentId:', actualStudentId);
-        const meeting = await Meeting.findLatestByStudentId(actualStudentId);
-        
-        console.log('Database result:', meeting ? 'Meeting found' : 'No meeting found', meeting);
-        
-        // Include the current volunteer ID in the response for ownership checking
+
+        // Helper function to determine real-time meeting status
+        function getRealTimeStatus(meeting) {
+            const now = new Date();
+            const meetingStart = new Date(meeting.scheduled_time);
+            const meetingEnd = new Date(meetingStart.getTime() + (60 * 60 * 1000)); // Assume 1 hour duration
+            const minutesLate = Math.floor((now - meetingStart) / (1000 * 60));
+            
+            // If meeting was manually canceled, keep that status
+            if (meeting.status === 'canceled') {
+                return 'canceled';
+            }
+            
+            // If meeting was manually marked as completed, keep that status
+            if (meeting.status === 'completed') {
+                return 'completed';
+            }
+            
+            // If meeting was already marked as missed, keep that status
+            if (meeting.status === 'missed') {
+                return 'missed';
+            }
+            
+            // Real-time status detection with automatic timeout logic
+            if (now < meetingStart) {
+                // Meeting is in the future
+                return 'upcoming';
+            } else if (now >= meetingStart && now <= meetingEnd) {
+                // Meeting should be happening right now
+                if (meeting.status === 'in_progress') {
+                    return 'in_progress';
+                } else if (minutesLate >= 40) {
+                    // Auto-timeout: 40+ minutes late = missed
+                    // This will trigger database update below
+                    return 'auto_missed';
+                } else {
+                    // Still within grace period
+                    return 'missed_start';
+                }
+            } else {
+                // Meeting time has passed
+                if (meeting.status === 'in_progress') {
+                    return 'ended'; // Was active but time passed
+                } else if (meeting.status === 'scheduled') {
+                    return 'missed'; // Was scheduled but never started
+                } else {
+                    return meeting.status; // Keep other statuses
+                }
+            }
+        }
+
+        // Get current volunteer ID for ownership checking and meeting count
         const currentVolunteerId = req.user.id;
         
-        // Return 200 with null meeting data if no meeting found (instead of 404)
-        // This is better for SEO and prevents console errors
-        if (!meeting) {
-            console.log('No active meetings found for student', actualStudentId);
-            return res.status(200).json({
-                meeting: null,
-                currentVolunteerId: currentVolunteerId
-            });
+        // PRIVACY: Only get meetings involving THIS volunteer, but be more flexible for active meetings
+        
+        // 1. First, find ANY active meeting involving THIS volunteer and this student
+        console.log('Querying for active meeting between volunteer', currentVolunteerId, 'and student', actualStudentId);
+        
+        const activeMeetingQuery = `
+            SELECT 
+                m.*,
+                v.full_name as volunteer_name
+            FROM meetings m
+            LEFT JOIN users v ON m.volunteer_id = v.id
+            WHERE m.student_id = $1 
+            AND m.volunteer_id = $2
+            AND (m.status = 'scheduled' OR m.status = 'in_progress')
+            ORDER BY m.scheduled_time ASC
+            LIMIT 1
+        `;
+        
+        const activeMeetingResult = await pool.query(activeMeetingQuery, [actualStudentId, currentVolunteerId]);
+        let activeMeeting = activeMeetingResult.rows[0] || null;
+        
+        console.log('Active meeting query result:', {
+            found: activeMeeting ? 'YES' : 'NO',
+            meetingData: activeMeeting ? {
+                id: activeMeeting.id,
+                status: activeMeeting.status,
+                scheduled_time: activeMeeting.scheduled_time,
+                volunteer_id: activeMeeting.volunteer_id,
+                student_id: activeMeeting.student_id
+            } : 'None'
+        });
+
+        // 2. Get ALL meetings between THIS volunteer and this student (for history)
+        const volunteerStudentMeetingsQuery = `
+            SELECT 
+                m.*,
+                v.full_name as volunteer_name
+            FROM meetings m
+            LEFT JOIN users v ON m.volunteer_id = v.id
+            WHERE m.student_id = $1 
+            AND m.volunteer_id = $2
+            ORDER BY m.scheduled_time DESC
+        `;
+        
+        const volunteerStudentMeetingsResult = await pool.query(volunteerStudentMeetingsQuery, [actualStudentId, currentVolunteerId]);
+        const volunteerStudentMeetings = volunteerStudentMeetingsResult.rows;
+        
+        console.log('Volunteer-student meetings found:', volunteerStudentMeetings.length);
+
+        // Process meetings and auto-update timed-out meetings
+        const processedMeetings = [];
+        const meetingsToUpdate = [];
+        
+        for (const meeting of volunteerStudentMeetings) {
+            const realTimeStatus = getRealTimeStatus(meeting);
+            
+            // Check if meeting should be auto-updated to missed status
+            if (realTimeStatus === 'auto_missed' && meeting.status === 'scheduled') {
+                meetingsToUpdate.push({
+                    id: meeting.id,
+                    originalStatus: meeting.status
+                });
+                
+                // Update the meeting object for response
+                meeting.status = 'missed';
+                meeting.auto_missed = true;
+                meeting.realTimeStatus = 'missed';
+            } else {
+                meeting.realTimeStatus = realTimeStatus;
+            }
+            
+            processedMeetings.push(meeting);
         }
         
+        // Batch update timed-out meetings in database
+        if (meetingsToUpdate.length > 0) {
+            console.log(`⏰ Auto-updating ${meetingsToUpdate.length} timed-out meetings to 'missed' status`);
+            
+            for (const meetingUpdate of meetingsToUpdate) {
+                try {
+                    await pool.query(`
+                        UPDATE meetings 
+                        SET status = 'missed', 
+                            updated_at = NOW()
+                        WHERE id = $1 AND status = 'scheduled'
+                    `, [meetingUpdate.id]);
+                    
+                    console.log(`✅ Meeting ${meetingUpdate.id} auto-marked as missed (40+ min timeout)`);
+                } catch (updateError) {
+                    console.error(`❌ Failed to auto-update meeting ${meetingUpdate.id}:`, updateError);
+                }
+            }
+        }
+
+        // Count meetings between current volunteer and this student (for limit check)
+        // IMPORTANT: Count all active meetings (scheduled, completed, in_progress)
+        // Only exclude missed and canceled meetings
+        const volunteerStudentMeetingCount = processedMeetings.filter(m => 
+            m.status !== 'missed' && m.status !== 'canceled' && m.status !== 'cancelled'
+        ).length;
+
+        console.log('Privacy-focused database result:', {
+            activeMeeting: activeMeeting ? 'Found' : 'None',
+            volunteerStudentMeetings: volunteerStudentMeetings.length,
+            volunteerStudentMeetingCount
+        });
+
+        // Return privacy-focused meeting data (only THIS volunteer's meetings)
         const responseData = {
-            meeting: {
+            // Active meeting only if THIS volunteer is involved
+            activeMeeting: activeMeeting ? {
+                id: activeMeeting.id,
+                roomId: activeMeeting.room_id,
+                scheduled_time: activeMeeting.scheduled_time,
+                endTime: activeMeeting.end_time,
+                status: activeMeeting.status,
+                realTimeStatus: getRealTimeStatus(activeMeeting),
+                studentId: activeMeeting.student_id,
+                volunteerId: activeMeeting.volunteer_id,
+                volunteer_name: activeMeeting.volunteer_name,
+                // Also provide snake_case versions for compatibility
+                student_id: activeMeeting.student_id,
+                volunteer_id: activeMeeting.volunteer_id
+            } : null,
+            
+            // For backward compatibility, also set the 'meeting' field
+            meeting: activeMeeting ? {
+                id: activeMeeting.id,
+                roomId: activeMeeting.room_id,
+                scheduled_time: activeMeeting.scheduled_time,
+                endTime: activeMeeting.end_time,
+                status: activeMeeting.status,
+                realTimeStatus: getRealTimeStatus(activeMeeting),
+                studentId: activeMeeting.student_id,
+                volunteerId: activeMeeting.volunteer_id,
+                volunteer_name: activeMeeting.volunteer_name,
+                student_id: activeMeeting.student_id,
+                volunteer_id: activeMeeting.volunteer_id
+            } : null,
+            
+            // Meetings between THIS volunteer and this student (for history tab)
+            volunteerStudentMeetings: processedMeetings.map(meeting => ({
                 id: meeting.id,
                 roomId: meeting.room_id,
                 scheduled_time: meeting.scheduled_time,
-                endTime: meeting.end_time,
                 status: meeting.status,
-                studentId: meeting.student_id,
-                volunteerId: meeting.volunteer_id,
-                // Also provide snake_case versions for compatibility
-                student_id: meeting.student_id,
-                volunteer_id: meeting.volunteer_id
+                realTimeStatus: meeting.realTimeStatus,
+                volunteer_id: meeting.volunteer_id,
+                volunteer_name: meeting.volunteer_name,
+                isOwner: true, // These are all this volunteer's meetings
+                created_at: meeting.created_at,
+                auto_missed: meeting.auto_missed || false // Flag for auto-timeout
+            })),
+            
+            // Meeting statistics
+            meetingStats: {
+                volunteerStudentMeetingCount,
+                meetingLimit: 3,
+                canScheduleMore: volunteerStudentMeetingCount < 3,
+                totalVolunteerMeetings: processedMeetings.length
             },
+            
             currentVolunteerId: currentVolunteerId
         };
-        
-        console.log('Sending API response with meeting data:', JSON.stringify(responseData));
+
+        console.log('Sending privacy-focused API response:', {
+            activeMeeting: responseData.activeMeeting ? 'Yes' : 'No',
+            volunteerStudentMeetings: responseData.volunteerStudentMeetings.length,
+            volunteerStudentCount: volunteerStudentMeetingCount,
+            canScheduleMore: responseData.meetingStats.canScheduleMore,
+            currentVolunteerId: currentVolunteerId,
+            actualStudentId: actualStudentId,
+            debugInfo: {
+                activeMeetingData: responseData.activeMeeting,
+                volunteerStudentMeetingsData: responseData.volunteerStudentMeetings
+            }
+        });
+
         res.json(responseData);
     } catch (error) {
         console.error('Error fetching student meetings:', error);
@@ -591,22 +1029,43 @@ export const endMeeting = async (req, res) => {
         }
         
         // Only allow ending if meeting is active, pending, or scheduled
-        if (!['active', 'pending', 'scheduled'].includes(meeting.status)) {
+        if (!['active', 'pending', 'scheduled', 'in_progress'].includes(meeting.status)) {
             return res.status(400).json({ success: false, message: 'Meeting cannot be ended in current status' });
         }
         
-        // Update meeting status to ended
+        // Determine if this was a successful meeting for limit counting
         const endTime = new Date();
+        const scheduledTime = new Date(meeting.scheduled_time);
+        const currentTime = new Date();
+        
+        // Calculate how long the meeting was available (from scheduled time to now)
+        const availableDurationMinutes = Math.floor((currentTime - scheduledTime) / (1000 * 60));
+        
+        // Consider a meeting "successful" if:
+        // 1. The meeting was scheduled and participants had reasonable time to interact (at least 5 minutes past start time)
+        // 2. OR if it was already marked as completed
+        // 3. OR if both participants explicitly ended it (indicates they were both present)
+        const isSuccessfulMeeting = (
+            availableDurationMinutes >= 5 || 
+            meeting.status === 'completed' ||
+            meeting.status === 'in_progress' ||
+            meeting.status === 'active'
+        );
+        
+        // Set appropriate final status based on success criteria
+        const finalStatus = isSuccessfulMeeting ? 'completed' : 'ended';
+        
+        // Update meeting status
         await pool.query(`
             UPDATE meetings 
             SET 
-                status = 'ended',
-                end_time = $1,
-                ended_by = $2,
-                end_reason = $3,
+                status = $1,
+                end_time = $2,
+                ended_by = $3,
+                end_reason = $4,
                 updated_at = NOW()
-            WHERE id = $4
-        `, [endTime, userId, reason, meeting.id]);
+            WHERE id = $5
+        `, [finalStatus, endTime, userId, reason, meeting.id]);
         
         // Determine who ended the meeting and who needs to be notified
         const endedByName = userRole === 'volunteer' ? meeting.volunteer_name : meeting.student_name;
@@ -644,7 +1103,71 @@ export const endMeeting = async (req, res) => {
         });
         
         console.log(`✅ Meeting ${meeting.id} ended by ${userRole} ${userId} (${endedByName})`);
-        console.log(`📡 Notified ${otherParticipantRole} ${otherParticipantId} (${otherParticipantName})`);
+        console.log(`� Meeting duration: ${durationMinutes} minutes, Status: ${finalStatus} (${isSuccessfulMeeting ? 'COUNTS toward limit' : 'does NOT count toward limit'})`);
+        console.log(`�📡 Notified ${otherParticipantRole} ${otherParticipantId} (${otherParticipantName})`);
+        
+        // Send meeting completion notifications
+        try {
+            const completionMessage = finalStatus === 'completed' 
+                ? '🎉 Meeting Completed Successfully!' 
+                : '⏰ Meeting Ended';
+                
+            const completionDetails = finalStatus === 'completed'
+                ? 'Thank you for participating in this conversation practice session. Your engagement helps build stronger communities!'
+                : 'The meeting has ended. Thank you for your time.';
+
+            // Notify the other participant
+            if (otherParticipantId && otherParticipantRole) {
+                await notificationService.sendNotification({
+                    recipient_id: otherParticipantId,
+                    recipient_role: otherParticipantRole,
+                    title: completionMessage,
+                    message: `Your meeting with ${endedByName} has ended. ${completionDetails}`,
+                    type: finalStatus === 'completed' ? 'meeting_completed' : 'meeting_ended',
+                    priority: 'medium',
+                    metadata: {
+                        meeting_id: meeting.id,
+                        ended_by: endedByName,
+                        ended_by_role: userRole,
+                        final_status: finalStatus,
+                        ended_at: endTime.toISOString(),
+                        duration_minutes: durationMinutes
+                    }
+                }, ['in-app', 'push'], {
+                    persistent: true,
+                    auto_delete_after: 1440, // 24 hours
+                    require_interaction: false,
+                    action_url: otherParticipantRole === 'student' ? '/student/dashboard' : '/volunteer/dashboard/students.html',
+                    tag: `meeting-ended-${meeting.id}`
+                });
+            }
+
+            // Notify the current user
+            await notificationService.sendNotification({
+                recipient_id: userId,
+                recipient_role: userRole,
+                title: completionMessage,
+                message: `Your meeting with ${otherParticipantName} has ended. ${completionDetails}`,
+                type: finalStatus === 'completed' ? 'meeting_completed' : 'meeting_ended',
+                priority: 'medium',
+                metadata: {
+                    meeting_id: meeting.id,
+                    final_status: finalStatus,
+                    ended_at: endTime.toISOString(),
+                    duration_minutes: durationMinutes
+                }
+            }, ['in-app', 'push'], {
+                persistent: false,
+                auto_delete_after: 240, // 4 hours
+                require_interaction: false,
+                action_url: userRole === 'student' ? '/student/dashboard' : '/volunteer/dashboard/students.html',
+                tag: `meeting-ended-confirmation-${meeting.id}`
+            });
+
+        } catch (notificationError) {
+            console.error('Error sending meeting completion notifications:', notificationError);
+            // Don't fail the meeting end if notifications fail
+        }
         
         // Log the meeting end action
         try {
@@ -760,7 +1283,7 @@ export const joinMeeting = async (req, res) => {
 };
 
 /**
- * Create a reschedule notification for the student
+ * Create a reschedule notification for both student and volunteer
  * @param {Object} meeting - The updated meeting object
  * @param {Object} rescheduler - The user who rescheduled (volunteer or admin)
  * @param {string} originalTime - The original scheduled time
@@ -768,15 +1291,19 @@ export const joinMeeting = async (req, res) => {
  */
 async function createRescheduleNotification(meeting, rescheduler, originalTime, newTime) {
     try {
-        const originalDate = new Date(originalTime).toLocaleString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Africa/Nairobi'
-        });
+        // Handle invalid or missing originalTime
+        let originalDate = 'Previous time';
+        if (originalTime && originalTime !== 'Invalid Date' && !isNaN(new Date(originalTime).getTime())) {
+            originalDate = new Date(originalTime).toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Africa/Nairobi'
+            });
+        }
         
         const newDate = new Date(newTime).toLocaleString('en-US', {
             weekday: 'long',
@@ -788,53 +1315,127 @@ async function createRescheduleNotification(meeting, rescheduler, originalTime, 
             timeZone: 'Africa/Nairobi'
         });
         
-        const message = `Your meeting has been rescheduled by ${rescheduler.full_name}. ` +
-                       `Original time: ${originalDate}. ` +
-                       `New time: ${newDate}.`;
+        // Get meeting participants
+        // Handle both camelCase and snake_case column names from database
+        const volunteerId = meeting.volunteer_id || meeting.volunteerId;
+        const studentId = meeting.student_id || meeting.studentId;
         
-        // With unified authentication, meeting.studentId now directly references users.id
-        const studentUserId = meeting.studentId;
+        const [volunteerResult, studentResult] = await Promise.all([
+            pool.query('SELECT id, full_name, email FROM users WHERE id = $1 AND role = $2', [volunteerId, 'volunteer']),
+            pool.query('SELECT id, full_name, email FROM users WHERE id = $1 AND role = $2', [studentId, 'student'])
+        ]);
         
-        // Verify the student user exists
-        const userQuery = 'SELECT id, full_name FROM users WHERE id = $1 AND role = $2';
-        const userResult = await pool.query(userQuery, [studentUserId, 'student']);
-        
-        if (userResult.rows.length > 0) {
-            const studentUser = userResult.rows[0];
-            console.log(`Creating reschedule notification for student: ${studentUser.full_name} (ID: ${studentUserId})`);
-            
-            // Insert notification into database
-            const insertQuery = `
-                INSERT INTO notifications (user_id, type, title, message, meeting_id, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING id
-            `;
-            
-            const result = await pool.query(insertQuery, [
-                studentUserId,
-                'meeting_rescheduled',
-                'Meeting Rescheduled',
-                message,
-                meeting.id,
-                new Date()
-            ]);
-            
-            console.log(`Created reschedule notification ${result.rows[0].id} for student user ${studentUserId}`);
-            
-            // Emit real-time notification via Socket.IO
-            if (io) {
-                io.to(`user_${studentUserId}`).emit('notification', {
-                    id: result.rows[0].id,
-                    type: 'meeting_rescheduled',
-                    title: 'Meeting Rescheduled',
-                    message: message,
-                    meeting_id: meeting.id,
-                    created_at: new Date().toISOString()
-                });
-            }
+        if (volunteerResult.rows.length === 0 || studentResult.rows.length === 0) {
+            console.error('Could not find meeting participants for reschedule notification');
+            return;
         }
+        
+        const volunteer = volunteerResult.rows[0];
+        const student = studentResult.rows[0];
+        
+        console.log(`📅 Creating reschedule notifications for meeting ${meeting.id}`);
+        
+        // Student notification (they receive info about who rescheduled)
+        const studentMessage = `Your meeting has been rescheduled by ${rescheduler.full_name}. ` +
+                              `Original time: ${originalDate}. ` +
+                              `New time: ${newDate}.`;
+        
+        // Volunteer notification (confirmation of their reschedule action)
+        const volunteerMessage = rescheduler.id === volunteer.id 
+            ? `You successfully rescheduled your meeting with ${student.full_name}. ` +
+              `Original time: ${originalDate}. ` +
+              `New time: ${newDate}.`
+            : `Your meeting with ${student.full_name} has been rescheduled by ${rescheduler.full_name}. ` +
+              `Original time: ${originalDate}. ` +
+              `New time: ${newDate}.`;
+
+        // Shared metadata for both notifications
+        const baseMetadata = {
+            meeting_id: meeting.id,
+            original_time: originalTime || null,
+            new_time: newTime,
+            rescheduled_by: rescheduler.full_name,
+            student_name: student.full_name,
+            volunteer_name: volunteer.full_name,
+            meeting_url: `/volunteer/dashboard/upcoming.html`,
+            type: 'meeting_rescheduled'
+        };
+
+        // Send notification to student with immediate in-app notification only
+        await notificationService.sendNotification({
+            recipient_id: student.id,
+            recipient_role: 'student',
+            title: '📅 Meeting Rescheduled',
+            message: studentMessage,
+            type: 'meeting_rescheduled',
+            priority: 'high',
+            metadata: {
+                ...baseMetadata,
+                action_url: '/student/dashboard'
+            }
+        }, ['in-app', 'push'], {  // Include push notification for mobile alerts
+            persistent: true,
+            require_interaction: false,
+            action_url: '/student/dashboard',
+            icon_url: '/favicon.ico',
+            badge_url: '/favicon.ico',
+            tag: `meeting-reschedule-${meeting.id}`,
+            auto_delete_after: 1440 // 24 hours
+        });
+
+        // Send notification to volunteer with immediate in-app notification only  
+        await notificationService.sendNotification({
+            recipient_id: volunteer.id,
+            recipient_role: 'volunteer',
+            title: '📅 Meeting Rescheduled',
+            message: volunteerMessage,
+            type: 'meeting_rescheduled',
+            priority: 'high',
+            metadata: {
+                ...baseMetadata,
+                action_url: '/volunteer/dashboard/upcoming.html'
+            }
+        }, ['in-app', 'push'], {  // Include push notification for mobile alerts
+            persistent: true,
+            require_interaction: false,
+            action_url: '/volunteer/dashboard/upcoming.html',
+            icon_url: '/favicon.ico',
+            badge_url: '/favicon.ico',
+            tag: `meeting-reschedule-${meeting.id}`,
+            auto_delete_after: 1440 // 24 hours
+        });
+
+        console.log(`✅ Reschedule notifications sent to both student ${student.id} and volunteer ${volunteer.id}`);
+        
+        // Emit real-time notification for immediate UI updates
+        if (io) {
+            // Send to student
+            io.to(`user_${student.id}`).emit('meeting-rescheduled', {
+                meeting_id: meeting.id,
+                original_time: originalTime,
+                new_time: newTime,
+                rescheduled_by: rescheduler.full_name,
+                message: studentMessage,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Send to volunteer
+            io.to(`user_${volunteer.id}`).emit('meeting-rescheduled', {
+                meeting_id: meeting.id,
+                original_time: originalTime,
+                new_time: newTime,
+                rescheduled_by: rescheduler.full_name,
+                message: volunteerMessage,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Update notification badge for both users
+            io.to(`user_${student.id}`).emit('notification-badge-update', { increment: 1 });
+            io.to(`user_${volunteer.id}`).emit('notification-badge-update', { increment: 1 });
+        }
+        
     } catch (error) {
-        console.error('Error creating reschedule notification:', error);
+        console.error('❌ Error creating reschedule notification:', error);
         // Don't throw error - notification failure shouldn't break meeting update
     }
 }

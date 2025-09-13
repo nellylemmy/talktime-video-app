@@ -65,7 +65,7 @@ class Notification {
         try {
             const result = await db.query(
                 `SELECT * FROM notifications 
-                WHERE user_id = $1 
+                WHERE user_id = $1 OR recipient_id = $1 
                 ORDER BY created_at DESC`,
                 [userId]
             );

@@ -20,6 +20,12 @@
     <link rel="stylesheet" href="css/main.css" />
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/realtime-notifications.js"></script>
+    <!-- Notification System -->
+    <script src="/shared/js/notification-permission-modal.js"></script>
+    <script src="/shared/js/notification-enforcer.js"></script>
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
     <style>
         #mobile-menu-toggle:focus {
           outline: none;
@@ -75,75 +81,110 @@
     <!-- Header -->
     <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
         <nav class="container mx-auto flex items-center justify-between relative">
-            <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#4f46e5;" />
-                    <stop offset="100%" style="stop-color:#a855f7;" />
-                  </linearGradient>
-                </defs>
-                <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-              </svg>
-              <span class="gradient-text">TALK TIME</span>
-            </a>
+            <div class="flex flex-col">
+                <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                        <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                        <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                    </svg>
+                    <span class="gradient-text">TALK TIME</span>
+                </a>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                        Powered by ADEA Foundation
+                    </a>
+                </div>
+            </div>
           
-            <!-- Desktop Buttons - Dynamic based on auth status -->
-            <div id="nav-auth-buttons" class="hidden md:flex items-center space-x-4">
-              <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors">Login</a>
-              <a href="/volunteer/signup" class="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-all">Sign Up</a>
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <a href="/volunteer/who-we-are.html" class="px-4 py-2 text-gray-700 hover:text-purple-600 transition-colors font-medium">
+                    <i class="fas fa-heart mr-2"></i>Who We Are
+                </a>
             </div>
             
-            <!-- Profile Section (shown when logged in) -->
+            <!-- Auth buttons - shown when logged out -->
+            <div id="nav-auth-buttons" class="flex items-center space-x-4">
+                <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors">Login</a>
+                <a href="/volunteer/signup" class="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-all">Sign Up</a>
+            </div>
+            
+            <!-- Profile Section - shown when logged in -->
             <div id="nav-profile-section" class="hidden items-center space-x-4">
-              <div class="relative">
-                <button id="profile-btn" class="flex items-center gap-2">
-                  <span id="volunteer-greeting" class="font-semibold hidden sm:inline">Welcome!</span>
-                  <!-- Avatar container - will be populated by JS -->
-                  <div id="avatar-container" class="h-10 w-10 relative">
-                    <!-- Letter avatar (default, shown when no image) -->
-                    <div id="letter-avatar" class="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow-sm hidden"></div>
-                    <!-- Image avatar (only shown when available) -->
-                    <img id="profile-avatar" alt="Profile" class="h-10 w-10 rounded-full border-2 border-white shadow-sm hidden">
-                  </div>
-                </button>
-                <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden">
-                  <a href="/volunteer/dashboard/students.html" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">Dashboard</a>
-                  <a href="/volunteer/profile" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">My Profile</a>
-                  <a href="#" id="logout-btn" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">Logout</a>
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <a href="/volunteer/notifications.html" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Bell body -->
+                            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            
+                            <!-- Bell clapper -->
+                            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        <span id="notification-badge" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"></span>
+                    </a>
                 </div>
-              </div>
+                <div class="relative">
+                    <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
+                        <span id="volunteer-greeting" class="font-semibold sm:inline">Welcome,</span>
+                        <div class="relative">
+                            <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
+                            <div id="volunteer-initial" class="w-10 h-10 rounded-full flex items-center justify-center text-indigo-600 font-bold" style="background-color: rgb(250, 244, 255) !important;">N</div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
+                        <a href="/volunteer/who-we-are.html" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 hover:text-purple-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-heart mr-2"></i>Who We Are
+                        </a>
+                        <a href="/volunteer/profile.html" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-user mr-2"></i>My Profile
+                        </a>
+                        <a href="/volunteer/settings" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </a>
+                        <hr class="my-2 border-gray-200">
+                        <a href="#" id="logout-link" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
             </div>
           
             <!-- Mobile Menu Button -->
             <div class="md:hidden">
-              <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6h16M4 12h16m-7 6h7"></path>
-                </svg>
-              </button>
+                <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
             </div>
           
             <!-- Mobile Menu -->
             <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
-              <!-- Mobile menu auth buttons (shown when logged out) -->
-              <div id="mobile-auth-buttons">
-                <a href="/volunteer/login" class="block py-2 px-4 text-gray-800 hover:text-orange-500">Login</a>
-                <a href="/volunteer/signup" class="block bg-orange-500 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-600 transition-all">Sign Up</a>
-              </div>
-              
-              <!-- Mobile menu dashboard link (shown when logged in) -->
-              <div id="mobile-dashboard-link" class="hidden">
-                <a href="/volunteer/dashboard/students.html" class="block bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-lg shadow-lg hover:opacity-90 transition-all">
-                  <i class="fas fa-columns mr-2"></i>View Your Dashboard
+                <a href="/" class="block py-2 px-4 text-gray-800 hover:text-green-600">
+                    <i class="fas fa-home mr-2"></i>Home
                 </a>
-              </div>
+                <a href="/volunteer/who-we-are.html" class="block py-2 px-4 text-gray-800 hover:text-purple-600">
+                    <i class="fas fa-heart mr-2"></i>Who We Are
+                </a>
+                <a href="/volunteer/notifications.html" class="block py-2 px-4 text-gray-800 hover:text-blue-600 font-semibold">
+                    <i class="fas fa-bell mr-2"></i>Notifications
+                </a>
+                <a href="/volunteer/profile" class="block py-2 px-4 text-gray-800 hover:text-purple-600 font-semibold">
+                    <i class="fas fa-user mr-2"></i>My Profile
+                </a>
+                <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
             </div>
-          </nav>
-          
+        </nav>
     </header>
 
     <div class="relative min-h-screen w-full flex flex-col items-center justify-center px-4 z-10 pt-24">
@@ -311,10 +352,13 @@
     <!-- Authentication Detection Script -->
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize TalkTime Auth for volunteers
+            // Initialize JWT auth for volunteers
             window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
             
-            // Check authentication status and update UI accordingly
+            // Initialize real-time notifications
+            window.realtimeNotifications = new RealtimeNotifications('volunteer');
+            
+            // Check auth state on page load and update UI accordingly
             const loginCta = document.getElementById('login-cta');
             const dashboardCta = document.getElementById('dashboard-cta');
             const navAuthButtons = document.getElementById('nav-auth-buttons');
@@ -323,7 +367,66 @@
             const mobileProfileSection = document.getElementById('mobile-profile-section');
             const getStartedBtn = document.getElementById('get-started-btn');
             
+            // Force update UI with current auth state
+            function updateAuthenticatedUI(userData) {
+                console.log('Updating UI with user data:', userData);
+                
+                // Main content area
+                if (loginCta) loginCta.classList.add('hidden');
+                if (dashboardCta) dashboardCta.classList.remove('hidden');
+                
+                // Navigation bar - desktop
+                if (navAuthButtons) navAuthButtons.classList.add('hidden');
+                if (navProfileSection) {
+                    navProfileSection.classList.remove('hidden');
+                    navProfileSection.classList.add('flex');
+                }
+                
+                // Update profile information
+                const volunteerGreeting = document.getElementById('volunteer-greeting');
+                const volunteerInitial = document.getElementById('volunteer-initial');
+                
+                if (volunteerGreeting && userData) {
+                    let displayName = userData.username || userData.name || userData.full_name || userData.fullName || userData.email || 'Volunteer';
+                    
+                    if (!userData.username && displayName.includes(' ')) {
+                        displayName = displayName.split(' ')[0];
+                    } else if (displayName.includes('@')) {
+                        displayName = displayName.split('@')[0];
+                    }
+                    
+                    volunteerGreeting.textContent = `Welcome, ${displayName}!`;
+                    console.log('Updated greeting to:', volunteerGreeting.textContent);
+                }
+                
+                if (volunteerInitial && userData) {
+                    const name = userData.username || userData.name || userData.full_name || userData.fullName || userData.email || 'V';
+                    const initial = name.charAt(0).toUpperCase();
+                    volunteerInitial.textContent = initial;
+                    console.log('Updated avatar initial to:', initial);
+                }
+                
+                // Setup profile dropdown (ensure it's called)
+                setTimeout(() => setupProfileDropdown(), 100);
+                
+                // Update Get Started button
+                if (getStartedBtn) {
+                    getStartedBtn.href = '/volunteer/dashboard/students.html';
+                    getStartedBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Go to Dashboard`;
+                }
+            }
+            
+            // Always update UI immediately if authenticated
             if (window.TalkTimeAuth.isAuthenticated()) {
+                const cachedUser = window.TalkTimeAuth.getUser();
+                if (cachedUser) {
+                    console.log('Immediately updating UI with cached user:', cachedUser);
+                    updateAuthenticatedUI(cachedUser);
+                }
+                
+                // Also setup dropdown immediately
+                setupProfileDropdown();
+                
                 try {
                     // Verify token is still valid
                     const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/jwt-auth/verify', {
@@ -333,47 +436,31 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (data.success && data.user) {
-                            // User is authenticated - update all UI elements
-                            
-                            // Main content area
-                            if (loginCta) loginCta.classList.add('hidden');
-                            if (dashboardCta) dashboardCta.classList.remove('hidden');
-                            
-                            // Navigation bar - desktop
-                            if (navAuthButtons) navAuthButtons.classList.add('hidden');
-                            if (navProfileSection) {
-                                navProfileSection.classList.remove('hidden');
-                                navProfileSection.classList.add('flex'); // Make it visible
-                            }
-                            
-                            // Navigation bar - mobile (if exists)
-                            if (mobileAuthButtons) mobileAuthButtons.classList.add('hidden');
-                            if (mobileProfileSection) {
-                                mobileProfileSection.classList.remove('hidden');
-                                mobileProfileSection.classList.add('block');
-                            }
-                            
-                            // Update "Get Started" button to go to dashboard for authenticated users
-                            if (getStartedBtn) {
-                                getStartedBtn.href = '/volunteer/dashboard/students.html';
-                                getStartedBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Go to Dashboard`;
-                            }
-                            
-                            // Update profile information
-                            const volunteerGreeting = document.getElementById('volunteer-greeting');
-                            const letterAvatar = document.getElementById('letter-avatar');
-                            
-                            if (volunteerGreeting) {
-                                volunteerGreeting.textContent = `Welcome, ${data.user.fullName || 'Volunteer'}!`;
-                                volunteerGreeting.classList.remove('hidden');
-                            }
-                            
-                            // Create letter avatar from user's name
-                            if (letterAvatar && data.user.fullName) {
-                                const initials = data.user.fullName.split(' ').map(name => name[0]).join('').toUpperCase().slice(0, 2);
-                                letterAvatar.textContent = initials;
-                                letterAvatar.style.backgroundColor = '#8b5cf6'; // Purple background
-                                letterAvatar.classList.remove('hidden');
+                            console.log('Refreshing UI with server user data:', data.user);
+                            updateAuthenticatedUI(data.user);
+                            // Update avatar - prioritize profile image over letter
+                            if (data.user.profile_image) {
+                                // Show profile image if available
+                                if (profileImage) {
+                                    profileImage.src = `/api/v1/volunteer/profile/image/${data.user.profile_image}`;
+                                    profileImage.classList.remove('hidden');
+                                }
+                                if (letterAvatar) {
+                                    letterAvatar.classList.add('hidden');
+                                }
+                            } else {
+                                // Show avatar letter
+                                if (profileImage) {
+                                    profileImage.classList.add('hidden');
+                                }
+                                if (letterAvatar) {
+                                    const userName = data.user.username || data.user.name || data.user.full_name || data.user.nickname || 'V';
+                                    const avatarLetter = userName.charAt(0).toUpperCase();
+                                    letterAvatar.textContent = avatarLetter;
+                                    letterAvatar.style.backgroundColor = '#8B5CF6'; // Purple background
+                                    letterAvatar.classList.remove('hidden');
+                                    console.log('Avatar letter set to:', avatarLetter, 'from userName:', userName, 'user data:', data.user);
+                                }
                             }
                             
                             // Update dashboard button text with personalized message
@@ -390,29 +477,77 @@
                                 const welcomeText = document.createElement('p');
                                 welcomeText.className = 'mt-4 text-lg md:text-xl text-gray-700 font-medium fade-in-up welcome-back-message';
                                 welcomeText.style.animationDelay = '0.15s';
-                                welcomeText.textContent = `Welcome back, ${data.user.fullName || 'Volunteer'}!`;
+                                // Prioritize username for nickname display, fallback to first name from full name
+                                let welcomeDisplayName = data.user.username || data.user.full_name || data.user.fullName || 'Volunteer';
+                                
+                                // If using full name and it has spaces, use just the first name
+                                if (!data.user.username && welcomeDisplayName.includes(' ')) {
+                                    welcomeDisplayName = welcomeDisplayName.split(' ')[0]; // Use first name only
+                                } else if (welcomeDisplayName.includes('@')) {
+                                    // If it's an email, use the part before @
+                                    welcomeDisplayName = welcomeDisplayName.split('@')[0];
+                                }
+                                
+                                welcomeText.textContent = `Welcome back, ${welcomeDisplayName}!`;
                                 titleElement.parentNode.insertBefore(welcomeText, titleElement.nextSibling);
                             }
-                            
-                            // Setup profile dropdown functionality
-                            setupProfileDropdown();
-                            
-                            // Also set up dropdown with a small delay as backup
-                            setTimeout(() => {
-                                if (!document.getElementById('profile-btn').onclick) {
-                                    setupProfileDropdown();
-                                }
-                            }, 100);
                             
                             return;
                         }
                     }
                 } catch (error) {
-                    console.log('Token verification failed');
-                    // Clear invalid tokens
-                    window.TalkTimeAuth?.logout();
-                    // Token cleanup handled by JWT auth;
-                    // User cleanup handled by JWT auth;
+                    console.log('Token verification failed:', error.message);
+                    // Don't automatically logout on index page - user might just have network issues
+                    // Only clear tokens if they're definitively invalid (not network errors)
+                    if (error.message && error.message.includes('malformed')) {
+                        console.log('Token is malformed, clearing auth');
+                        window.TalkTimeAuth?.logout();
+                    } else {
+                        console.log('Network or temporary error, keeping user logged in');
+                        // Use cached user data from localStorage as fallback
+                        const cachedUser = window.TalkTimeAuth?.getUser();
+                        if (cachedUser) {
+                            console.log('Using cached user data:', cachedUser);
+                            
+                            // Update authentication state
+                            updateAuthenticatedUI(cachedUser);
+                            
+                            // Load notification count
+                            loadNotificationCount();
+                            
+                            // Initialize real-time notifications
+                            initializeRealtimeNotifications();
+                            
+                            // Update avatar using cached data
+                            const profileImage = document.getElementById('nav-profile-image');
+                            const letterAvatar = document.getElementById('volunteer-initial');
+                            
+                            if (cachedUser.profile_image || cachedUser.profileImage) {
+                                if (profileImage) {
+                                    profileImage.src = `/api/v1/volunteer/profile/image/${cachedUser.profile_image || cachedUser.profileImage}`;
+                                    profileImage.classList.remove('hidden');
+                                }
+                                if (letterAvatar) {
+                                    letterAvatar.classList.add('hidden');
+                                }
+                            } else {
+                                if (profileImage) {
+                                    profileImage.classList.add('hidden');
+                                }
+                                if (letterAvatar) {
+                                    const userName = cachedUser.username || cachedUser.full_name || cachedUser.name || 'V';
+                                    const avatarLetter = userName.charAt(0).toUpperCase();
+                                    letterAvatar.textContent = avatarLetter;
+                                    letterAvatar.style.backgroundColor = '#8B5CF6'; // Purple background
+                                    letterAvatar.classList.remove('hidden');
+                                    console.log('Cached avatar letter set to:', avatarLetter, 'from userName:', userName, 'cachedUser:', cachedUser);
+                                }
+                            }
+                            
+                            setupProfileDropdown();
+                            return; // Exit early to prevent showing logged-out UI
+                        }
+                    }
                 }
             }
             
@@ -435,32 +570,48 @@
         function setupProfileDropdown() {
             const profileBtn = document.getElementById('profile-btn');
             const profileDropdown = document.getElementById('profile-dropdown');
-            const logoutBtn = document.getElementById('logout-btn');
             
             console.log('Setting up profile dropdown...', { profileBtn: !!profileBtn, profileDropdown: !!profileDropdown });
             
             if (profileBtn && profileDropdown) {
-                // Remove any existing event listeners to avoid duplicates
-                const newProfileBtn = profileBtn.cloneNode(true);
-                profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
+                // Clear any existing handlers
+                const newBtn = profileBtn.cloneNode(true);
+                profileBtn.parentNode.replaceChild(newBtn, profileBtn);
                 
-                // Get the new button reference
-                const freshProfileBtn = document.getElementById('profile-btn');
-                
-                // Toggle dropdown on profile button click
-                freshProfileBtn.addEventListener('click', function(e) {
+                // Add fresh click event listener
+                newBtn.addEventListener('click', function(e) {
+                    console.log('Profile button clicked - homepage');
                     e.preventDefault();
                     e.stopPropagation();
-                    profileDropdown.classList.toggle('hidden');
-                    console.log('Dropdown toggled, hidden:', profileDropdown.classList.contains('hidden'));
+                    
+                    const dropdown = document.getElementById('profile-dropdown');
+                    const isHidden = dropdown.classList.contains('hidden');
+                    console.log('Dropdown is currently hidden:', isHidden);
+                    
+                    if (isHidden) {
+                        // Show dropdown
+                        dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
+                        console.log('Showing dropdown - homepage');
+                    } else {
+                        // Hide dropdown
+                        dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
+                        console.log('Hiding dropdown - homepage');
+                    }
                 });
                 
                 // Close dropdown when clicking outside (only add if not already added)
                 if (!document.dropdownClickListenerAdded) {
-                    document.addEventListener('click', function() {
-                        if (!profileDropdown.classList.contains('hidden')) {
+                    document.addEventListener('click', function(e) {
+                        if (!profileDropdown.classList.contains('hidden') && 
+                            !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                            console.log('Clicking outside, closing dropdown');
                             profileDropdown.classList.add('hidden');
-                            console.log('Dropdown closed by outside click');
+                            profileDropdown.classList.add('opacity-0');
+                            profileDropdown.classList.add('-translate-y-2');
+                            profileDropdown.classList.add('scale-95');
+                            profileDropdown.classList.remove('opacity-100');
+                            profileDropdown.classList.remove('translate-y-0');
+                            profileDropdown.classList.remove('scale-100');
                         }
                     });
                     document.dropdownClickListenerAdded = true;
@@ -476,15 +627,28 @@
                 console.log('❌ Profile button or dropdown not found');
             }
             
-            // Logout functionality
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
+            // Logout functionality - desktop dropdown
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
                     e.preventDefault();
                     
                     // Clear JWT tokens
                     window.TalkTimeAuth?.logout();
-                    // Token cleanup handled by JWT auth;
-                    // User cleanup handled by JWT auth;
+                    
+                    // Redirect to home page (which will show login/signup options)
+                    window.location.href = '/volunteer/';
+                });
+            }
+            
+            // Logout functionality - mobile menu
+            const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Clear JWT tokens
+                    window.TalkTimeAuth?.logout();
                     
                     // Redirect to home page (which will show login/signup options)
                     window.location.href = '/volunteer/';
@@ -492,6 +656,63 @@
             }
         }
         
+        // Load notification count and update badge
+        async function loadNotificationCount() {
+            try {
+                if (!window.TalkTimeAuth || !await window.TalkTimeAuth.verifyToken()) {
+                    return;
+                }
+
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/unread-count');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateNotificationBadge(data.unread_count);
+                }
+            } catch (error) {
+                console.error('Error loading notification count:', error);
+            }
+        }
+
+        // Initialize real-time notifications for authenticated users
+        async function initializeRealtimeNotifications() {
+            try {
+                if (!window.TalkTimeAuth || !await window.TalkTimeAuth.verifyToken()) {
+                    return;
+                }
+
+                await window.realtimeNotifications.initialize();
+                
+                // Set up real-time notification handlers
+                window.realtimeNotifications.on('newNotification', (data) => {
+                    loadNotificationCount();
+                });
+                
+                window.realtimeNotifications.on('notificationRead', (data) => {
+                    loadNotificationCount();
+                });
+                
+                window.realtimeNotifications.on('allNotificationsRead', (data) => {
+                    loadNotificationCount();
+                });
+                
+            } catch (error) {
+                console.error('Error initializing real-time notifications:', error);
+            }
+        }
+
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count.toString();
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
         // Mobile menu toggle
         const menuToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');

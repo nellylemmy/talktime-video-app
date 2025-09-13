@@ -9,6 +9,11 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 
+// Public certificate verification page (no auth required)
+router.get('/verify', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', '..', '..', 'frontends', 'volunteer', 'public', 'verify.html'));
+});
+
 // Middleware to check if user is authenticated as a volunteer
 const isVolunteerAuthenticated = (req, res, next) => {
     // This would be replaced with actual authentication logic
@@ -16,7 +21,7 @@ const isVolunteerAuthenticated = (req, res, next) => {
     next();
 };
 
-// Apply authentication middleware to all volunteer routes
+// Apply authentication middleware to all volunteer routes except verification
 router.use(isVolunteerAuthenticated);
 
 // Volunteer dashboard - main page (redirects to students tab)

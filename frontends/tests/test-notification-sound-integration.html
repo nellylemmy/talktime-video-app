@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime Notification Sound Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-button {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .test-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔊 TalkTime Notification Sound Integration Test</h1>
+        
+        <div class="status">
+            <h3>🔧 System Status</h3>
+            <p id="status-text">Initializing...</p>
+        </div>
+        
+        <div>
+            <h3>🧪 Test Notification Sounds</h3>
+            <button class="test-button" onclick="testMeetingReminder()">📅 Meeting Reminder</button>
+            <button class="test-button" onclick="testInstantCall()">📞 Instant Call</button>
+            <button class="test-button" onclick="testMeetingScheduled()">✅ Meeting Scheduled</button>
+            <button class="test-button" onclick="testMeetingRescheduled()">🔄 Meeting Rescheduled</button>
+            <button class="test-button" onclick="testSystemNotification()">ℹ️ System Alert</button>
+            <button class="test-button" onclick="testUrgentNotification()">🚨 Urgent Alert</button>
+        </div>
+        
+        <div>
+            <h3>🔔 Test Complete Notifications</h3>
+            <button class="test-button" onclick="simulateRealNotification()">📨 Simulate Real Notification</button>
+            <button class="test-button" onclick="simulatePushNotification()">🚀 Simulate Push Notification</button>
+            <button class="test-button" onclick="simulateSocketNotification()">🔌 Simulate Socket Notification</button>
+        </div>
+        
+        <div class="log" id="log">
+            <div>📋 Event Log:</div>
+        </div>
+    </div>
+
+    <!-- Load the notification system -->
+    <script src="../shared/js/notification-permission-modal.js"></script>
+    <script src="../shared/js/notification-sound-manager.js"></script>
+    <script src="../shared/js/notification-enforcer.js"></script>
+    <script src="../shared/js/realtime-notifications.js"></script>
+    <script src="../shared/js/notification-sound-integration.js"></script>
+    
+    <script>
+        let soundIntegration = null;
+        let soundManager = null;
+        
+        // Logging function
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+        
+        // Status update function
+        function updateStatus(message) {
+            document.getElementById('status-text').textContent = message;
+            log(`Status: ${message}`);
+        }
+        
+        // Initialize when ready
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('Loading notification sound system...');
+            
+            // Wait for integration to be ready
+            document.addEventListener('talktimeNotificationSoundIntegrationReady', (event) => {
+                soundIntegration = event.detail.integration;
+                soundManager = soundIntegration.getSoundManager();
+                updateStatus('✅ Notification sound system ready!');
+                log('🎵 Sound integration initialized successfully');
+            });
+            
+            // Check periodically if not ready
+            const checkStatus = () => {
+                if (window.talkTimeNotificationSoundIntegration) {
+                    soundIntegration = window.talkTimeNotificationSoundIntegration;
+                    if (soundIntegration.isInitialized()) {
+                        soundManager = soundIntegration.getSoundManager();
+                        updateStatus('✅ Notification sound system ready!');
+                        log('🎵 Sound integration found and ready');
+                        return;
+                    }
+                }
+                
+                if (window.talkTimeNotificationSoundManager) {
+                    soundManager = window.talkTimeNotificationSoundManager;
+                    if (soundManager.initialized) {
+                        updateStatus('✅ Sound manager ready (integration pending)');
+                        log('🔊 Sound manager ready');
+                        return;
+                    }
+                }
+                
+                setTimeout(checkStatus, 1000);
+            };
+            
+            setTimeout(checkStatus, 1000);
+        });
+        
+        // Test functions
+        async function testMeetingReminder() {
+            log('🧪 Testing meeting reminder sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('meeting_reminder');
+            } else if (soundManager) {
+                await soundManager.playSound('meeting_reminder', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            // Also trigger notification event
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: {
+                    type: 'meeting_reminder',
+                    priority: 'normal',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ Meeting reminder test completed');
+        }
+        
+        async function testInstantCall() {
+            log('🧪 Testing instant call sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('instant_call');
+            } else if (soundManager) {
+                await soundManager.playSound('instant_call', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: {
+                    type: 'instant_call',
+                    priority: 'high',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ Instant call test completed');
+        }
+        
+        async function testMeetingScheduled() {
+            log('🧪 Testing meeting scheduled sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('meeting_scheduled');
+            } else if (soundManager) {
+                await soundManager.playSound('meeting_scheduled', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: {
+                    type: 'meeting_scheduled',
+                    priority: 'normal',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ Meeting scheduled test completed');
+        }
+        
+        async function testMeetingRescheduled() {
+            log('🧪 Testing meeting rescheduled sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('meeting_rescheduled');
+            } else if (soundManager) {
+                await soundManager.playSound('meeting_rescheduled', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: {
+                    type: 'meeting_rescheduled',
+                    priority: 'normal',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ Meeting rescheduled test completed');
+        }
+        
+        async function testSystemNotification() {
+            log('🧪 Testing system notification sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('system_notification');
+            } else if (soundManager) {
+                await soundManager.playSound('system_notification', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            document.dispatchEvent(new CustomEvent('talktimeInAppNotificationShown', {
+                detail: {
+                    type: 'system',
+                    priority: 'normal',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ System notification test completed');
+        }
+        
+        async function testUrgentNotification() {
+            log('🧪 Testing urgent notification sound...');
+            
+            if (soundIntegration) {
+                await soundIntegration.testSound('urgent');
+            } else if (soundManager) {
+                await soundManager.playSound('urgent', { forcePlay: true });
+            } else {
+                log('❌ Sound system not ready');
+                return;
+            }
+            
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: {
+                    type: 'urgent',
+                    priority: 'urgent',
+                    source: 'test'
+                }
+            }));
+            
+            log('✅ Urgent notification test completed');
+        }
+        
+        async function simulateRealNotification() {
+            log('🧪 Simulating real notification...');
+            
+            // Simulate the full notification flow
+            const notificationData = {
+                notification: {
+                    id: Date.now(),
+                    title: 'Test Meeting Reminder',
+                    message: 'Your meeting with Sarah starts in 5 minutes',
+                    type: 'meeting_reminder',
+                    priority: 'normal'
+                },
+                sound_type: 'meeting_reminder',
+                priority: 'normal',
+                channels_used: ['in-app', 'push'],
+                source: 'simulation'
+            };
+            
+            // Trigger the events that would happen with a real notification
+            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                detail: notificationData
+            }));
+            
+            log('✅ Real notification simulation completed');
+        }
+        
+        async function simulatePushNotification() {
+            log('🧪 Simulating push notification...');
+            
+            const pushData = {
+                type: 'instant_call',
+                priority: 'high',
+                source: 'push',
+                metadata: {
+                    type: 'instant_call',
+                    priority: 'high'
+                }
+            };
+            
+            document.dispatchEvent(new CustomEvent('talktimePushNotificationSent', {
+                detail: pushData
+            }));
+            
+            log('✅ Push notification simulation completed');
+        }
+        
+        async function simulateSocketNotification() {
+            log('🧪 Simulating Socket.IO notification...');
+            
+            // Simulate what would happen when receiving a socket notification
+            if (window.realtimeNotifications && window.realtimeNotifications.playNotificationSound) {
+                window.realtimeNotifications.playNotificationSound({
+                    notification: { type: 'meeting_scheduled' },
+                    sound_type: 'meeting_scheduled',
+                    priority: 'normal',
+                    source: 'socket-simulation'
+                });
+            } else {
+                // Fallback to direct event
+                document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                    detail: {
+                        type: 'meeting_scheduled',
+                        priority: 'normal',
+                        source: 'socket-simulation'
+                    }
+                }));
+            }
+            
+            log('✅ Socket notification simulation completed');
+        }
+        
+        // Listen for sound events to confirm they're working
+        document.addEventListener('talktimeNotificationSent', (event) => {
+            log(`🔊 Caught notification sound event: ${event.detail.type} (${event.detail.source})`);
+        });
+        
+        document.addEventListener('talktimePushNotificationSent', (event) => {
+            log(`🚀 Caught push notification sound event: ${event.detail.type} (${event.detail.source})`);
+        });
+        
+        document.addEventListener('talktimeInAppNotificationShown', (event) => {
+            log(`📱 Caught in-app notification sound event: ${event.detail.type} (${event.detail.source})`);
+        });
+    </script>
+</body>
+</html>

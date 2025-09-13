@@ -264,11 +264,33 @@ class InstantCallUI {
         if (callData.volunteerPhoto) {
             // Use the API endpoint for serving profile images
             callerPhoto.src = `/api/v1/profile/image/${callData.volunteerPhoto}`;
-            callerPhoto.classList.remove('hidden');
-            callerInitials.classList.add('hidden');
-        } else {
-            const initials = callData.volunteerName.split(' ').map(n => n[0]).join('').toUpperCase();
-            callerInitials.textContent = initials;
+            // Update volunteer avatar - prioritize profile image over nickname letter
+            const volunteerAvatar = document.getElementById('volunteer-avatar-letter');
+            const volunteerImage = document.getElementById('volunteer-avatar-image');
+            
+            if (callData.volunteer) {
+                if (callData.volunteer.profile_image) {
+                    // Show profile image if available
+                    if (volunteerImage) {
+                        volunteerImage.src = `/api/v1/volunteer/profile/image/${callData.volunteer.profile_image}`;
+                        volunteerImage.classList.remove('hidden');
+                    }
+                    if (volunteerAvatar) {
+                        volunteerAvatar.classList.add('hidden');
+                    }
+                } else {
+                    // Show avatar letter
+                    if (volunteerImage) {
+                        volunteerImage.classList.add('hidden');
+                    }
+                    if (volunteerAvatar) {
+                        const userName = callData.volunteer.nickname || callData.volunteer.username || callData.volunteer.name || 'V';
+                        const avatarLetter = userName.charAt(0).toUpperCase();
+                        volunteerAvatar.textContent = avatarLetter;
+                        volunteerAvatar.classList.remove('hidden');
+                    }
+                }
+            }
             callerInitials.classList.remove('hidden');
             callerPhoto.classList.add('hidden');
         }

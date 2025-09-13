@@ -17,8 +17,6 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
     
     <!-- JWT Authentication Utilities -->
     <script src="/volunteer/js/jwt-auth.js"></script>
@@ -28,6 +26,9 @@
     
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/realtime-notifications.js"></script>
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
 
     <style>
         /* Base styles from the brand identity */
@@ -110,19 +111,23 @@
         <!-- Login Card -->
         <div class="w-full max-w-md">
             <!-- Logo -->
-            <!-- Navigation Container -->
-            <div id="nav-container">
-                <!-- Navigation will be loaded dynamically -->
-            </div>    
-            <!-- Mobile Menu -->
-            <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
-              <a href="/" class="block text-gray-700 hover:text-orange-500 transition-colors">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back
-              </a>
+             <div class="text-center mb-8">
+                <div class="flex flex-col items-center justify-center">
+                    <a href="/" class="flex items-center text-2xl font-bold justify-center" aria-label="TalkTime Home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                        </svg>
+                        <span class="gradient-text">TALK TIME</span>
+                    </a>
+                    <div class="flex items-center justify-center gap-2 mt-0.5">
+                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                            Powered by ADEA Foundation
+                        </a>
+                    </div>
+                </div>
             </div>
-          </nav>
-    </header>
 
             <div class="glass-card rounded-2xl shadow-xl p-6 md:p-10">
                 <div class="text-center mb-8">
@@ -147,7 +152,7 @@
                     <div>
                         <div class="flex items-center justify-between">
                             <label for="password" class="text-sm font-medium text-gray-700">Password</label>
-                            <a href="/common/forgot-password" class="text-sm text-indigo-600 hover:underline">Forgot?</a>
+                            <a href="/volunteer/forgot-password.html" class="text-sm text-indigo-600 hover:underline">Forgot?</a>
                         </div>
                         <div class="relative mt-1">
                              <span class="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -173,9 +178,7 @@
                     <p class="text-sm text-gray-600">Don't have an account? Create one as a:</p>
                     <div class="flex justify-center items-center space-x-4">
                         <a href="/volunteer/signup" class="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline">Volunteer</a>
-                        <span class="text-gray-400">or</span>
-                        <a href="/volunteer/student-signup" class="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline">Student Volunteer</a>
-                    </div>
+                       </div>
                 </div>
             </div>
         </div>
@@ -282,18 +285,17 @@
                 window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
             }
             
-            // Check if volunteer is already authenticated
+            // Simple authentication check - only verify if token exists and is valid
             if (window.TalkTimeAuth.isAuthenticated()) {
                 try {
-                    // Verify token is still valid
-                    const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/jwt-auth/verify', {
-                        method: 'GET'
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.user.role === 'volunteer') {
+                    // Quick token verification without navigation loader conflicts
+                    const isValid = await window.TalkTimeAuth.verifyToken();
+                    if (isValid) {
+                        // Check user role from stored user data
+                        const user = window.TalkTimeAuth.getUser();
+                        if (user && user.role === 'volunteer') {
                             // Volunteer is already authenticated, redirect to dashboard
+                            console.log('Volunteer already authenticated, redirecting to dashboard');
                             window.location.href = '/volunteer/dashboard/students.html';
                             return;
                         }
@@ -305,10 +307,6 @@
                 }
             }
             
-            // Initialize navigation without authentication requirement (for login page)
-            if (typeof VolunteerNavLoader !== 'undefined') {
-                await VolunteerNavLoader.init(false);
-            }
         });
     </script>
 </body>

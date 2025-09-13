@@ -29,6 +29,9 @@
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
     <style>
         /* Base styles matching the landing page */
         body {
@@ -162,7 +165,7 @@
         </div>
     </div>
 
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-20">
         <!-- Dashboard Page -->
         <div id="page-dashboard" class="page w-full">
 
@@ -462,7 +465,7 @@
             const config = statusConfig[filter];
             
             const meetingsHtml = meetings.map(meeting => {
-                const studentName = meeting.student_full_name || meeting.full_name || 'Unknown Student';
+                const studentName = meeting.studentName || meeting.name || meeting.student_name || meeting.full_name || 'Unknown Student';
                 const meetingTime = meeting.scheduledTime || meeting.scheduled_time || meeting.time;
                 const meetingDate = new Date(meetingTime);
                 
@@ -544,11 +547,27 @@
         document.addEventListener('click', e => {
             // Profile dropdown toggle
             if (profileBtn && profileBtn.contains(e.target)) {
+                console.log('Profile button clicked');
                 e.stopPropagation();
-                profileDropdown.classList.toggle('hidden');
-                profileDropdown.classList.toggle('opacity-0');
-                profileDropdown.classList.toggle('-translate-y-2');
-            } else if (profileDropdown && !profileDropdown.contains(e.target)) {
+                
+                const isHidden = profileDropdown.classList.contains('hidden');
+                console.log('Dropdown is currently hidden:', isHidden);
+                
+                if (isHidden) {
+                    // Show dropdown
+                    profileDropdown.classList.remove('hidden');
+                    profileDropdown.classList.remove('opacity-0');
+                    profileDropdown.classList.remove('-translate-y-2');
+                    console.log('Showing dropdown');
+                } else {
+                    // Hide dropdown
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                    profileDropdown.classList.add('-translate-y-2');
+                    console.log('Hiding dropdown');
+                }
+            } else if (profileDropdown && !profileDropdown.contains(e.target) && !profileDropdown.classList.contains('hidden')) {
+                console.log('Clicking outside, closing dropdown');
                 profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
             }
         });

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        input { margin: 5px; padding: 8px; }
+        button { padding: 10px 15px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Form Validation Test</h1>
+    
+    <div class="test-case">
+        <h3>Test Case 1: Both names provided</h3>
+        <input type="text" id="first-name-1" value="John" placeholder="First Name">
+        <input type="text" id="last-name-1" value="Doe" placeholder="Last Name">
+        <button onclick="testCase1()">Test</button>
+        <div id="result-1"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Test Case 2: Only first name</h3>
+        <input type="text" id="first-name-2" value="Jane" placeholder="First Name">
+        <input type="text" id="last-name-2" value="" placeholder="Last Name">
+        <button onclick="testCase2()">Test</button>
+        <div id="result-2"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Test Case 3: Only last name</h3>
+        <input type="text" id="first-name-3" value="" placeholder="First Name">
+        <input type="text" id="last-name-3" value="Smith" placeholder="Last Name">
+        <button onclick="testCase3()">Test</button>
+        <div id="result-3"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Test Case 4: No names</h3>
+        <input type="text" id="first-name-4" value="" placeholder="First Name">
+        <input type="text" id="last-name-4" value="" placeholder="Last Name">
+        <button onclick="testCase4()">Test</button>
+        <div id="result-4"></div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Test Case 5: Names with spaces</h3>
+        <input type="text" id="first-name-5" value="  Mary  " placeholder="First Name">
+        <input type="text" id="last-name-5" value="  Johnson  " placeholder="Last Name">
+        <button onclick="testCase5()">Test</button>
+        <div id="result-5"></div>
+    </div>
+    
+    <script>
+        function validateNames(firstNameId, lastNameId) {
+            // Replicate the exact logic from the signup form
+            const firstName = document.getElementById(firstNameId).value.trim();
+            const lastName = document.getElementById(lastNameId).value.trim();
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            // Validate that we have both first and last name
+            if (!firstName || !lastName) {
+                return {
+                    valid: false,
+                    error: 'Please provide both first and last name',
+                    firstName: firstName,
+                    lastName: lastName,
+                    fullName: fullName
+                };
+            }
+            
+            return {
+                valid: true,
+                firstName: firstName,
+                lastName: lastName,
+                fullName: fullName
+            };
+        }
+        
+        function displayResult(resultId, result) {
+            const resultDiv = document.getElementById(resultId);
+            if (result.valid) {
+                resultDiv.className = 'success';
+                resultDiv.innerHTML = `
+                    <strong>✅ Valid!</strong><br>
+                    First Name: "${result.firstName}"<br>
+                    Last Name: "${result.lastName}"<br>
+                    Full Name: "${result.fullName}"
+                `;
+            } else {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <strong>❌ Invalid!</strong><br>
+                    Error: ${result.error}<br>
+                    First Name: "${result.firstName}"<br>
+                    Last Name: "${result.lastName}"<br>
+                    Full Name: "${result.fullName}"
+                `;
+            }
+        }
+        
+        function testCase1() {
+            const result = validateNames('first-name-1', 'last-name-1');
+            displayResult('result-1', result);
+        }
+        
+        function testCase2() {
+            const result = validateNames('first-name-2', 'last-name-2');
+            displayResult('result-2', result);
+        }
+        
+        function testCase3() {
+            const result = validateNames('first-name-3', 'last-name-3');
+            displayResult('result-3', result);
+        }
+        
+        function testCase4() {
+            const result = validateNames('first-name-4', 'last-name-4');
+            displayResult('result-4', result);
+        }
+        
+        function testCase5() {
+            const result = validateNames('first-name-5', 'last-name-5');
+            displayResult('result-5', result);
+        }
+        
+        // Auto-run all tests on page load
+        window.onload = function() {
+            testCase1();
+            testCase2();
+            testCase3();
+            testCase4();
+            testCase5();
+        };
+    </script>
+</body>
+</html>

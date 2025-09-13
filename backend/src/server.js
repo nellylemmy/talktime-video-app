@@ -19,11 +19,12 @@ import meetingValidationRoutes from './api/v1/routes/meetingValidationRoutes.js'
 // Legacy enhancedInstantCalls routes removed - using unified users table only
 import meetingAccessRoutes from './routes/meetingAccess.js';
 import parentalApprovalRoutes from './routes/parentalApproval.js';
-// import notificationRoutes from './routes/notifications.js';
+import notificationRoutes from './routes/notifications.js';
 // import uploadRoutes from './routes/upload.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initializeSocket } from './socket.js';
 import { redisClient } from './config/cache.js';
+import { initializeScheduler, stopScheduler } from './services/schedulerService.js';
 // import { initializeSecurityTables } from './middleware/enhancedSecurity.js'; // Temporarily disabled
 
 // Load environment variables
@@ -104,7 +105,7 @@ app.use('/api/v1/analytics', analyticsRoutes);
 // Legacy instant-calls routes removed - using unified users table only
 // Legacy enhanced-instant-calls routes removed - using unified users table only
 app.use('/api/v1/meeting', jwtAuthMiddleware, meetingAccessRoutes);
-// app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 // app.use('/api/v1/upload', uploadRoutes);
 
 // Health check endpoint
@@ -141,12 +142,22 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 // Initialize Socket.IO
 initializeSocket(server);
 
+// Start the Docker-compatible notification scheduler
+try {
+    initializeScheduler();
+    console.log('🚀 Initializing Docker-compatible scheduler service...');
+    console.log('✅ Scheduler initialized successfully');
+} catch (error) {
+    console.error('❌ Failed to start scheduler service:', error);
+}
+
 // Initialize Enhanced Security Tables (Phase 5) - Temporarily disabled
 // initializeSecurityTables().catch(console.error);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
+  stopScheduler(); // Stop the cron scheduler
   server.close(() => {
     console.log('Process terminated');
   });
@@ -154,6 +165,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully');
+  stopScheduler(); // Stop the cron scheduler
   server.close(() => {
     console.log('Process terminated');
   });

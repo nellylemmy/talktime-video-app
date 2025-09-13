@@ -7,6 +7,9 @@ const router = express.Router();
 import { isAuthenticated, isAdmin } from '../../../middleware/auth.js';
 import * as notificationController from '../controllers/notificationController.js';
 
+// Import tracking routes
+import trackingRouter from './notificationTracking.js';
+
 /**
  * @route   GET /api/v1/notifications
  * @desc    Get user notifications
@@ -27,5 +30,8 @@ router.put('/:id/read', isAuthenticated, notificationController.markNotification
  * @access  Private (Admin only)
  */
 router.post('/', isAuthenticated, isAdmin, notificationController.sendNotification);
+
+// Mount tracking routes
+router.use('/', trackingRouter);
 
 export default router;

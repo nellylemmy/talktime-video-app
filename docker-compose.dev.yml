@@ -14,6 +14,12 @@ services:
       - ./frontends/student/public:/var/www/frontend/student
       - ./frontends/call:/var/www/frontend/call
       - ./frontends/shared:/var/www/frontend/shared
+      - ./frontends/tests:/var/www/frontend/tests
+      # Notification system files (served from root for service worker scope)
+      - ./frontends/notification-sw.js:/var/www/frontend/notification-sw.js
+      - ./frontends/notification-integration-example.html:/var/www/frontend/notification-integration-example.html
+      # Optional: serve sw.js from root if you create one
+      - ./frontends/sw.js:/var/www/frontend/sw.js:ro
     depends_on:
       - backend
     networks:
@@ -44,6 +50,12 @@ services:
       # Development URLs
       FRONTEND_URL: http://localhost
       CORS_ORIGINS: "http://localhost,http://localhost:3000,http://localhost:3001,http://localhost:3002"
+      # Push Notification Configuration - VAPID keys will be auto-generated
+      VAPID_SUBJECT: "mailto:support@talktime.app"
+      # Notification Settings
+      NOTIFICATION_PERSISTENCE_ENABLED: "true"
+      NOTIFICATION_ANALYTICS_ENABLED: "true"
+      NOTIFICATION_RATE_LIMIT: "100"
     depends_on:
       - db
       - redis

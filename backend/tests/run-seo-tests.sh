@@ -3,8 +3,8 @@
 # Run SEO and Navigation Tests in Docker
 echo "🐳 Running SEO and Navigation Tests in Docker..."
 
-# Navigate to project root
-cd "$(dirname "$0")/.."
+# Navigate to project root (now from backend/tests/)
+cd "$(dirname "$0")/../.."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -27,8 +27,8 @@ fi
 
 # Copy test files to the frontend container
 echo "📋 Copying test files to frontend container..."
-docker cp ./tests/seo-navigation-test.js talktime_frontend:/app/public/tests/
-docker cp ./tests/package.json talktime_frontend:/app/public/tests/
+docker cp ./backend/tests/seo-navigation-test.js talktime_frontend:/app/public/tests/
+docker cp ./backend/tests/package.json talktime_frontend:/app/public/tests/
 
 # Install puppeteer in the frontend container
 echo "📦 Installing puppeteer in the frontend container..."

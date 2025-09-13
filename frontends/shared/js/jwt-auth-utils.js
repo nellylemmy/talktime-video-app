@@ -62,6 +62,13 @@ class TalkTimeJWTAuth {
     }
 
     /**
+     * Get access token (alias for backward compatibility)
+     */
+    getToken() {
+        return this.getAccessToken();
+    }
+
+    /**
      * Clear all authentication data
      */
     clearAuth() {

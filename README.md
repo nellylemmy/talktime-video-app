@@ -216,11 +216,9 @@ SOFTWARE.
 
 
 
-docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml down && docker-compose -f docker-compose.dev.yml up --build -d
 
 docker system prune -f
-
-docker-compose -f docker-compose.dev.yml up --build -d
 
 docker-compose -f docker-compose.dev.yml up --build -d
 

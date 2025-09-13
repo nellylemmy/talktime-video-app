@@ -23,14 +23,20 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
-    <!-- JWT Authentication -->
+    <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
     
     <!-- Navigation Loader -->
     <script src="/volunteer/partials/nav-loader.js"></script>
     
     <!-- Modal Utilities -->
     <script src="/volunteer/js/modal-utils.js"></script>
+    
+    <!-- Real-time Notifications -->
+    <script src="/shared/js/realtime-notifications.js"></script>
     
     <style>
         /* Base styles matching the landing page */
@@ -184,6 +190,19 @@
         .gallery-img:hover {
             transform: scale(1.05);
         }
+        
+        /* Meeting Tab Styles */
+        .meeting-tab-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .meeting-tab-btn:hover {
+            background-color: #f8fafc;
+        }
+        
+        .tab-content {
+            min-height: 200px;
+        }
     </style>
 </head>
 <body>
@@ -196,7 +215,7 @@
         <!-- Navigation will be loaded dynamically -->
     </div>
 
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-20">
         <!-- Dashboard Navigation -->
         <div class="mb-8 flex items-center">
             <a href="/volunteer/dashboard/students.html" class="text-blue-600 hover:text-blue-800 flex items-center">
@@ -208,25 +227,59 @@
         <!-- Student Profile Page -->
         <div id="page-student-profile" class="page w-full">
             <div class="max-w-3xl mx-auto">
-                <div id="student-profile" class="glass-bg rounded-xl p-6 mb-6">
-                    <div class="flex flex-col md:flex-row gap-6">
-                        <div class="w-full md:w-1/3">
-                            <img id="student-profile-image" src="/volunteer/images/default-profile.svg" alt="Student" class="w-full aspect-square object-cover rounded-xl">
-                        </div>
-                        <div class="w-full md:w-2/3">
-                            <h2 id="student-name" class="text-2xl font-bold mb-2">Student Name</h2>
-                            <div class="flex items-center mb-4">
-                                <span id="student-age" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full mr-2">Age: 14</span>
-                                <span id="student-gender" class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Female</span>
+                                <div id="student-profile" class="glass-bg rounded-xl p-6 mb-6">
+                    <!-- Modern card layout with better visual hierarchy -->
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <!-- Profile Image Section -->
+                        <div class="flex-shrink-0 mx-auto lg:mx-0">
+                            <div class="relative">
+                                <img id="student-profile-image" 
+                                     src="/volunteer/images/default-profile.svg" 
+                                     alt="Student" 
+                                     class="w-32 h-32 lg:w-40 lg:h-40 object-cover rounded-2xl shadow-lg ring-4 ring-white ring-opacity-50">
+                                <!-- Online status indicator (optional) -->
+                                <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white shadow-lg"></div>
                             </div>
-                            <p id="student-admission" class="text-sm text-gray-600 mb-4">Admission #: <span class="font-semibold">12345</span></p>
-                            <h3 class="font-semibold mb-2">About</h3>
-                            <p id="student-bio" class="text-gray-700 mb-4">Loading student bio...</p>
+                        </div>
+                        
+                        <!-- Student Info Section -->
+                        <div class="flex-grow text-center lg:text-left">
+                            <!-- Name with better typography -->
+                            <h2 id="student-name" class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3 leading-tight">
+                                Student Name
+                            </h2>
                             
-                            <div id="schedule-button-container" class="mt-6">
-                                <!-- Schedule or Reschedule button will be inserted here -->
+                            <!-- Enhanced badges with better styling -->
+                            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6">
+                                <span id="student-age" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md">
+                                    <i class="fas fa-birthday-cake mr-2"></i>
+                                    Age: 14
+                                </span>
+                                <span id="student-gender" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md">
+                                    <i class="fas fa-user mr-2"></i>
+                                    Female
+                                </span>
+                            </div>
+                            
+                            <!-- Quick stats or additional info (optional enhancement) -->
+                            <div class="hidden lg:block">
+                                <div class="flex items-center gap-6 text-gray-600 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-blue-500"></i>
+                                        <span>Available for sessions</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-globe text-green-500"></i>
+                                        <span>English learner</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Schedule button container with enhanced styling -->
+                    <div id="schedule-button-container" class="mt-8 pt-6 border-t border-gray-200 border-opacity-50 w-full">
+                        <!-- Schedule or Reschedule button will be inserted here -->
                     </div>
                 </div>
                 
@@ -257,8 +310,6 @@
         const studentNameEl = document.getElementById('student-name');
         const studentAgeEl = document.getElementById('student-age');
         const studentGenderEl = document.getElementById('student-gender');
-        const studentAdmissionEl = document.getElementById('student-admission');
-        const studentBioEl = document.getElementById('student-bio');
         const studentStoryEl = document.getElementById('student-story');
         const studentProfileImageEl = document.getElementById('student-profile-image');
         const studentGalleryEl = document.getElementById('student-gallery');
@@ -354,9 +405,7 @@
             // Check if DOM elements exist
             console.log('DOM elements check:', {
                 studentNameEl: !!studentNameEl,
-                studentAgeEl: !!studentAgeEl,
-                studentAdmissionEl: !!studentAdmissionEl,
-                studentBioEl: !!studentBioEl
+                studentAgeEl: !!studentAgeEl
             });
             
             // Store the numeric student ID in a data attribute for later use
@@ -373,13 +422,6 @@
             }
             if (studentGenderEl) {
                 studentGenderEl.textContent = student.gender || 'Unknown';
-            }
-            if (studentAdmissionEl) {
-                studentAdmissionEl.innerHTML = `Admission #: <span class="font-semibold">${student.admissionNumber || 'Unknown'}</span>`;
-                console.log('Updated student admission to:', studentAdmissionEl.innerHTML);
-            }
-            if (studentBioEl) {
-                studentBioEl.textContent = student.bio || 'No bio available.';
             }
             if (studentStoryEl) {
                 studentStoryEl.textContent = student.story || 'No story available.';
@@ -410,7 +452,7 @@
             }
         }
 
-        // Function to check if there's an existing meeting with this student
+        // Function to check meetings with this student and render appropriate interface
         function checkExistingMeeting(studentId) {
             // Use the full student ID for the API call - some students have the name in their admission number
             
@@ -422,29 +464,30 @@
                     return response.json();
                 })
                 .then(data => {
-                    // If meeting is null, show schedule button
-                    if (!data.meeting) {
-                        renderScheduleButton(studentId);
-                        return;
-                    }
+                    console.log('Enhanced meeting data received:', data);
                     
-                    // Get the current volunteer ID from the session
+                    // Get meeting statistics and new data structure
+                    const meetingStats = data.meetingStats || {};
+                    const volunteerStudentMeetings = data.volunteerStudentMeetings || [];
+                    const allVolunteerMeetings = data.allVolunteerMeetings || [];
                     const currentVolunteerId = data.currentVolunteerId;
+                    const activeMeeting = data.activeMeeting || data.meeting; // Try new field first, fall back to old
                     
-                    // Check if the current volunteer is the owner of the meeting
-                    const isOwner = data.meeting.volunteer_id == currentVolunteerId;
-                    
-                    // Add ownership information to the meeting object
-                    data.meeting.isOwner = isOwner;
-                    
-                    console.log('Meeting ownership check:', {
-                        meetingVolunteerId: data.meeting.volunteer_id,
-                        currentVolunteerId: currentVolunteerId,
-                        isOwner: isOwner
+                    console.log('Processing meeting data:', {
+                        activeMeeting: activeMeeting ? 'Found' : 'None',
+                        volunteerStudentMeetings: volunteerStudentMeetings.length,
+                        allVolunteerMeetings: allVolunteerMeetings.length,
+                        meetingStats
                     });
                     
-                    // Meeting found, show reschedule button with ownership information
-                    renderRescheduleButton(studentId, data.meeting);
+                    // Render the comprehensive meeting interface with correct data structure
+                    renderMeetingInterface(studentId, {
+                        activeMeeting,
+                        volunteerStudentMeetings,
+                        allVolunteerMeetings,
+                        meetingStats,
+                        currentVolunteerId
+                    });
                 })
                 .catch(error => {
                     console.error('Error checking existing meeting:', error);
@@ -509,7 +552,7 @@
                             <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" class="inline-block bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
                                 <i class="far fa-calendar-alt mr-2"></i>Reschedule
                             </a>
-                            <button id="cancel-meeting-btn" data-meeting-id="${meeting.id}" class="bg-white border border-red-500 text-red-500 py-2 px-4 rounded-lg hover:bg-red-50 transition-colors">
+                            <button id="cancel-meeting-btn" data-meeting-id="${meeting.id}" data-student-name="${studentName}" class="bg-white border border-red-500 text-red-500 py-2 px-4 rounded-lg hover:bg-red-50 transition-colors">
                                 <i class="far fa-calendar-times mr-2"></i>Cancel Meeting
                             </button>
                         </div>
@@ -537,9 +580,14 @@
                 `;
                 
                 // Add event listeners
-                document.getElementById('cancel-meeting-btn').addEventListener('click', () => {
-                    cancelMeeting(meeting.id, params.studentName);
-                });
+                const cancelBtn = document.getElementById('cancel-meeting-btn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => {
+                        const meetingId = cancelBtn.dataset.meetingId;
+                        const studentName = cancelBtn.dataset.studentName;
+                        window.cancelMeeting(meetingId, studentName);
+                    });
+                }
                 document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
             } else {
                 // If another volunteer owns this meeting, show normal schedule button (no warning)
@@ -564,8 +612,318 @@
             }
         }
 
-        // Function to cancel a meeting
-        async function cancelMeeting(meetingId, studentName) {
+        // NEW: Function to render comprehensive meeting interface with tabs
+        function renderMeetingInterface(studentId, data) {
+            const { activeMeeting, volunteerStudentMeetings, allVolunteerMeetings, meetingStats, currentVolunteerId } = data;
+            const params = getUrlParams();
+            if (!params) return;
+            
+            const numericId = document.getElementById('student-profile').dataset.numericId;
+            const studentName = document.getElementById('student-name').textContent.trim();
+            
+            // Check if we can schedule more meetings
+            const canScheduleMore = meetingStats.canScheduleMore;
+            const meetingCount = meetingStats.volunteerStudentMeetingCount;
+            const limit = meetingStats.meetingLimit;
+            
+            let interfaceHtml = `<div class="space-y-6">`;
+            
+            // Show 3-meeting limit status
+            interfaceHtml += `
+                <div class="p-4 rounded-lg ${canScheduleMore ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
+                    <div class="flex items-center gap-3">
+                        <i class="fas ${canScheduleMore ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}"></i>
+                        <div>
+                            <h4 class="font-semibold ${canScheduleMore ? 'text-green-800' : 'text-red-800'}">
+                                Meeting Limit Status: ${meetingCount}/${limit} meetings with this student
+                            </h4>
+                            <p class="text-sm ${canScheduleMore ? 'text-green-700' : 'text-red-700'}">
+                                ${canScheduleMore 
+                                    ? `You can schedule ${limit - meetingCount} more meeting${limit - meetingCount === 1 ? '' : 's'} with this student.`
+                                    : 'You have reached the 3-meeting limit with this student. This ensures all students get equal opportunities.'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create single tab interface (only meetings with this student)
+            interfaceHtml += `
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <!-- Meeting Content -->
+                    <div class="p-6">
+            `;
+            
+            // Show ALL meetings with this specific student
+            if (volunteerStudentMeetings && volunteerStudentMeetings.length > 0) {
+                // Sort meetings by date - upcoming meetings first, then past meetings
+                const sortedMeetings = [...volunteerStudentMeetings].sort((a, b) => {
+                    const dateA = new Date(a.scheduled_time);
+                    const dateB = new Date(b.scheduled_time);
+                    const now = new Date();
+                    
+                    // Separate upcoming and past meetings
+                    const aIsUpcoming = dateA >= now;
+                    const bIsUpcoming = dateB >= now;
+                    
+                    // If both are upcoming, sort by earliest first
+                    if (aIsUpcoming && bIsUpcoming) {
+                        return dateA - dateB;
+                    }
+                    
+                    // If both are past, sort by most recent first
+                    if (!aIsUpcoming && !bIsUpcoming) {
+                        return dateB - dateA;
+                    }
+                    
+                    // Upcoming meetings come before past meetings
+                    return aIsUpcoming ? -1 : 1;
+                });
+                
+                interfaceHtml += `
+                    <div class="mb-4">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                            <i class="fas fa-user-graduate text-blue-600"></i>
+                            All Meetings with ${studentName} (${sortedMeetings.length})
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Complete meeting history between you and this student
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                `;
+                
+                sortedMeetings.forEach(meeting => {
+                    const meetingDate = new Date(meeting.scheduled_time);
+                    const now = new Date();
+                    const meetingEnd = new Date(meetingDate.getTime() + (60 * 60 * 1000)); // Assume 1 hour duration
+                    const minutesLate = Math.floor((now - meetingDate) / (1000 * 60));
+                    
+                    // Use real-time status from backend, which handles auto-timeout logic
+                    const realTimeStatus = meeting.realTimeStatus || meeting.status;
+                    const isToday = meetingDate.toDateString() === now.toDateString();
+                    
+                    let statusColor = '';
+                    let statusBadge = '';
+                    let cardBorder = '';
+                    let statusIcon = '';
+                    
+                    // Determine status colors and badges based on real-time status
+                    switch (realTimeStatus) {
+                        case 'upcoming':
+                            statusColor = 'text-blue-600 bg-blue-100';
+                            statusBadge = isToday ? 'Today - Upcoming' : 'Upcoming';
+                            cardBorder = isToday ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50';
+                            statusIcon = 'fas fa-clock';
+                            break;
+                        case 'in_progress':
+                            statusColor = 'text-green-600 bg-green-100 animate-pulse';
+                            statusBadge = '🔴 LIVE NOW';
+                            cardBorder = 'border-green-400 bg-green-100';
+                            statusIcon = 'fas fa-video';
+                            break;
+                        case 'missed_start':
+                            statusColor = 'text-orange-600 bg-orange-100';
+                            if (minutesLate >= 35) {
+                                statusBadge = `${minutesLate} min late - Auto-timeout in ${40 - minutesLate} min`;
+                            } else {
+                                statusBadge = `${minutesLate} min late - Should be Live`;
+                            }
+                            cardBorder = 'border-orange-200 bg-orange-50';
+                            statusIcon = 'fas fa-exclamation-triangle';
+                            break;
+                        case 'completed':
+                            statusColor = 'text-green-600 bg-green-100';
+                            statusBadge = 'Successfully Completed';
+                            cardBorder = 'border-gray-200 bg-gray-50';
+                            statusIcon = 'fas fa-check-circle';
+                            break;
+                        case 'missed':
+                            statusColor = 'text-red-600 bg-red-100';
+                            if (meeting.auto_missed) {
+                                statusBadge = 'Auto-Missed (40+ min timeout)';
+                            } else {
+                                statusBadge = 'Missed - No Show';
+                            }
+                            cardBorder = 'border-red-200 bg-red-50';
+                            statusIcon = 'fas fa-times-circle';
+                            break;
+                        case 'ended':
+                            statusColor = 'text-purple-600 bg-purple-100';
+                            statusBadge = 'Session Ended';
+                            cardBorder = 'border-gray-200 bg-gray-50';
+                            statusIcon = 'fas fa-stop-circle';
+                            break;
+                        case 'canceled':
+                            statusColor = 'text-gray-600 bg-gray-100';
+                            statusBadge = 'Canceled';
+                            cardBorder = 'border-gray-200 bg-gray-50';
+                            statusIcon = 'fas fa-ban';
+                            break;
+                        default:
+                            statusColor = 'text-gray-600 bg-gray-100';
+                            statusBadge = meeting.status || 'Unknown';
+                            cardBorder = 'border-gray-200 bg-gray-50';
+                            statusIcon = 'fas fa-question-circle';
+                    }
+                    
+                    // Calculate time info with timeout awareness
+                    const timeInfo = (() => {
+                        if (realTimeStatus === 'in_progress') {
+                            const minutesLive = Math.floor((now - meetingDate) / (1000 * 60));
+                            return `Started ${minutesLive} min ago`;
+                        } else if (realTimeStatus === 'missed_start') {
+                            if (minutesLate >= 35) {
+                                return `Auto-timeout in ${40 - minutesLate} min`;
+                            } else if (minutesLate >= 20) {
+                                return `${minutesLate} min late - Join now!`;
+                            } else {
+                                return `${minutesLate} min late`;
+                            }
+                        } else if (realTimeStatus === 'upcoming' && isToday) {
+                            const minutesUntil = Math.floor((meetingDate - now) / (1000 * 60));
+                            if (minutesUntil < 60) {
+                                return `Starts in ${minutesUntil} min`;
+                            }
+                        } else if (realTimeStatus === 'missed') {
+                            if (meeting.auto_missed) {
+                                return 'Timed out - Can reschedule';
+                            } else {
+                                const hoursAgo = Math.floor((now - meetingEnd) / (1000 * 60 * 60));
+                                if (hoursAgo < 24) {
+                                    return `Missed ${hoursAgo}h ago`;
+                                }
+                            }
+                        }
+                        return '';
+                    })();
+                    
+                    interfaceHtml += `
+                        <div class="flex items-center justify-between p-4 rounded-lg border ${cardBorder}">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="font-medium text-gray-900">
+                                        ${meetingDate.toLocaleDateString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })}
+                                    </span>
+                                    <span class="text-gray-500">
+                                        ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor} flex items-center gap-1">
+                                        <i class="${statusIcon}"></i>
+                                        ${statusBadge}
+                                    </span>
+                                    ${timeInfo ? `<span class="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded font-medium">${timeInfo}</span>` : ''}
+                                </div>
+                                <div class="text-gray-600 text-sm">
+                                    Meeting with ${studentName} • ID: ${meeting.id}
+                                    ${realTimeStatus === 'missed' && meeting.auto_missed ? ' • Auto-timed out (no attendance)' : ''}
+                                    ${realTimeStatus === 'missed' && !meeting.auto_missed ? ' • No attendance recorded' : ''}
+                                    ${realTimeStatus === 'missed_start' && minutesLate >= 35 ? ' • Will auto-timeout soon' : ''}
+                                </div>
+                            </div>
+                            <div class="flex gap-2 ml-4">
+                                ${realTimeStatus === 'upcoming' ? `
+                                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" 
+                                       class="text-xs bg-indigo-600 text-white py-1 px-3 rounded hover:bg-indigo-700 transition-colors">
+                                        <i class="far fa-edit mr-1"></i>Edit
+                                    </a>
+                                    <button class="cancel-meeting-btn text-xs bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 transition-colors" 
+                                            data-meeting-id="${meeting.id}" data-student-name="${studentName}">
+                                        <i class="far fa-trash mr-1"></i>Cancel
+                                    </button>
+                                ` : realTimeStatus === 'in_progress' || realTimeStatus === 'missed_start' ? `
+                                    <a href="/call/call.html?room=${meeting.roomId || meeting.id}" 
+                                       class="text-xs bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors font-bold">
+                                        <i class="fas fa-video mr-1"></i>JOIN NOW
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                interfaceHtml += `
+                    </div>
+                `;
+            } else {
+                interfaceHtml += `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-calendar-alt text-6xl mb-4 opacity-30"></i>
+                        <p class="text-xl font-medium mb-2">No Meetings Yet</p>
+                        <p class="text-sm">You haven't had any meetings with ${studentName} yet.</p>
+                        <p class="text-sm text-gray-400 mt-2">Schedule your first meeting using the button below!</p>
+                    </div>
+                `;
+            }
+            
+            interfaceHtml += `
+                    </div>
+                </div>
+            `;
+            
+            // Show schedule button based on meeting limit (simplified)
+            if (canScheduleMore) {
+                interfaceHtml += `
+                    <div class="flex gap-3 mt-6">
+                        <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
+                           class="inline-block bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                           data-numeric-id="${numericId}">
+                            <i class="far fa-calendar-plus mr-2"></i>Schedule ${meetingCount === 0 ? 'First' : 'Another'} Meeting
+                        </a>
+                        <button id="instant-call-btn" 
+                                class="inline-block bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors"
+                                data-student-id="${numericId}"
+                                data-student-name="${studentName}">
+                            <i class="fas fa-phone-alt mr-2"></i>Instant Call
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Simple disabled state without redundant explanation
+                interfaceHtml += `
+                    <div class="flex gap-3 mt-6">
+                        <button class="bg-gray-400 text-white py-3 px-6 rounded-lg cursor-not-allowed" disabled>
+                            <i class="far fa-calendar-plus mr-2"></i>Cannot Schedule More
+                        </button>
+                        <button id="instant-call-btn" 
+                                class="inline-block bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors"
+                                data-student-id="${numericId}"
+                                data-student-name="${studentName}">
+                            <i class="fas fa-phone-alt mr-2"></i>Instant Call (Still Available)
+                        </button>
+                    </div>
+                `;
+            }
+            
+            interfaceHtml += `</div>`;
+            
+            scheduleButtonContainer.innerHTML = interfaceHtml;
+            
+            // Add event listener for instant call button
+            const instantCallBtn = document.getElementById('instant-call-btn');
+            if (instantCallBtn) {
+                instantCallBtn.addEventListener('click', initiateInstantCall);
+            }
+            
+            // Add event listeners for all cancel meeting buttons
+            const cancelButtons = scheduleButtonContainer.querySelectorAll('.cancel-meeting-btn');
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const meetingId = button.dataset.meetingId;
+                    const studentName = button.dataset.studentName;
+                    window.cancelMeeting(meetingId, studentName);
+                });
+            });
+        }
+
+        // Function to cancel a meeting (make it globally accessible)
+        window.cancelMeeting = async function(meetingId, studentName) {
             const confirmed = await window.showConfirmation(
                 `Are you sure you want to cancel your meeting with ${studentName}?`,
                 {
@@ -581,7 +939,7 @@
             }
             
             // Send API request to cancel the meeting
-            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
+            window.TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
@@ -597,10 +955,10 @@
                     // Show success notification
                     showNotification('Meeting cancelled successfully');
                     
-                    // Update the button to show schedule option
+                    // Refresh the meeting interface to show updated data
                     const params = getUrlParams();
                     if (params) {
-                        renderScheduleButton(params.studentId);
+                        checkExistingMeeting(params.studentId);
                     }
                 })
                 .catch(error => {
@@ -663,17 +1021,71 @@
         document.addEventListener('click', e => {
             // Profile dropdown toggle
             if (profileBtn && profileBtn.contains(e.target)) {
+                console.log('Profile button clicked');
                 e.stopPropagation();
-                profileDropdown.classList.toggle('hidden');
-                profileDropdown.classList.toggle('opacity-0');
-                profileDropdown.classList.toggle('-translate-y-2');
-            } else if (profileDropdown && !profileDropdown.contains(e.target)) {
+                
+                const isHidden = profileDropdown.classList.contains('hidden');
+                console.log('Dropdown is currently hidden:', isHidden);
+                
+                if (isHidden) {
+                    // Show dropdown
+                    profileDropdown.classList.remove('hidden');
+                    profileDropdown.classList.remove('opacity-0');
+                    profileDropdown.classList.remove('-translate-y-2');
+                    console.log('Showing dropdown');
+                } else {
+                    // Hide dropdown
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                    profileDropdown.classList.add('-translate-y-2');
+                    console.log('Hiding dropdown');
+                }
+            } else if (profileDropdown && !profileDropdown.contains(e.target) && !profileDropdown.classList.contains('hidden')) {
+                console.log('Clicking outside, closing dropdown');
                 profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
             }
         });
         
         // --- Initialize Authentication ---
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        
+        // --- Initialize Real-time Notifications ---
+        if (typeof RealtimeNotifications !== 'undefined') {
+            window.realtimeNotifications = new RealtimeNotifications('volunteer');
+            window.realtimeNotifications.initialize().then(() => {
+                console.log('Real-time notifications initialized');
+                
+                // Listen for meeting reschedule notifications
+                window.realtimeNotifications.on('meeting-rescheduled', (data) => {
+                    console.log('Meeting rescheduled notification received:', data);
+                    showNotification(`Meeting rescheduled: ${data.message}`, 'success');
+                    
+                    // Refresh the meeting interface to show updated data
+                    const params = getUrlParams();
+                    if (params && params.studentId) {
+                        checkExistingMeeting(params.studentId);
+                    }
+                });
+                
+                // Listen for general notifications
+                window.realtimeNotifications.on('newNotification', (notification) => {
+                    if (notification.type === 'meeting_rescheduled') {
+                        console.log('Meeting rescheduled notification:', notification);
+                        showNotification(notification.message, 'success');
+                        
+                        // Refresh the meeting interface
+                        const params = getUrlParams();
+                        if (params && params.studentId) {
+                            setTimeout(() => {
+                                checkExistingMeeting(params.studentId);
+                            }, 1000);
+                        }
+                    }
+                });
+            }).catch(error => {
+                console.error('Failed to initialize real-time notifications:', error);
+            });
+        }
         
         // --- Initial Load ---
         loadStudentData();
@@ -684,6 +1096,22 @@
     <!-- Initialize Navigation -->
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            // Register notification service worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/notification-sw.js');
+                    console.log('Notification service worker registered:', registration);
+                    
+                    // Request notification permission if not already granted
+                    if (Notification.permission === 'default') {
+                        const permission = await Notification.requestPermission();
+                        console.log('Notification permission:', permission);
+                    }
+                } catch (error) {
+                    console.error('Failed to register notification service worker:', error);
+                }
+            }
+            
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
         });

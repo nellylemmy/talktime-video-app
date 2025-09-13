@@ -21,6 +21,12 @@
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
+    <!-- Real-time Notifications -->
+    <script src="/shared/js/realtime-notifications.js"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f0f4ff; }
         .font-poppins { font-family: 'Poppins', sans-serif; }
@@ -107,7 +113,7 @@
         <!-- Navigation will be loaded dynamically -->
     </div>
 
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-20">
         <!-- Back Navigation -->
         <div class="mb-8 flex items-center" id="back-link-container">
             <!-- Back link will be inserted here -->
@@ -126,16 +132,21 @@
                         </div>
                     </div>
                     
-                    <!-- Timezone Selection -->
+                    <!-- Timezone Display -->
                     <div class="mb-6">
-                        <label for="timezone-select" class="block text-sm font-medium text-gray-700 mb-2">Your Timezone</label>
-                        <select id="timezone-select" class="w-full p-3 bg-white/70 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <!-- Timezone options will be inserted here -->
-                        </select>
-                        <p class="mt-2 text-xs text-gray-500">Students are in Kenya (EAT). Available hours: 9:00 AM - 5:00 PM EAT.</p>
-                    </div>
-                    
-                    <!-- Calendar -->
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Your Timezone</label>
+                        <div class="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-gray-700">
+                            <div class="flex items-center justify-between">
+                                <span id="volunteer-timezone-display" class="font-medium">Loading timezone...</span>
+                                <div class="flex gap-2">
+                                    <button id="detect-timezone-btn" class="text-blue-600 hover:text-blue-800 text-sm underline" onclick="autoDetectTimezone()">
+                                        <i class="fas fa-location-dot mr-1"></i>Auto-detect
+                                    </button>
+                                    <a href="/volunteer/settings" class="text-indigo-600 hover:text-indigo-800 text-sm underline">Edit in Settings</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                    <!-- Calendar -->
                     <div class="mb-6">
                         <div class="flex justify-between items-center mb-4">
                             <button id="prev-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-left"></i></button>
@@ -143,13 +154,13 @@
                             <button id="next-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-right"></i></button>
                         </div>
                         <div class="calendar mb-2">
-                            <div class="text-center text-gray-500 text-sm font-medium">S</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">M</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">T</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">W</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">T</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">F</div>
-                            <div class="text-center text-gray-500 text-sm font-medium">S</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Sunday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Monday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Tuesday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Wednesday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Thursday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Friday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Saturday</div>
                         </div>
                         <div id="calendar-days" class="calendar">
                             <!-- Calendar days will be inserted here -->
@@ -205,7 +216,7 @@
         const studentImage = document.getElementById('student-image');
         const studentName = document.getElementById('student-name');
         const studentDetails = document.getElementById('student-details');
-        const timezoneSelect = document.getElementById('timezone-select');
+        const volunteerTimezoneDisplay = document.getElementById('volunteer-timezone-display');
         const calendarMonth = document.getElementById('calendar-month');
         const calendarDays = document.getElementById('calendar-days');
         const prevMonthBtn = document.getElementById('prev-month');
@@ -232,6 +243,7 @@
         let studentData = null;
         let meetingId = null; // For rescheduling
         let isRescheduling = false;
+        let volunteerTimezone = null; // Volunteer's saved timezone
         
         // --- Utility Functions ---
         function showNotification(message, type = 'success') {
@@ -461,8 +473,8 @@
             // Clear existing time slots
             timeSlots.innerHTML = '';
             
-            // Get selected timezone
-            const timezone = timezoneSelect.value;
+            // Use volunteer's saved timezone
+            const timezone = volunteerTimezone;
             
             // Generate time slots based on EAT constraints (9:00 AM - 5:00 PM EAT)
             // with 15-minute intervals (00, 15, 30, 45)
@@ -572,8 +584,11 @@
                         fetchMeetingDetails(meetingId);
                     }
                     
-                    // Initialize timezone select
-                    initializeTimezoneSelect();
+                    // Check meeting limit status with this student
+                    checkMeetingLimitStatus(params.studentId);
+                    
+                    // Load volunteer's saved timezone
+                    loadVolunteerTimezone();
                 })
                 .catch(error => {
                     console.error('Error loading student data:', error);
@@ -630,102 +645,161 @@
                 });
         }
         
-        function initializeTimezoneSelect() {
-            // Get user's timezone
-            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
-            // List of common timezones with EAT (Africa/Nairobi) at the top
-            const commonTimezones = [
-                'Africa/Nairobi', // EAT
-                'UTC',
-                'America/New_York',
-                'America/Chicago',
-                'America/Denver',
-                'America/Los_Angeles',
-                'America/Toronto',
-                'Europe/London',
-                'Europe/Paris',
-                'Europe/Berlin',
-                'Asia/Dubai',
-                'Asia/Tokyo',
-                'Asia/Shanghai',
-                'Australia/Sydney',
-                'Pacific/Auckland'
-            ];
-            
-            // Add user's timezone if not in the common list
-            if (!commonTimezones.includes(userTimezone)) {
-                commonTimezones.push(userTimezone);
-            }
-            
-            // Create common timezones optgroup
-            let timezoneOptions = '<optgroup label="Common Time Zones">';
-            
-            // Generate common timezone options
-            commonTimezones.forEach(tz => {
-                const selected = tz === userTimezone ? 'selected' : '';
-                const now = new Date();
-                const tzString = now.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop();
-                timezoneOptions += `<option value="${tz}" ${selected}>${tz.replace('_', ' ')} (${tzString})</option>`;
-            });
-            
-            timezoneOptions += '</optgroup>';
-            
-            // Add all IANA timezones grouped by continent
-            let allTimezones = [];
-            
-            try {
-                // This might not be supported in all browsers
-                allTimezones = Intl.supportedValuesOf('timeZone');
-            } catch (e) {
-                console.warn('Intl.supportedValuesOf not supported, using fallback timezone list');
-                // Fallback to a smaller list of common timezones
-                allTimezones = [
-                    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
-                    'America/Mexico_City', 'America/Phoenix', 'America/Sao_Paulo',
-                    'Asia/Hong_Kong', 'Asia/Jerusalem', 'Asia/Seoul', 'Asia/Singapore',
-                    'Australia/Melbourne', 'Australia/Perth',
-                    'Europe/Amsterdam', 'Europe/Istanbul', 'Europe/Moscow', 'Europe/Rome'
-                ];
-            }
-            
-            // Filter out the common timezones that we've already added
-            const otherTimezones = allTimezones.filter(tz => !commonTimezones.includes(tz));
-            
-            // Group by continent
-            const continents = {};
-            
-            otherTimezones.forEach(tz => {
-                const continent = tz.split('/')[0];
-                if (!continents[continent]) {
-                    continents[continent] = [];
-                }
-                continents[continent].push(tz);
-            });
-            
-            // Add each continent as an optgroup
-            Object.keys(continents).sort().forEach(continent => {
-                timezoneOptions += `<optgroup label="${continent}">`;
-                
-                continents[continent].sort().forEach(tz => {
-                    const selected = tz === userTimezone ? 'selected' : '';
-                    const now = new Date();
-                    const tzString = now.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop();
-                    timezoneOptions += `<option value="${tz}" ${selected}>${tz.replace('_', ' ')} (${tzString})</option>`;
+        function checkMeetingLimitStatus(studentId) {
+            // Check meeting count with this student and display status
+            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/student/${studentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const meetingStats = data.meetingStats || {};
+                    const meetingCount = meetingStats.volunteerStudentMeetingCount || 0;
+                    const limit = meetingStats.meetingLimit || 3;
+                    const canScheduleMore = meetingStats.canScheduleMore !== false;
+                    
+                    // Add meeting status display after student info
+                    const studentDetails = document.getElementById('student-details');
+                    const studentContainer = studentDetails.parentElement;
+                    
+                    // Remove any existing status display
+                    const existingStatus = document.getElementById('meeting-limit-status');
+                    if (existingStatus) {
+                        existingStatus.remove();
+                    }
+                    
+                    // Create status display
+                    const statusEl = document.createElement('div');
+                    statusEl.id = 'meeting-limit-status';
+                    statusEl.className = `p-3 rounded-lg border mb-4 ${canScheduleMore ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`;
+                    
+                    statusEl.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <i class="fas ${canScheduleMore ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}"></i>
+                            <div>
+                                <h4 class="font-semibold text-sm ${canScheduleMore ? 'text-green-800' : 'text-red-800'}">
+                                    Meeting Limit: ${meetingCount}/${limit} meetings with this student
+                                </h4>
+                                <p class="text-xs ${canScheduleMore ? 'text-green-700' : 'text-red-700'}">
+                                    ${canScheduleMore 
+                                        ? `You can schedule ${limit - meetingCount} more meeting${limit - meetingCount === 1 ? '' : 's'}.`
+                                        : 'You have reached the limit. This ensures all students get equal opportunities.'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Insert after student info container
+                    studentContainer.appendChild(statusEl);
+                    
+                    // If limit reached, disable scheduling interface
+                    if (!canScheduleMore && !isRescheduling) {
+                        disableSchedulingInterface();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking meeting limit:', error);
+                    // Don't block scheduling on error, just log it
                 });
+        }
+        
+        function disableSchedulingInterface() {
+            // Disable calendar and time selection
+            const calendarDays = document.getElementById('calendar-days');
+            const timeSelection = document.getElementById('time-selection');
+            const confirmContainer = document.getElementById('confirm-container');
+            
+            if (calendarDays) {
+                calendarDays.style.pointerEvents = 'none';
+                calendarDays.style.opacity = '0.5';
+            }
+            if (timeSelection) {
+                timeSelection.style.display = 'none';
+            }
+            if (confirmContainer) {
+                confirmContainer.style.display = 'none';
+            }
+            
+            // Show disabled message
+            const scheduleContainer = document.querySelector('.glass-bg');
+            if (scheduleContainer) {
+                const disabledMsg = document.createElement('div');
+                disabledMsg.className = 'p-4 bg-gray-100 rounded-lg text-center mt-4';
+                disabledMsg.innerHTML = `
+                    <p class="text-gray-700">
+                        <i class="fas fa-ban mr-2"></i>
+                        Scheduling is disabled because you've reached the 3-meeting limit with this student.
+                    </p>
+                    <p class="text-sm text-gray-600 mt-2">
+                        This policy ensures all students get equal opportunities to practice with different volunteers.
+                    </p>
+                `;
+                scheduleContainer.appendChild(disabledMsg);
+            }
+        }
+        
+        function loadVolunteerTimezone() {
+            // Fetch volunteer's profile to get their saved timezone
+            TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile', {
+                method: 'GET'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Extract timezone from volunteer profile - handle both data structures
+                    volunteerTimezone = data.timezone || data.volunteer?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    
+                    // Display timezone with user-friendly format
+                    const displayTimezone = formatTimezoneDisplay(volunteerTimezone);
+                    volunteerTimezoneDisplay.textContent = displayTimezone;
+                    
+                    // Show detection hint if timezone doesn't match browser timezone
+                    const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (volunteerTimezone !== browserTimezone) {
+                        console.log(`Timezone mismatch detected. Saved: ${volunteerTimezone}, Browser: ${browserTimezone}`);
+                    }
+                    
+                    console.log('Loaded volunteer timezone:', volunteerTimezone);
+                })
+                .catch(error => {
+                    console.error('Error loading volunteer timezone:', error);
+                    // Fallback to browser detected timezone
+                    volunteerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const displayTimezone = formatTimezoneDisplay(volunteerTimezone);
+                    volunteerTimezoneDisplay.textContent = displayTimezone + ' (detected)';
+                });
+        }
+        
+        function formatTimezoneDisplay(timezone) {
+            try {
+                const now = new Date();
+                const tzString = now.toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop();
                 
-                timezoneOptions += '</optgroup>';
-            });
-            
-            // Set the timezone options
-            timezoneSelect.innerHTML = timezoneOptions;
-            
-            // Add event listener to regenerate time slots when timezone changes
-            timezoneSelect.addEventListener('change', () => {
-                if (selectedDate) {
-                    showTimeSelection();
-                }
-            });
+                // Map common timezones to user-friendly names
+                const timezoneMap = {
+                    'America/New_York': 'Eastern Time (US & Canada)',
+                    'America/Chicago': 'Central Time (US & Canada)',
+                    'America/Denver': 'Mountain Time (US & Canada)',
+                    'America/Los_Angeles': 'Pacific Time (US & Canada)',
+                    'America/Toronto': 'Toronto, Montreal',
+                    'Europe/London': 'London, Dublin',
+                    'Europe/Paris': 'Paris, Berlin, Rome',
+                    'Africa/Nairobi': 'Nairobi, Kenya (EAT)',
+                    'Asia/Dubai': 'Dubai, Abu Dhabi',
+                    'Asia/Tokyo': 'Tokyo, Osaka',
+                    'Australia/Sydney': 'Sydney, Melbourne'
+                };
+                
+                return timezoneMap[timezone] || `${timezone.replace('_', ' ')} (${tzString})`;
+            } catch (e) {
+                return timezone.replace('_', ' ');
+            }
         }
         
         // --- Event Handlers ---
@@ -802,8 +876,8 @@
             const meetingDate = new Date(selectedDate);
             meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
             
-            // Get selected timezone
-            const timezone = timezoneSelect.value;
+            // Use volunteer's saved timezone
+            const timezone = volunteerTimezone;
             
             // Prepare meeting data
             const meetingData = {
@@ -838,12 +912,20 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        // Check specific error status codes
-                        if (response.status === 403) {
-                            throw new Error('Not authorized: This student already has an active meeting scheduled. Please cancel the existing meeting before scheduling a new one.');
-                        } else {
-                            throw new Error('Failed to schedule meeting');
-                        }
+                        // Handle different error status codes
+                        return response.json().then(errorData => {
+                            if (response.status === 403) {
+                                if (errorData.error && errorData.error.includes('3-meeting limit')) {
+                                    throw new Error(`You have reached the 3-meeting limit with this student (${errorData.meetingCount}/${errorData.limit}). This ensures all students get equal opportunities to practice with different volunteers.`);
+                                } else {
+                                    throw new Error('Not authorized: This student already has an active meeting scheduled. Please cancel the existing meeting before scheduling a new one.');
+                                }
+                            } else if (response.status === 409) {
+                                throw new Error('This student already has a meeting scheduled for this date. Please choose a different date.');
+                            } else {
+                                throw new Error(errorData.error || 'Failed to schedule meeting');
+                            }
+                        });
                     }
                     return response.json();
                 })
@@ -851,10 +933,53 @@
                     // Show success notification
                     showNotification(isRescheduling ? 'Meeting rescheduled successfully' : 'Meeting scheduled successfully');
                     
-                    // Redirect to student profile page
+                    // If this is a reschedule, immediately trigger the reschedule sound
+                    if (isRescheduling) {
+                        console.log('🔊 Triggering reschedule sound manually...');
+                        
+                        // Method 1: Direct sound event trigger
+                        if (document.dispatchEvent) {
+                            document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
+                                detail: {
+                                    type: 'meeting_rescheduled',
+                                    priority: 'high',
+                                    metadata: {
+                                        meeting_id: meetingId,
+                                        action: 'reschedule_confirmed'
+                                    },
+                                    source: 'schedule_page',
+                                    force_play: true
+                                }
+                            }));
+                        }
+                        
+                        // Method 2: Direct sound manager call
+                        if (window.talkTimeNotificationSoundManager) {
+                            window.talkTimeNotificationSoundManager.playSound('meeting_rescheduled', { 
+                                forcePlay: true,
+                                source: 'schedule_confirmation' 
+                            }).catch(err => console.log('Sound play failed:', err));
+                        }
+                        
+                        // Method 3: Realtime notifications call
+                        if (window.realtimeNotifications && window.realtimeNotifications.playNotificationSound) {
+                            window.realtimeNotifications.playNotificationSound({
+                                sound_type: 'meeting_rescheduled',
+                                priority: 'high',
+                                notification: { type: 'meeting_rescheduled' },
+                                source: 'schedule_confirmation'
+                            });
+                        }
+                        
+                        console.log('🔊 Reschedule sound triggered via multiple methods');
+                    }
+                    
+                    // Increase redirect delay to allow Socket.IO events to be received and sounds to play
+                    const redirectDelay = isRescheduling ? 3000 : 1500; // 3 seconds for reschedule, 1.5 for new meetings
+                    
                     setTimeout(() => {
                         window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
-                    }, 1500);
+                    }, redirectDelay);
                 })
                 .catch(error => {
                     console.error('Error scheduling meeting:', error);
@@ -873,15 +998,76 @@
         // Profile dropdown toggle
         document.addEventListener('click', e => {
             if (profileBtn && profileBtn.contains(e.target)) {
+                console.log('Profile button clicked');
                 e.stopPropagation();
-                profileDropdown.classList.toggle('hidden');
-            } else if (profileDropdown && !profileDropdown.contains(e.target)) {
+                
+                const isHidden = profileDropdown.classList.contains('hidden');
+                console.log('Dropdown is currently hidden:', isHidden);
+                
+                if (isHidden) {
+                    // Show dropdown
+                    profileDropdown.classList.remove('hidden');
+                    profileDropdown.classList.remove('opacity-0');
+                    profileDropdown.classList.remove('-translate-y-2');
+                    console.log('Showing dropdown');
+                } else {
+                    // Hide dropdown
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                    profileDropdown.classList.add('-translate-y-2');
+                    console.log('Hiding dropdown');
+                }
+            } else if (profileDropdown && !profileDropdown.contains(e.target) && !profileDropdown.classList.contains('hidden')) {
+                console.log('Clicking outside, closing dropdown');
                 profileDropdown.classList.add('hidden');
+                profileDropdown.classList.add('opacity-0');
+                profileDropdown.classList.add('-translate-y-2');
             }
         });
         
         // --- Initialize Authentication ---
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        
+        // --- Initialize Real-time Notifications ---
+        if (typeof RealtimeNotifications !== 'undefined') {
+            window.realtimeNotifications = new RealtimeNotifications('volunteer');
+            window.realtimeNotifications.initialize().then(() => {
+                console.log('Real-time notifications initialized on schedule page');
+                
+                // Listen for meeting notifications
+                window.realtimeNotifications.on('newNotification', (notification) => {
+                    if (notification.type === 'meeting_scheduled' || notification.type === 'meeting_rescheduled') {
+                        console.log('Meeting notification received:', notification);
+                        showNotification(notification.message, 'success');
+                    }
+                });
+                
+                // Add specific listener for meeting-rescheduled Socket.IO events
+                if (window.realtimeNotifications.socket) {
+                    window.realtimeNotifications.socket.on('meeting-rescheduled', (data) => {
+                        console.log('🔔 Schedule page received meeting-rescheduled event:', data);
+                        
+                        // Trigger reschedule sound
+                        if (window.realtimeNotifications.playNotificationSound) {
+                            window.realtimeNotifications.playNotificationSound({
+                                sound_type: 'meeting_rescheduled',
+                                priority: 'high',
+                                notification: { type: 'meeting_rescheduled' },
+                                metadata: data,
+                                source: 'socket_event_schedule_page'
+                            });
+                        }
+                        
+                        // Show toast notification
+                        showNotification('Meeting rescheduled successfully! 🔔', 'success');
+                    });
+                } else {
+                    console.log('Socket.IO not available on schedule page, manual sound triggers will be used');
+                }
+            }).catch(error => {
+                console.error('Failed to initialize real-time notifications:', error);
+            });
+        }
         
         // --- Initialization ---
         loadStudentData();
@@ -889,9 +1075,83 @@
     });
     </script>
 
+    <!-- Global Functions -->
+    <script>
+        // Auto-detect timezone function (must be global for onclick handler)
+        function autoDetectTimezone() {
+            const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            console.log('Auto-detecting timezone:', browserTimezone);
+            
+            // Update the display immediately
+            volunteerTimezone = browserTimezone;
+            
+            // Format timezone display
+            function formatTimezoneDisplay(timezone) {
+                try {
+                    const now = new Date();
+                    const tzString = now.toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop();
+                    
+                    // Map common timezones to user-friendly names
+                    const timezoneMap = {
+                        'America/New_York': 'Eastern Time (US & Canada)',
+                        'America/Chicago': 'Central Time (US & Canada)',
+                        'America/Denver': 'Mountain Time (US & Canada)',
+                        'America/Los_Angeles': 'Pacific Time (US & Canada)',
+                        'America/Toronto': 'Toronto, Montreal',
+                        'Europe/London': 'London, Dublin',
+                        'Europe/Paris': 'Paris, Berlin, Rome',
+                        'Africa/Nairobi': 'Nairobi, Kenya (EAT)',
+                        'Asia/Dubai': 'Dubai, Abu Dhabi',
+                        'Asia/Tokyo': 'Tokyo, Osaka',
+                        'Australia/Sydney': 'Sydney, Melbourne'
+                    };
+                    
+                    return timezoneMap[timezone] || `${timezone.replace('_', ' ')} (${tzString})`;
+                } catch (e) {
+                    return timezone.replace('_', ' ');
+                }
+            }
+            
+            const displayTimezone = formatTimezoneDisplay(volunteerTimezone);
+            const displayElement = document.getElementById('volunteer-timezone-display');
+            if (displayElement) {
+                displayElement.textContent = displayTimezone + ' (auto-detected)';
+            }
+            
+            // Show success message
+            const notification = document.getElementById('notification');
+            if (notification) {
+                notification.textContent = 'Timezone auto-detected and updated!';
+                notification.className = 'fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+                
+                setTimeout(() => {
+                    notification.className = 'hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+                }, 3000);
+            }
+            
+            console.log('Timezone updated to:', volunteerTimezone);
+        }
+    </script>
+
     <!-- Initialize Navigation -->
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            // Register notification service worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/notification-sw.js');
+                    console.log('Notification service worker registered:', registration);
+                    
+                    // Request notification permission if not already granted
+                    if (Notification.permission === 'default') {
+                        const permission = await Notification.requestPermission();
+                        console.log('Notification permission:', permission);
+                    }
+                } catch (error) {
+                    console.error('Failed to register notification service worker:', error);
+                }
+            }
+            
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
         });

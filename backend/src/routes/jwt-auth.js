@@ -1,7 +1,14 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { generateTokens, verifyToken, createJWTMiddleware } from '../utils/jwt.js';
 import pool from '../config/database.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 // Legacy User and Student models removed - using unified users table only
 
 const router = express.Router();
@@ -15,65 +22,259 @@ router.post('/volunteer/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        console.log('JWT Volunteer login attempt:', { email });
+        console.log('JWT Volunteer login attempt:', email);
         
+        // Validate required fields
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
                 error: 'Email and password are required'
             });
         }
-        
+
         // Find user by email
-        const query = 'SELECT * FROM users WHERE email = $1';
-        const { rows } = await pool.query(query, [email]);
+        const query = 'SELECT * FROM users WHERE email = $1 AND role = $2';
+        const { rows } = await pool.query(query, [email, 'volunteer']);
         const user = rows[0];
-        if (!user) {
+
+        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.status(401).json({
                 success: false,
-                error: 'Invalid credentials'
+                error: 'Invalid email or password'
             });
         }
-        
-        // Verify user is a volunteer
-        if (user.role !== 'volunteer') {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid credentials'
-            });
-        }
-        
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password_hash);
-        if (!isValidPassword) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid credentials'
-            });
-        }
-        
-        // Generate JWT tokens
+
+        // Generate JWT token using utility function with proper audience
         const tokens = generateTokens(user);
-        
+
         console.log('JWT Volunteer login successful:', user.email);
-        
+
         res.json({
             success: true,
-            message: 'Login successful',
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.full_name || user.username,
-                role: user.role
-            },
-            ...tokens
+                username: user.username,
+                full_name: user.full_name,
+                role: user.role,
+                volunteer_type: user.volunteer_type,
+                is_approved: user.is_approved
+            }
         });
-        
+
     } catch (error) {
         console.error('JWT Volunteer login error:', error);
         res.status(500).json({
             success: false,
-            error: 'Server error during login'
+            error: 'Internal server error'
+        });
+    }
+});
+
+/**
+ * @route   POST /api/v1/jwt-auth/volunteer/forgot-password
+ * @desc    Get security questions for password recovery
+ * @access  Public
+ */
+router.post('/volunteer/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        console.log('Password recovery request for:', email);
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required'
+            });
+        }
+
+        // Find user by email
+        const query = 'SELECT id, email, full_name, security_question_1, security_question_2, security_question_3 FROM users WHERE email = $1 AND role = $2';
+        const { rows } = await pool.query(query, [email, 'volunteer']);
+        const user = rows[0];
+
+        if (!user) {
+            // Don't reveal whether email exists for security
+            return res.status(404).json({
+                success: false,
+                error: 'No account found with this email address'
+            });
+        }
+
+        // Check if user has security questions set up
+        if (!user.security_question_1 || !user.security_question_2 || !user.security_question_3) {
+            return res.status(400).json({
+                success: false,
+                error: 'This account does not have security questions set up. Please contact support.'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name
+            },
+            security_questions: [
+                user.security_question_1,
+                user.security_question_2,
+                user.security_question_3
+            ]
+        });
+
+    } catch (error) {
+        console.error('Password recovery error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
+/**
+ * @route   POST /api/v1/jwt-auth/volunteer/verify-security-answers
+ * @desc    Verify security answers and allow password reset
+ * @access  Public
+ */
+router.post('/volunteer/verify-security-answers', async (req, res) => {
+    try {
+        const { email, security_answers } = req.body;
+        
+        console.log('Security answers verification for:', email);
+        
+        if (!email || !security_answers || !Array.isArray(security_answers) || security_answers.length !== 3) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email and three security answers are required'
+            });
+        }
+
+        // Find user with security question hashes
+        const query = 'SELECT id, email, full_name, security_answer_1_hash, security_answer_2_hash, security_answer_3_hash FROM users WHERE email = $1 AND role = $2';
+        const { rows } = await pool.query(query, [email, 'volunteer']);
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'No account found with this email address'
+            });
+        }
+
+        // Verify all three security answers
+        const answer1Valid = await bcrypt.compare(security_answers[0].toLowerCase().trim(), user.security_answer_1_hash);
+        const answer2Valid = await bcrypt.compare(security_answers[1].toLowerCase().trim(), user.security_answer_2_hash);
+        const answer3Valid = await bcrypt.compare(security_answers[2].toLowerCase().trim(), user.security_answer_3_hash);
+
+        if (!answer1Valid || !answer2Valid || !answer3Valid) {
+            return res.status(401).json({
+                success: false,
+                error: 'One or more security answers are incorrect'
+            });
+        }
+
+        // Generate a temporary token for password reset
+        const resetToken = jwt.sign(
+            { 
+                id: user.id, 
+                email: user.email, 
+                purpose: 'password_reset' 
+            },
+            JWT_SECRET,
+            { expiresIn: '15m' } // Short expiry for security
+        );
+
+        console.log('Security answers verified successfully for:', user.email);
+
+        res.json({
+            success: true,
+            message: 'Security answers verified successfully',
+            reset_token: resetToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name
+            }
+        });
+
+    } catch (error) {
+        console.error('Security answers verification error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
+/**
+ * @route   POST /api/v1/jwt-auth/volunteer/reset-password
+ * @desc    Reset password using verified reset token
+ * @access  Public
+ */
+router.post('/volunteer/reset-password', async (req, res) => {
+    try {
+        const { reset_token, new_password } = req.body;
+        
+        console.log('Password reset attempt with token');
+        
+        if (!reset_token || !new_password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Reset token and new password are required'
+            });
+        }
+
+        // Verify reset token
+        let decoded;
+        try {
+            decoded = jwt.verify(reset_token, JWT_SECRET);
+            
+            if (decoded.purpose !== 'password_reset') {
+                throw new Error('Invalid token purpose');
+            }
+        } catch (tokenError) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid or expired reset token'
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+
+        // Update user password
+        const updateQuery = 'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 AND email = $3 AND role = $4 RETURNING id, email, full_name';
+        const { rows } = await pool.query(updateQuery, [hashedPassword, decoded.id, decoded.email, 'volunteer']);
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        console.log('Password reset successful for:', user.email);
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name
+            }
+        });
+
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
         });
     }
 });
@@ -85,16 +286,46 @@ router.post('/volunteer/login', async (req, res) => {
  */
 router.post('/volunteer/signup', async (req, res) => {
     try {
-        const { username, full_name, email, password, is_under_18, parent_email, parent_phone } = req.body;
+        const { username, full_name, email, password, parent_email, parent_phone, volunteer_type, school_name, age, gender, phone, timezone, security_questions } = req.body;
         
-        console.log('JWT Volunteer signup attempt:', { username, email, is_under_18 });
+        console.log('JWT Volunteer signup attempt:', { username, email, volunteer_type, age });
         
         // Validate required fields
-        if (!username || !full_name || !email || !password) {
+        if (!username || !full_name || !email || !password || !age || !gender || !phone || !timezone) {
             return res.status(400).json({
                 success: false,
-                error: 'Username, full name, email, and password are required'
+                error: 'Username, full name, email, password, age, gender, phone, and timezone are required'
             });
+        }
+        
+        // Validate timezone format (IANA timezone identifier)
+        if (timezone && typeof timezone === 'string') {
+            const validTimezonePattern = /^[A-Za-z_]+\/[A-Za-z_]+$/;
+            if (!validTimezonePattern.test(timezone)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid timezone format. Please use IANA timezone identifier (e.g., America/New_York)'
+                });
+            }
+        }
+        
+        // Validate security questions (required for password recovery)
+        if (!security_questions || !Array.isArray(security_questions) || security_questions.length !== 3) {
+            return res.status(400).json({
+                success: false,
+                error: 'Three security questions are required for password recovery'
+            });
+        }
+        
+        // Validate each security question has both question and answer
+        for (let i = 0; i < security_questions.length; i++) {
+            const sq = security_questions[i];
+            if (!sq.question || !sq.answer || !sq.question.trim() || !sq.answer.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Security question ${i + 1} must have both question and answer`
+                });
+            }
         }
         
         // Check if user already exists
@@ -108,11 +339,54 @@ router.post('/volunteer/signup', async (req, res) => {
             });
         }
         
+        // Determine if parental approval is needed
+        const isStudentVolunteer = volunteer_type === 'student_volunteer';
+        const parsedAge = parseInt(age, 10);
+        const actuallyUnder18 = !isNaN(parsedAge) && parsedAge >= 10 && parsedAge < 18;
+        const needsParentalApproval = isStudentVolunteer || actuallyUnder18;
+        
+        console.log('Parental approval check:', { 
+            volunteer_type, 
+            isStudentVolunteer, 
+            age: parsedAge, 
+            actuallyUnder18, 
+            needsParentalApproval 
+        });
+        
+        // Validate required parental fields if approval is needed
+        if (needsParentalApproval && (!parent_email || !parent_phone)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Parent email and phone are required for parental approval'
+            });
+        }
+        
+        // Validate school name for student volunteers
+        if (isStudentVolunteer && !school_name) {
+            return res.status(400).json({
+                success: false,
+                error: 'School name is required for student volunteers'
+            });
+        }
+        
         // Create new volunteer
         const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Hash security answers
+        const hashedAnswers = await Promise.all(
+            security_questions.map(sq => bcrypt.hash(sq.answer.toLowerCase().trim(), 10))
+        );
+        
         const insertQuery = `
-            INSERT INTO users (username, full_name, email, password_hash, role, is_under_18, parent_email, parent_phone, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            INSERT INTO users (
+                username, full_name, email, password_hash, role, volunteer_type, is_under_18, 
+                age, gender, phone, timezone, parent_email, parent_phone, school_name, 
+                security_question_1, security_answer_1_hash,
+                security_question_2, security_answer_2_hash,
+                security_question_3, security_answer_3_hash,
+                created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())
             RETURNING *
         `;
         const { rows: newUserRows } = await pool.query(insertQuery, [
@@ -121,11 +395,53 @@ router.post('/volunteer/signup', async (req, res) => {
             email,
             hashedPassword,
             'volunteer',
-            is_under_18 || false,
-            is_under_18 ? parent_email : null,
-            is_under_18 ? parent_phone : null
+            volunteer_type || 'standard',
+            actuallyUnder18 || false,
+            parseInt(age) || null,
+            gender || null,
+            phone || null,
+            timezone,
+            needsParentalApproval ? parent_email : null,
+            needsParentalApproval ? parent_phone : null,
+            isStudentVolunteer ? school_name : null,
+            security_questions[0].question,
+            hashedAnswers[0],
+            security_questions[1].question,
+            hashedAnswers[1],
+            security_questions[2].question,
+            hashedAnswers[2]
         ]);
         const newUser = newUserRows[0];
+        
+        // If parental approval is needed, send notification
+        if (needsParentalApproval) {
+            try {
+                const ParentalApprovalService = await import('../utils/parentalApproval.js');
+                const approvalToken = ParentalApprovalService.default.generateApprovalToken();
+                
+                // Update user with approval token
+                await pool.query(
+                    'UPDATE users SET parent_approval_token = $1, parent_approval_sent_at = NOW() WHERE id = $2',
+                    [approvalToken, newUser.id]
+                );
+                
+                // Send parental approval request
+                const { sendParentalApprovalRequest } = await import('../services/notificationService.js');
+                await sendParentalApprovalRequest({
+                    full_name,
+                    email,
+                    is_under_18: actuallyUnder18,
+                    volunteer_type: volunteer_type,
+                    parent_email,
+                    parent_phone
+                }, approvalToken);
+                
+                console.log('Parental approval request sent for user:', newUser.email);
+            } catch (approvalError) {
+                console.error('Error sending parental approval:', approvalError);
+                // Don't fail signup if approval email fails, but log it
+            }
+        }
         
         // Generate JWT tokens
         const tokens = generateTokens(newUser);
@@ -452,10 +768,14 @@ router.get('/verify', createJWTMiddleware(), async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email || null,
-                fullName: user.fullName,
+                username: user.username || null,
+                full_name: user.full_name || user.fullName || null,
                 role: user.role,
+                volunteer_type: user.volunteer_type || null,
+                is_approved: user.is_approved || true,
                 ...(user.role === 'student' && {
-                    admissionNumber: user.admissionNumber
+                    admissionNumber: user.admissionNumber,
+                    admission_number: user.admissionNumber
                 })
             }
         });

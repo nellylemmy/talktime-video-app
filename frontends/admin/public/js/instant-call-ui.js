@@ -267,8 +267,9 @@ class InstantCallUI {
             callerPhoto.classList.remove('hidden');
             callerInitials.classList.add('hidden');
         } else {
-            const initials = callData.volunteerName.split(' ').map(n => n[0]).join('').toUpperCase();
-            callerInitials.textContent = initials;
+            // Use nickname/username first letter if available, otherwise first letter of name
+            const avatarLetter = callData.volunteerUsername ? callData.volunteerUsername[0].toUpperCase() : callData.volunteerName[0].toUpperCase();
+            callerInitials.textContent = avatarLetter;
             callerInitials.classList.remove('hidden');
             callerPhoto.classList.add('hidden');
         }

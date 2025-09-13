@@ -21,33 +21,129 @@
         .hidden {
             display: none;
         }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #main-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #profile-dropdown.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        body { 
+            padding-top: 120px; 
+        }
     </style>
 </head>
 <body class="gradient-bg">
     <!-- Phone-like Instant Call UI will be injected here by instant-call-ui.js -->
 
     <div class="min-h-screen bg-gray-50">
-        <!-- Header -->
-        <div class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl font-bold text-gray-900">Welcome, <span id="studentName">Student</span>!</h1>
-                        <span id="admissionNumber" class="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"></span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div id="notificationBell" class="relative cursor-pointer">
-                            <i class="fas fa-bell text-gray-600 hover:text-gray-800 text-xl"></i>
-                            <span id="notificationCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                        </div>
-                        <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            Logout
-                        </button>
+        <!-- Header Navigation (same as other pages) -->
+        <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
+            <nav class="container mx-auto flex items-center justify-between relative">
+                <div class="flex flex-col">
+                    <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                        </svg>
+                        <span class="gradient-text">TALK TIME</span>
+                    </a>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                            Powered by ADEA Foundation
+                        </a>
                     </div>
                 </div>
-            </div>
-        </div>
+              
+                <!-- Desktop Navigation Menu -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="/student/dashboard" class="px-4 py-2 text-blue-600 bg-blue-50 rounded-lg transition-colors font-medium">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                    <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                </div>
+                
+                <!-- Profile Section -->
+                <div id="nav-profile-section" class="flex items-center space-x-4">
+                    <!-- Notification Bell -->
+                    <div class="relative">
+                        <div id="notificationBell" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Bell body -->
+                                <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                
+                                <!-- Bell clapper -->
+                                <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span id="notificationCount" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">0</span>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
+                            <span id="student-greeting" class="font-semibold sm:inline">Welcome, <span id="studentName">Student</span>!</span>
+                            <div class="relative">
+                                <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
+                                <div id="student-initial" class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">S</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
+                            <div class="px-4 py-2 text-sm text-gray-600 border-b">
+                                <div class="font-medium" id="dropdown-student-name">Student</div>
+                                <div class="text-xs" id="dropdown-admission">Admission: <span id="admissionNumber"></span></div>
+                            </div>
+                            <hr class="my-2 border-gray-200">
+                            <a href="#" id="logout-link" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+              
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
+              
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
+                    <a href="/student/dashboard" class="block py-2 px-4 text-blue-600 font-semibold">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                    <a href="/" class="block py-2 px-4 text-gray-800 hover:text-green-600">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                    <div class="border-t pt-2">
+                        <div class="px-4 py-2 text-sm text-gray-600">
+                            <div class="font-medium" id="mobile-student-name">Student</div>
+                            <div class="text-xs">Admission: <span id="mobile-admission"></span></div>
+                        </div>
+                        <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </header>
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -797,6 +893,64 @@
     
     // All instant call functionality is now handled by the new phone-like InstantCallUI class
     // Old functions removed for cleaner code
+    
+    // Navigation functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        if (mobileMenuToggle && mobileMenu) {
+            mobileMenuToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Profile dropdown
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                profileDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.remove('show');
+                }
+            });
+        }
+        
+        // Logout event listeners
+        const logoutLink = document.getElementById('logout-link');
+        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if (logoutLink) {
+            logoutLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                handleLogout();
+            });
+        }
+        
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                handleLogout();
+            });
+        }
+        
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                handleLogout();
+            });
+        }
+    });
     
     // Logout function
     async function handleLogout() {

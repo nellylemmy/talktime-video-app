@@ -11,6 +11,9 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
 
     <!-- Google Fonts: Inter & Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,8 +38,17 @@
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
+    <!-- Notification Enforcement System -->
+    <script src="/shared/js/notification-enforcer.js"></script>
+    
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    
+    <!-- Flowbite JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
     
     <style>
         /* Base styles matching the landing page */
@@ -222,6 +234,439 @@
         .green-border {
             border-color: #22c55e !important;
         }
+        
+        /* TalkTime Date Filter Input - Real Input Appearance */
+        .talktime-datepicker-input {
+            background: rgba(255, 255, 255, 0.4) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            color: #374151 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        
+        /* Date Filter Container Hover Effects */
+        #date-filter-container:hover .talktime-datepicker-input {
+            border-color: #9ca3af !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            background: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        .talktime-datepicker-input::placeholder {
+            color: #9ca3af !important;
+            font-weight: 400 !important;
+        }
+        
+        /* Active state when datepicker is open */
+        #date-filter-container.active .talktime-datepicker-input {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            background: rgba(255, 255, 255, 0.7) !important;
+            outline: none !important;
+        }
+        
+        /* TalkTime Datepicker Popup - Features Overview Card Style */
+        .datepicker-picker {
+            background: linear-gradient(to right, #eff6ff, #faf5ff) !important;
+            border: 1px solid #dbeafe !important;
+            border-radius: 16px !important;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(59, 130, 246, 0.05) !important;
+            padding: 24px !important;
+            font-family: 'Inter', sans-serif !important;
+            z-index: 9999 !important;
+        }
+        
+        /* Datepicker Header - Light Blue Style */
+        .datepicker-header {
+            background: rgba(239, 246, 255, 0.8) !important;
+            border: 1px solid #dbeafe !important;
+            border-radius: 12px !important;
+            margin-bottom: 16px !important;
+            padding: 16px !important;
+        }
+        
+        .datepicker-title {
+            color: #1e40af !important;
+            font-weight: 700 !important;
+            font-size: 18px !important;
+        }
+        
+        /* Month/Year Display Button */
+        .view-switch {
+            background: rgba(239, 246, 255, 0.6) !important;
+            color: #1e40af !important;
+            border: 1px solid #dbeafe !important;
+            font-weight: 600 !important;
+        }
+        
+        .view-switch:hover {
+            background: #eff6ff !important;
+            color: #1d4ed8 !important;
+        }
+        
+        /* Navigation Arrows - Blue Branding Style */
+        .prev-btn,
+        .next-btn {
+            background: #3b82f6 !important;
+            color: white !important;
+            border: 1px solid #3b82f6 !important;
+            border-radius: 10px !important;
+            width: 36px !important;
+            height: 36px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
+        }
+        
+        .prev-btn:hover,
+        .next-btn:hover {
+            background: #1d4ed8 !important;
+            border-color: #1d4ed8 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3) !important;
+        }
+        
+        .prev-btn svg,
+        .next-btn svg {
+            color: white !important;
+        }
+        
+        /* Days of Week Header */
+        .dow {
+            color: #1e40af !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            padding: 8px 4px !important;
+            text-align: center !important;
+        }
+        
+        /* Date Cells Base - Override Flowbite classes */
+        .datepicker-cell,
+        .datepicker-cell.day {
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            border-radius: 8px !important;
+            height: 36px !important;
+            width: 36px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 2px !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            color: #374151 !important;
+            border: 0 !important;
+            background: transparent !important;
+        }
+        
+        /* Today's Date - Blue Accent */
+        .datepicker-cell.today,
+        .datepicker-cell.day.today {
+            background: rgba(59, 130, 246, 0.1) !important;
+            color: #1e40af !important;
+            font-weight: 600 !important;
+            border: 2px solid rgba(59, 130, 246, 0.3) !important;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        /* Selected Date - Blue Solid Color */
+        .datepicker-cell.selected,
+        .datepicker-cell.day.selected,
+        .datepicker-cell.focused,
+        .datepicker-cell.day.focused {
+            background: #3b82f6 !important;
+            color: white !important;
+            font-weight: 700 !important;
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35) !important;
+            transform: scale(1.08) !important;
+            border: 2px solid rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        /* Hover Effects - Blue Style */
+        .datepicker-cell:hover:not(.selected):not(.disabled):not(.prev):not(.next),
+        .datepicker-cell.day:hover:not(.selected):not(.disabled):not(.prev):not(.next) {
+            background: rgba(59, 130, 246, 0.15) !important;
+            color: #1e40af !important;
+            transform: scale(1.05) !important;
+            box-shadow: 0 3px 12px rgba(59, 130, 246, 0.15) !important;
+        }
+        
+        /* Disabled/Past Dates */
+        .datepicker-cell.disabled,
+        .datepicker-cell.day.disabled {
+            color: #d1d5db !important;
+            background: rgba(243, 244, 246, 0.5) !important;
+            cursor: not-allowed !important;
+            opacity: 0.4 !important;
+        }
+        
+        /* Previous/Next Month Dates */
+        .datepicker-cell.prev,
+        .datepicker-cell.next,
+        .datepicker-cell.day.prev,
+        .datepicker-cell.day.next {
+            color: #d1d5db !important;
+            opacity: 0.3 !important;
+        }
+        
+        /* Action Buttons (Today/Clear) - Light Blue Design */
+        .datepicker-footer {
+            padding: 16px !important;
+            border-top: 1px solid #dbeafe !important;
+            margin-top: 16px !important;
+            background: rgba(239, 246, 255, 0.5) !important;
+            border-radius: 0 0 16px 16px !important;
+        }
+        
+        .today-btn,
+        .clear-btn {
+            background: #eff6ff !important;
+            color: #1e40af !important;
+            border: 1px solid #dbeafe !important;
+            border-radius: 10px !important;
+            padding: 10px 18px !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            margin: 0 6px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        
+        .today-btn:hover,
+        .clear-btn:hover {
+            background: #3b82f6 !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25) !important;
+            border-color: #3b82f6 !important;
+        }
+        
+        /* Newsletter Widget Protection - Preserve Original Styling */
+        #newsletter-widget,
+        #newsletter-minimized,
+        #newsletter-expanded,
+        .newsletter-widget,
+        .newsletter-minimized,
+        .newsletter-expanded {
+            /* Reset any conflicts and preserve original newsletter styling */
+            background: revert !important;
+            color: revert !important;
+            border: revert !important;
+            box-shadow: revert !important;
+            animation: revert !important;
+        }
+        
+        /* Ensure newsletter minimized button keeps its gradient and styling */
+        #newsletter-minimized .pulse-zoom {
+            background: linear-gradient(to right, #3b82f6, #4f46e5) !important;
+            color: white !important;
+            border-radius: 9999px !important;
+            padding: 1rem !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transform: translateZ(0) !important;
+        }
+        
+        #newsletter-minimized .pulse-zoom:hover {
+            background: linear-gradient(to right, #2563eb, #4338ca) !important;
+            color: white !important;
+            transform: scale(1.05) translateZ(0) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        /* Newsletter expanded popup styling */
+        #newsletter-expanded .glass-card {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 1rem !important;
+            padding: 1.5rem !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            max-width: 24rem !important;
+        }
+        
+        /* Preserve newsletter button gradients */
+        #newsletter-submit {
+            background: linear-gradient(to right, #f97316, #ea580c) !important;
+            color: white !important;
+        }
+        
+        #newsletter-submit:hover {
+            background: linear-gradient(to right, #ea580c, #dc2626) !important;
+            color: white !important;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .datepicker-picker {
+                border-radius: 12px !important;
+                margin: 0 8px !important;
+            }
+            
+            .datepicker-cell {
+                height: 32px !important;
+                width: 32px !important;
+                font-size: 13px !important;
+            }
+        }
+
+        /* Notification Permission Warning Banner */
+        .notification-warning-banner {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 800px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500, #ff6b6b);
+            background-size: 200% 200%;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.4), 0 10px 20px rgba(0, 0, 0, 0.1);
+            animation: gradientShift 3s ease-in-out infinite, slideInDown 0.6s ease-out, pulseGlow 2s ease-in-out infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .warning-content {
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .warning-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2.5s infinite;
+        }
+
+        .notification-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .enable-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #ff6b6b;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .enable-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            color: #ff4757;
+        }
+
+        .dismiss-btn, .info-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dismiss-btn:hover, .info-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* Animations */
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 20px 40px rgba(255, 107, 107, 0.4), 0 10px 20px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 25px 50px rgba(255, 107, 107, 0.6), 0 15px 30px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        /* Responsive for notification banner */
+        @media (max-width: 768px) {
+            .notification-warning-banner {
+                top: 70px;
+                width: 90%;
+                margin: 0 5%;
+            }
+            
+            .warning-content {
+                padding: 20px;
+            }
+            
+            .enable-btn, .dismiss-btn, .info-btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -235,7 +680,7 @@
     </div>
 
     <!-- Sticky Navigation Bar (only shows on profile and scheduler pages) -->
-    <div id="page-nav-sticky" class="hidden sticky top-16 z-30 glass-bg border-b border-white/20 shadow-sm">
+    <div id="page-nav-sticky" class="hidden sticky top-16 z-10 glass-bg border-b border-white/20 shadow-sm">
         <div class="container mx-auto px-4 py-3">
             <div id="page-nav-content" class="flex justify-between items-center">
                 <!-- Content will be dynamically inserted here -->
@@ -243,45 +688,84 @@
         </div>
     </div>
 
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-20">
+        
+        <!-- Notification Permission Warning Banner -->
+        <div id="notification-permission-warning" class="notification-warning-banner" style="display: none;">
+            <div class="warning-content">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="notification-icon">
+                            <i class="fas fa-bell text-white text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-white font-bold text-lg mb-2">
+                            🚨 Enable Browser Notifications for TalkTime
+                        </h3>
+                        <p class="text-white/90 text-sm mb-4 leading-relaxed">
+                            Stay connected with your students! Enable browser notifications to receive:
+                            <br>• Meeting reminders (1 hour, 30 minutes, and 5 minutes before)
+                            <br>• Instant call notifications from students
+                            <br>• Important meeting updates and reschedule alerts
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="requestNotificationPermission()" class="enable-btn">
+                                <i class="fas fa-bell mr-2"></i>Enable Notifications
+                            </button>
+                            <button onclick="hideNotificationWarning()" class="dismiss-btn">
+                                <i class="fas fa-times mr-2"></i>Dismiss
+                            </button>
+                            <button onclick="showNotificationInfo()" class="info-btn">
+                                <i class="fas fa-info-circle mr-2"></i>Why This Matters
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="hideNotificationWarning()" class="close-btn">
+                        <i class="fas fa-times text-white text-xl hover:text-red-200 transition-colors"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard Page -->
         <div id="page-dashboard" class="page w-full">
             <!-- Header Section -->
             <div class="text-center mb-3">
-                <h1 class="text-3xl md:text-4xl font-bold mb-4 font-poppins text-gray-900 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl px-4 py-2 border border-blue-100 inline-block">Volunteer Dashboard</h1>
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-3 text-center">
+                        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                        Scheduling Tips
+                    </h2>
+                    <div id="rotating-tip" class="text-center text-gray-700 text-base leading-relaxed">
+                        Click on any student card to view their profile and schedule a meeting
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cultural Exchange Warning Card -->
+            <div class="text-center mb-6">
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-lg font-semibold text-amber-800 mb-3">
+                                Cultural Exchange Notice
+                            </h3>
+                            <p class="text-amber-700 text-sm leading-relaxed">
+                                Our students may initially appear shy or reserved - this is normal! Please be patient and understanding as they come from diverse backgrounds and may need time to feel comfortable speaking.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Main Content Container -->
             <div class="max-w-6xl mx-auto">
                 <!-- Sticky tabs are rendered in #page-nav-sticky -->
                 <div id="dashboard-students" class="tab-pane">
-                    <!-- Features Overview -->
-                    <div class="mb-8">
-                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
-                            <div class="flex items-center mb-4">
-                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                                    <!-- Info/Tips icon -->
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20a8 8 0 100-16 8 8 0 000 16z"/>
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-semibold text-gray-900">Scheduling Tip</h3>
-                            </div>
-                            <div class="flex items-center text-sm text-gray-700">
-                                <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22a10 10 0 110-20 10 10 0 010 20z"/>
-                                </svg>
-                                All times sync to Kenya (EAT). Book between 9:00 and 17:00 EAT.
-                            </div>
-                            <div class="mt-4 border-t border-gray-200" role="separator" aria-hidden="true"></div>
-                            <div class="mt-4 text-sm text-gray-700 text-center">
-                                Connect with students, share knowledge, and make a meaningful impact through personalized English conversation sessions.
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Date Selection Section removed per request -->
                     
                     <!-- Students Grid -->
@@ -291,9 +775,36 @@
                             <div class="flex items-center justify-between mb-6">
                                 <h2 class="text-2xl font-bold section-heading">Available Students</h2>
                                 <div class="flex items-center gap-3">
-                                    <label for="sticky-student-date" class="text-sm text-gray-600 whitespace-nowrap shrink-0">Select date</label>
-                                    <input id="sticky-student-date" type="date" class="tt-input">
-                                    <button id="sticky-apply-date" class="tt-btn-primary">
+                                    <!-- Unified Date Filter Input -->
+                                    <div class="relative cursor-pointer w-80" id="date-filter-container">
+                                        
+                                        <!-- Input Content Area -->
+                                        <div class="talktime-datepicker-input h-12 flex items-center justify-center px-4 cursor-pointer">
+                                            <div class="flex items-center gap-3 h-full">
+                                                <!-- Small filter icon before text -->
+                                                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <!-- Horizontal lines with different lengths representing filtered content -->
+                                                    <path d="M4 6H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    <path d="M6 12H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    <path d="M8 18H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    
+                                                    <!-- Filter dots/controls -->
+                                                    <circle cx="7" cy="6" r="2" fill="currentColor"/>
+                                                    <circle cx="14" cy="12" r="2" fill="currentColor"/>
+                                                    <circle cx="10" cy="18" r="2" fill="currentColor"/>
+                                                </svg>
+                                                <div class="flex items-center gap-2 whitespace-nowrap">
+                                                    <span class="text-sm text-gray-600 font-medium leading-none">Filter by date</span>
+                                                    <span class="text-sm text-gray-400 leading-none">•</span>
+                                                    <span id="selected-date-display" class="text-sm text-blue-600 font-semibold leading-none">Today</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Hidden actual datepicker input -->
+                                        <input id="sticky-student-date" datepicker datepicker-autohide datepicker-format="mm/dd/yyyy" datepicker-buttons datepicker-autoselect-today type="text" class="absolute opacity-0 pointer-events-none" placeholder="Select date">
+                                    </div>
+                                    <button id="sticky-apply-date" class="tt-btn-primary hidden">
                                         <span class="hidden md:inline">Apply</span>
                                         <span class="md:hidden">Go</span>
                                     </button>
@@ -334,7 +845,7 @@
     </main>
     
     <!-- Notification Toast -->
-    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+    <div id="notification" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -387,6 +898,49 @@
         // --- Global Variables ---
         let students = [];
         let selectedStudent = null;
+
+        // --- Notification Functions ---
+        
+        // Check if notifications are enabled for critical actions
+        function checkNotificationPermissionForCriticalAction(actionName = 'critical action') {
+            if (!('Notification' in window)) {
+                console.log('❌ Browser does not support notifications');
+                return false;
+            }
+
+            if (Notification.permission === 'granted') {
+                console.log(`✅ Notifications enabled - allowing ${actionName}`);
+                return true;
+            } else {
+                console.log(`🚫 Notifications not enabled - blocking ${actionName}`);
+                // Force show the notification banner if it's hidden
+                const warningBanner = document.getElementById('notification-permission-warning');
+                if (warningBanner) {
+                    warningBanner.style.display = 'block';
+                }
+                return false;
+            }
+        }
+
+        // Show message that notifications are required for critical actions
+        function showNotificationRequiredMessage() {
+            const existingMessage = document.getElementById('notification-required-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            const message = document.createElement('div');
+            message.id = 'notification-required-message';
+            message.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.innerHTML = '⚠️ Notifications must be enabled for scheduling and critical actions';
+            document.body.appendChild(message);
+
+            setTimeout(() => {
+                if (message && message.parentNode) {
+                    message.remove();
+                }
+            }, 4000);
+        }
         let bookedSlots = {};
 
         // --- Sticky Controls Bar (Tabs only; date controls removed per request) ---
@@ -438,21 +992,188 @@
             const stickyDateEl = document.getElementById('sticky-student-date');
             const stickyApplyBtn = document.getElementById('sticky-apply-date');
 
-            const today = new Date().toISOString().split('T')[0];
+            // PRODUCTION: Calculate EXACT 3-month scheduling window (proper month arithmetic)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Exactly 3 months from today (e.g., 8th -> 8th of target month)
+            const maxDate = new Date(today);
+            maxDate.setMonth(today.getMonth() + 3);
+            
+            // Format dates for Flowbite (MM/DD/YYYY)
+            const formatDate = (date) => {
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${month}/${day}/${year}`;
+            };
+            
+            const todayStr = formatDate(today);
+            const maxDateStr = formatDate(maxDate);
+            
+            // Apply STRICT date constraints
+            stickyDateEl.setAttribute('datepicker-min-date', todayStr);
+            stickyDateEl.setAttribute('datepicker-max-date', maxDateStr);
+            
+            console.log('TalkTime Date Restrictions Applied:', {
+                today: todayStr,
+                maxDate: maxDateStr,
+                monthsRange: 3,
+                actualDays: Math.ceil((maxDate - today) / (1000 * 60 * 60 * 24))
+            });
+            
             if (mainDateEl) {
-                if (!mainDateEl.value) mainDateEl.value = today;
-                stickyDateEl.value = mainDateEl.value;
+                if (!mainDateEl.value) {
+                    mainDateEl.value = today.toISOString().split('T')[0];
+                    stickyDateEl.value = todayStr;
+                } else {
+                    // Convert ISO date to MM/DD/YYYY format for Flowbite
+                    const dateObj = new Date(mainDateEl.value);
+                    stickyDateEl.value = dateObj.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                }
             } else {
-                stickyDateEl.value = today;
+                stickyDateEl.value = todayStr;
+            }
+            
+            // Initialize the date display
+            updateDateDisplay(today);
+            
+            // Make entire container clickable
+            const dateFilterContainer = document.getElementById('date-filter-container');
+            if (dateFilterContainer) {
+                dateFilterContainer.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Add active state
+                    dateFilterContainer.classList.add('active');
+                    
+                    // Trigger the datepicker
+                    if (stickyDateEl._datepicker) {
+                        stickyDateEl._datepicker.show();
+                    } else {
+                        // Fallback: click the hidden input
+                        stickyDateEl.click();
+                    }
+                });
+                
+                // Remove active state when datepicker closes
+                document.addEventListener('click', (e) => {
+                    if (!dateFilterContainer.contains(e.target)) {
+                        dateFilterContainer.classList.remove('active');
+                    }
+                });
             }
 
-            stickyDateEl.addEventListener('change', () => {
-                if (mainDateEl) mainDateEl.value = stickyDateEl.value;
-                loadDashboardData(stickyDateEl.value);
+            // Multiple event listeners for Flowbite datepicker compatibility
+            stickyDateEl.addEventListener('changeDate', handleDateChange);
+            stickyDateEl.addEventListener('input', handleDateChange);
+            stickyDateEl.addEventListener('change', handleDateChange);
+            
+            // Listen for datepicker show/hide events
+            stickyDateEl.addEventListener('show', () => {
+                if (dateFilterContainer) {
+                    dateFilterContainer.classList.add('active');
+                }
             });
+            
+            stickyDateEl.addEventListener('hide', () => {
+                if (dateFilterContainer) {
+                    dateFilterContainer.classList.remove('active');
+                }
+            });
+            
+            // Update date display helper
+            function updateDateDisplay(date) {
+                const dateDisplay = document.getElementById('selected-date-display');
+                if (dateDisplay) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (date.getTime() === today.getTime()) {
+                        dateDisplay.textContent = 'Today';
+                    } else {
+                        const options = { month: 'short', day: 'numeric' };
+                        if (date.getFullYear() !== today.getFullYear()) {
+                            options.year = 'numeric';
+                        }
+                        dateDisplay.textContent = date.toLocaleDateString('en-US', options);
+                    }
+                }
+            }
+            
+            function handleDateChange() {
+                const selectedDate = stickyDateEl.value;
+                if (!selectedDate) return;
+                
+                try {
+                    const dateObj = new Date(selectedDate);
+                    if (isNaN(dateObj.getTime())) return;
+                    
+                    // STRICT validation: Enforce 3-month window
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const maxDate = new Date(today);
+                    maxDate.setMonth(today.getMonth() + 3);
+                    
+                    const selectedTime = dateObj.getTime();
+                    const todayTime = today.getTime();
+                    const maxTime = maxDate.getTime();
+                    
+                    if (selectedTime >= todayTime && selectedTime <= maxTime) {
+                        // Valid date - proceed with data loading
+                        if (mainDateEl) {
+                            mainDateEl.value = dateObj.toISOString().split('T')[0];
+                        }
+                        
+                        // Update the visual display
+                        updateDateDisplay(dateObj);
+                        
+                        loadDashboardData(dateObj.toISOString().split('T')[0]);
+                        
+                        showNotification(
+                            `Showing students for ${dateObj.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}`,
+                            'success'
+                        );
+                    } else {
+                        // Invalid date - reset to today and show error
+                        const todayFormatted = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                                             today.getDate().toString().padStart(2, '0') + '/' + 
+                                             today.getFullYear();
+                        
+                        stickyDateEl.value = todayFormatted;
+                        if (mainDateEl) {
+                            mainDateEl.value = today.toISOString().split('T')[0];
+                        }
+                        
+                        // Reset display to Today
+                        updateDateDisplay(today);
+                        
+                        const errorMsg = selectedTime < todayTime ? 
+                            'Cannot schedule meetings in the past' : 
+                            'Cannot schedule beyond 3 months from today';
+                            
+                        showNotification(errorMsg, 'error');
+                        loadDashboardData(today.toISOString().split('T')[0]);
+                    }
+                } catch (error) {
+                    console.error('Date validation error:', error);
+                    showNotification('Invalid date selected', 'error');
+                }
+            }
             stickyApplyBtn.addEventListener('click', () => {
-                if (mainDateEl) mainDateEl.value = stickyDateEl.value;
-                loadDashboardData(stickyDateEl.value);
+                // Convert MM/DD/YYYY back to YYYY-MM-DD for main date element
+                const selectedDate = stickyDateEl.value;
+                if (selectedDate && mainDateEl) {
+                    const dateObj = new Date(selectedDate);
+                    mainDateEl.value = dateObj.toISOString().split('T')[0];
+                }
+                loadDashboardData(mainDateEl ? mainDateEl.value : convertToISODate(selectedDate));
             });
         }
 
@@ -460,12 +1181,32 @@
         document.addEventListener('click', e => {
             // Profile dropdown toggle
             if (profileBtn && profileBtn.contains(e.target)) {
+                console.log('Profile button clicked');
                 e.stopPropagation();
+                
                 if (profileDropdown) {
-                    profileDropdown.classList.toggle('hidden');
+                    const isHidden = profileDropdown.classList.contains('hidden');
+                    console.log('Dropdown is currently hidden:', isHidden);
+                    
+                    if (isHidden) {
+                        // Show dropdown
+                        profileDropdown.classList.remove('hidden');
+                        profileDropdown.classList.remove('opacity-0');
+                        profileDropdown.classList.remove('-translate-y-2');
+                        console.log('Showing dropdown');
+                    } else {
+                        // Hide dropdown
+                        profileDropdown.classList.add('hidden');
+                        profileDropdown.classList.add('opacity-0');
+                        profileDropdown.classList.add('-translate-y-2');
+                        console.log('Hiding dropdown');
+                    }
                 }
             } else if (profileDropdown && !profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
+                console.log('Clicking outside, closing dropdown');
                 profileDropdown.classList.add('hidden');
+                profileDropdown.classList.add('opacity-0');
+                profileDropdown.classList.add('-translate-y-2');
             }
             
             // Student card click
@@ -474,6 +1215,13 @@
                 const studentId = studentCard.dataset.studentId;
                 const studentAdmission = studentCard.dataset.studentAdmission;
                 const studentName = studentCard.querySelector('h3').textContent;
+                
+                // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
+                if (!checkNotificationPermissionForCriticalAction('scheduling a meeting')) {
+                    console.log('🚫 Blocking student detail navigation - notifications not enabled');
+                    showNotificationRequiredMessage();
+                    return; // Prevent navigation
+                }
                 
                 // Navigate to student detail page with parameters
                 window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
@@ -518,6 +1266,19 @@
         })();
 
         // --- Utility Functions ---
+        
+        // Helper function to convert MM/DD/YYYY to YYYY-MM-DD
+        function convertToISODate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const dateObj = new Date(dateStr);
+                return dateObj.toISOString().split('T')[0];
+            } catch (e) {
+                console.error('Error converting date:', e);
+                return '';
+            }
+        }
+        
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
             notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
@@ -528,15 +1289,66 @@
             }, 5000);
         }
 
+        // Convert date from MM/DD/YYYY or MM-DD-YYYY format to YYYY-MM-DD (ISO format)
+        function convertToISODate(dateStr) {
+            if (!dateStr) return null;
+            
+            // If already in YYYY-MM-DD format, return as-is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                return dateStr;
+            }
+            
+            // Handle MM/DD/YYYY or MM-DD-YYYY format
+            let parts = dateStr.split(/[\/\-]/);
+            if (parts.length === 3) {
+                const [month, day, year] = parts;
+                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            
+            // Fallback: try to parse as Date and format
+            try {
+                const date = new Date(dateStr);
+                return date.toISOString().split('T')[0];
+            } catch (e) {
+                console.error('Failed to convert date:', dateStr, e);
+                return null;
+            }
+        }
+
         // --- Data Loading ---
+        // Add recursion prevention with timeout fallback
+        let isLoadingDashboard = false;
+        let loadingTimeout = null;
+        
         function loadDashboardData(selectedDate = null) {
+            // Prevent recursive calls
+            if (isLoadingDashboard) {
+                console.warn('loadDashboardData already in progress, skipping duplicate call');
+                return Promise.resolve();
+            }
+            
+            isLoadingDashboard = true;
+            
+            // Safety timeout in case the finally block doesn't execute
+            if (loadingTimeout) clearTimeout(loadingTimeout);
+            loadingTimeout = setTimeout(() => {
+                console.warn('Loading timeout exceeded, resetting flag');
+                isLoadingDashboard = false;
+            }, 10000);
+            
             // Set date selector to today if not already set
             if (!selectedDate) {
                 const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
                 const mainDate = document.getElementById('student-date-selector');
                 if (mainDate) mainDate.value = today;
                 selectedDate = today;
+            } else {
+                // Convert date from MM/DD/YYYY (datepicker format) to YYYY-MM-DD (API format)
+                selectedDate = convertToISODate(selectedDate);
             }
+            
+            console.log('=== DATE FILTER DEBUG ===');
+            console.log('Selected date for API:', selectedDate);
             
             // Debug JWT token details
             const token = window.TalkTimeAuth.getAccessToken();
@@ -551,56 +1363,65 @@
             try {
                 const headerEl = document.querySelector('#page-dashboard h1');
 
-                // Multilingual greeting rotation state
-                const greetings = [
-                    'Hello',            // English
-                    'Bonjour',          // French
-                    'Hallo',            // German
-                    'Hola',             // Spanish
-                    'Ciao',             // Italian
-                    'Olá',              // Portuguese
-                    'Habari',           // Swahili
-                    'नमस्ते',             // Hindi (Namaste)
-                    '你好',                // Chinese (Simplified)
-                    'Здравствуйте',     // Russian (formal)
-                    'こんにちは',            // Japanese
-                    'مرحبًا'               // Arabic
+                // Meeting scheduling tips rotation state
+                const schedulingTips = [
+                    'Click on any student card to view their profile and schedule a meeting',
+                    'Each student can only have one meeting per day to ensure quality time',
+                    'Meetings are automatically set to 40 minutes for optimal learning',
+                    'All times sync to Kenya timezone to match students\' local schedule',
+                    'Choose a time that works for both you and the student\'s timezone',
+                    'You\'ll receive email and SMS reminders before your scheduled meetings',
+                    'Students get notified immediately when you schedule a meeting with them',
+                    'You can reschedule or cancel meetings up to 1 hour before start time',
+                    'All meetings include a secure video room that\'s ready when you are',
+                    'Consider the student\'s school hours when picking meeting times',
+                    'Your impact grows with each conversation - every meeting matters!',
+                    'Browse student profiles to find those who match your interests',
+                    'Instant calls are available when students are online and ready'
                 ];
-                let greetingIndex = 0;
-                let greetingInterval = null;
+                let tipIndex = 0;
+                let tipInterval = null;
 
-                function ensureGreetingAnimationSetup(header) {
-                    if (!header) return;
-                    header.classList.add('greeting-fade', 'show');
+                function ensureTipAnimationSetup(tipElement) {
+                    if (!tipElement) return;
+                    tipElement.classList.add('greeting-fade', 'show');
+                    // Remove previous styling that was applied to h1
+                    tipElement.style.fontSize = '';
+                    tipElement.style.lineHeight = '';
+                    tipElement.style.fontWeight = '';
                 }
 
-                function animateGreetingChange(header, nextText) {
-                    if (!header) return;
-                    header.classList.remove('show');
-                    header.classList.add('enter');
+                function animateTipChange(tipElement, nextText) {
+                    if (!tipElement) return;
+                    tipElement.classList.remove('show');
+                    tipElement.classList.add('enter');
                     setTimeout(() => {
-                        header.textContent = nextText;
-                        header.classList.remove('enter');
-                        header.classList.add('show');
+                        // Just use text content since we have a separate icon in the header
+                        tipElement.textContent = nextText;
+                        tipElement.classList.remove('enter');
+                        tipElement.classList.add('show');
                     }, 400);
                 }
 
-                function startGreetingRotation(name) {
-                    if (!name) return; // Need a name to rotate with
+                function startTipRotation(name) {
                     // Prevent multiple intervals
-                    if (greetingInterval) return;
-                    const header = document.querySelector('#page-dashboard .text-center h1') || document.querySelector('#page-dashboard h1');
-                    if (!header) return;
-                    // Ensure animation classes exist initially
-                    ensureGreetingAnimationSetup(header);
-                    greetingInterval = setInterval(() => {
-                        greetingIndex = (greetingIndex + 1) % greetings.length;
-                        const nextGreeting = greetings[greetingIndex];
-                        animateGreetingChange(header, `${nextGreeting}, ${name}`);
-                    }, 4000);
+                    if (tipInterval) return;
+                    const tipElement = document.getElementById('rotating-tip');
+                    if (!tipElement) return;
+                    
+                    // Set initial tip and styling
+                    ensureTipAnimationSetup(tipElement);
+                    tipElement.textContent = schedulingTips[0];
+                    
+                    tipInterval = setInterval(() => {
+                        tipIndex = (tipIndex + 1) % schedulingTips.length;
+                        const nextTip = schedulingTips[tipIndex];
+                        animateTipChange(tipElement, nextTip);
+                    }, 8000); // Show each tip for 8 seconds - more time to read
+                    
                     // Clear on unload
                     window.addEventListener('beforeunload', () => {
-                        if (greetingInterval) clearInterval(greetingInterval);
+                        if (tipInterval) clearInterval(tipInterval);
                     });
                 }
 
@@ -661,78 +1482,25 @@
                     }, delay);
                 }
 
-                // Ensure we apply EAT date at load
-                document.addEventListener('DOMContentLoaded', () => {
-                    try { syncDateInputToEATToday(); } catch (_) {}
-                    try { scheduleEATMidnightRollover(); } catch (_) {}
-                    // Remove duplicate date controls (e.g., any in the nav) and keep the one inside Available Students header
-                    try {
-                        // Find the Available Students header row
-                        const heading = Array.from(document.querySelectorAll('h2.section-heading'))
-                            .find(h => h.textContent.trim().toLowerCase() === 'available students');
-                        const headerRow = heading ? heading.closest('div.flex.items-center.justify-between') : null;
-                        if (headerRow) {
-                            const keepContainer = headerRow.querySelector('.flex.items-center.gap-3') || headerRow;
-                            // Remove any matching controls not within the keepContainer
-                            document.querySelectorAll('#sticky-student-date, #sticky-apply-date, label[for="sticky-student-date"]').forEach(el => {
-                                if (!keepContainer.contains(el)) {
-                                    const flexWrap = el.closest('.flex');
-                                    if (flexWrap) flexWrap.remove(); else el.remove();
-                                }
-                            });
-                        }
-                        // Re-sync the surviving header input to EAT today if empty
-                        const headerInput = headerRow ? headerRow.querySelector('#sticky-student-date') : null;
-                        if (headerInput && !headerInput.value) {
-                            try { headerInput.value = getTodayInEATISODate(); } catch (_) {}
-                        }
-                    } catch (_) {}
-                    // Bind Apply/Go button to reload data for chosen date
-                    try {
-                        const btn = document.getElementById('sticky-apply-date');
-                        const dateEl = document.getElementById('sticky-student-date');
-                        if (btn) {
-                            btn.addEventListener('click', () => {
-                                const value = dateEl ? dateEl.value : '';
-                                if (typeof loadDashboardData === 'function') {
-                                    if (value) {
-                                        loadDashboardData(value);
-                                    } else {
-                                        loadDashboardData();
-                                    }
-                                }
-                            });
-                        }
-                        if (dateEl) {
-                            dateEl.addEventListener('change', () => {
-                                const value = dateEl.value;
-                                if (value && typeof loadDashboardData === 'function') {
-                                    // Optional immediate filter-on-change (keeps UI responsive). Remove if undesired.
-                                    // loadDashboardData(value);
-                                }
-                            });
-                        }
-                    } catch (_) {}
-                });
+                // Ensure we apply EAT date at load (DISABLED TO PREVENT RECURSION)
+                // document.addEventListener('DOMContentLoaded', () => {
+                //     // This was causing recursion issues - removed
+                // });
 
                 function setWelcomeHeader(fromUser) {
-                    // Try multiple header selectors for resiliency
-                    let header = headerEl || document.querySelector('#page-dashboard .text-center h1') || document.querySelector('#page-dashboard h1');
-                    if (!header || !fromUser) return false;
+                    // Since we removed the welcome header, just start the tips rotation
+                    if (!fromUser) return false;
                     let volunteerName = fromUser.fullName || fromUser.full_name || fromUser.name || fromUser.firstName || fromUser.given_name || fromUser.username || fromUser.email || null;
                     if (!volunteerName || typeof volunteerName !== 'string') return false;
                     let displayName = volunteerName;
                     if (displayName.includes(' ')) displayName = displayName.split(' ')[0];
                     else if (displayName.includes('@')) displayName = displayName.split('@')[0];
-                    const newText = `Welcome, ${displayName}`;
-                    if (header.textContent !== newText) {
-                        header.textContent = newText;
-                        console.log('[Dashboard Header] Set to:', newText);
-                    }
-                    // Initialize animation classes for smooth transitions
-                    ensureGreetingAnimationSetup(header);
-                    // Start multilingual rotation with the resolved display name
-                    startGreetingRotation(displayName);
+                    
+                    console.log('[Dashboard] Starting tips rotation for:', displayName);
+                    
+                    // Start showing tips immediately
+                    startTipRotation(displayName);
+                    
                     return true;
                 }
 
@@ -945,7 +1713,8 @@
                         }
                     }
                 }
-                console.log('Making student cards API call...');
+                console.log('=== MAKING STUDENT CARDS API CALL ===');
+                console.log('API URL:', `/api/v1/volunteers/students/cards?date=${selectedDate}`);
                 return window.TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/cards?date=${selectedDate}`, {
                     method: 'GET'
                 });
@@ -958,7 +1727,16 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Student cards data loaded:', data);
+                console.log('=== STUDENT CARDS DATA RECEIVED ===');
+                console.log('Full API response:', data);
+                console.log('Available students count:', data.data?.available?.length || 0);
+                console.log('Unavailable students count:', data.data?.unavailable?.length || 0);
+                console.log('Available students:', data.data?.available?.map(s => s.full_name) || []);
+                console.log('Unavailable students with meetings:', data.data?.unavailable?.map(s => ({
+                    name: s.full_name,
+                    isOwner: s.meeting?.isOwner,
+                    meetingTime: s.meeting?.time
+                })) || []);
                 
                 // Update the available students section
                 if (availableStudentsContainer) {
@@ -1000,13 +1778,22 @@
                 const unavailableContainer = document.getElementById('student-list-unavailable');
                 const unavailableSection = unavailableContainer ? unavailableContainer.closest('section') : null;
                 const unavailableStudents = (data.data && Array.isArray(data.data.unavailable)) ? data.data.unavailable : [];
+                
+                console.log('=== UNAVAILABLE SECTION DEBUG ===');
+                console.log('Unavailable students data:', unavailableStudents);
+                console.log('Unavailable students count:', unavailableStudents.length);
+                console.log('Unavailable container exists:', !!unavailableContainer);
+                console.log('Unavailable section exists:', !!unavailableSection);
+                
                 if (unavailableSection) {
                     if (!unavailableStudents || unavailableStudents.length === 0) {
                         // Hide section entirely if truly empty
+                        console.log('Hiding unavailable section - no students');
                         unavailableSection.classList.add('hidden');
                         unavailableSection.setAttribute('aria-hidden', 'true');
                     } else {
                         // Ensure visible when data exists
+                        console.log('Showing unavailable section - has students:', unavailableStudents.length);
                         unavailableSection.classList.remove('hidden');
                         unavailableSection.removeAttribute('aria-hidden');
                     }
@@ -1095,6 +1882,12 @@
                 if (document.getElementById('student-list-unavailable')) {
                     document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-8"><p class="text-gray-500">Unable to load unavailable students.</p></div>';
                 }
+            })
+            .finally(() => {
+                // Reset the loading flag and clear timeout
+                if (loadingTimeout) clearTimeout(loadingTimeout);
+                isLoadingDashboard = false;
+                console.log('loadDashboardData completed, flag reset');
             });
         }
 
@@ -1136,7 +1929,35 @@
                     const studentId = card.dataset.studentId;
                     const studentAdmission = card.dataset.studentAdmission;
                     const studentName = card.querySelector('h3')?.textContent || 'Student';
+                    
+                    // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
+                    if (!checkNotificationPermissionForCriticalAction('viewing student for scheduling')) {
+                        console.log('🚫 Blocking student detail navigation - notifications not enabled');
+                        showNotificationRequiredMessage();
+                        return; // Prevent navigation
+                    }
+                    
                     window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
+                }
+            });
+
+            // Global click interceptor for critical action links
+            document.addEventListener('click', function(event) {
+                const target = event.target.closest('a');
+                if (target && target.href) {
+                    const href = target.getAttribute('href');
+                    
+                    // Intercept navigation to upcoming meetings (where cancellation/rescheduling happens)
+                    if (href && href.includes('/volunteer/dashboard/upcoming')) {
+                        // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before accessing meeting management
+                        if (!checkNotificationPermissionForCriticalAction('managing scheduled meetings')) {
+                            console.log('🚫 Blocking upcoming meetings navigation - notifications not enabled');
+                            event.preventDefault();
+                            event.stopPropagation();
+                            showNotificationRequiredMessage();
+                            return false;
+                        }
+                    }
                 }
             });
         }
@@ -1146,11 +1967,364 @@
         // Initialize TalkTime Auth for volunteers FIRST
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
         
+        // Initialize TalkTime Production Datepicker with ABSOLUTE restrictions
+        setTimeout(() => {
+            if (window.Datepicker) {
+                const datepickerEl = document.getElementById('sticky-student-date');
+                if (datepickerEl && !datepickerEl._datepicker) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    // Exactly 3 months from today
+                    const maxDate = new Date(today);
+                    maxDate.setMonth(today.getMonth() + 3);
+                    
+                    const datepicker = new Datepicker(datepickerEl, {
+                        autohide: true,
+                        format: 'mm/dd/yyyy',
+                        minDate: today,
+                        maxDate: maxDate,
+                        weekStart: 0, // Sunday start (US standard)
+                        todayBtn: true,
+                        clearBtn: false, // Remove clear to prevent empty selection
+                        todayBtnMode: 1, // Select today when clicked
+                        orientation: 'auto',
+                        daysOfWeekDisabled: [], // All days allowed
+                        datesDisabled: [], // No specific dates disabled
+                        beforeShowDay: function(date) {
+                            const dateTime = date.getTime();
+                            const todayTime = today.getTime();
+                            const maxTime = maxDate.getTime();
+                            
+                            // STRICT: Block all dates outside 3-month range
+                            if (dateTime < todayTime || dateTime > maxTime) {
+                                return {
+                                    enabled: false,
+                                    classes: 'disabled blocked-date',
+                                    tooltip: dateTime < todayTime ? 
+                                        'Past dates not available for scheduling' : 
+                                        'Beyond 3-month scheduling window'
+                                };
+                            }
+                            
+                            return { 
+                                enabled: true,
+                                classes: 'available-date'
+                            };
+                        }
+                    });
+                    
+                    // Set default to today
+                    datepicker.setDate(today);
+                    datepickerEl._datepicker = datepicker;
+                    
+                    // Add change event listener for datepicker (fixed event name)
+                    datepickerEl.addEventListener('changeDate', function(e) {
+                        console.log('Datepicker changeDate event triggered:', e);
+                        const selectedDate = e.detail?.date || e.target.value;
+                        if (selectedDate) {
+                            let isoDate;
+                            if (selectedDate instanceof Date) {
+                                isoDate = selectedDate.toISOString().split('T')[0];
+                            } else {
+                                // Convert MM/DD/YYYY to YYYY-MM-DD
+                                const parts = selectedDate.split('/');
+                                if (parts.length === 3) {
+                                    isoDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                                } else {
+                                    isoDate = selectedDate;
+                                }
+                            }
+                            console.log('Datepicker date changed to:', isoDate);
+                            // Delay the call to prevent recursion
+                            setTimeout(() => {
+                                if (!isLoadingDashboard) {
+                                    loadDashboardData(isoDate);
+                                }
+                            }, 300);
+                        }
+                    });
+                    
+                    // Also listen for input change events as fallback
+                    datepickerEl.addEventListener('change', function(e) {
+                        console.log('Datepicker input change event triggered');
+                        const value = e.target.value;
+                        if (value && !isLoadingDashboard) {
+                            setTimeout(() => {
+                                if (!isLoadingDashboard) {
+                                    const parts = value.split('/');
+                                    if (parts.length === 3) {
+                                        const isoDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                                        console.log('Input change date converted to:', isoDate);
+                                        loadDashboardData(isoDate);
+                                    }
+                                }
+                            }, 300);
+                        }
+                    });
+                    
+                    console.log('✅ TalkTime Production Datepicker Active:', {
+                        range: `${today.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`,
+                        months: 3,
+                        actualDays: Math.ceil((maxDate - today) / (1000 * 60 * 60 * 24)),
+                        restrictions: 'STRICT - Past dates and 3+ months blocked'
+                    });
+                }
+            }
+        }, 300);
+        
         // --- Initial Load ---
         loadDashboardData();
         setupEventListeners();
         
         // Initialize approval status component using JWT authentication
+        // --- Notification Permission Functions ---
+        
+        // Check and show notification permission warning on page load
+        function checkAndShowNotificationWarning() {
+            if ('Notification' in window) {
+                const permission = Notification.permission;
+                console.log('Current notification permission:', permission);
+                
+                // Show warning if permission is not granted
+                if (permission === 'default' || permission === 'denied') {
+                    const warningBanner = document.getElementById('notification-permission-warning');
+                    if (warningBanner) {
+                        warningBanner.style.display = 'block';
+                        
+                        // Auto-hide after 30 seconds if not interacted with
+                        setTimeout(() => {
+                            if (warningBanner.style.display !== 'none') {
+                                warningBanner.style.display = 'none';
+                            }
+                        }, 30000);
+                    }
+                } else if (permission === 'granted') {
+                    console.log('✅ Notifications already enabled');
+                    hideNotificationWarning();
+                }
+            } else {
+                console.log('❌ Browser does not support notifications');
+            }
+        }
+
+        // Enhanced notification request with better messaging
+        function requestNotificationPermission() {
+            console.log('📱 Requesting enhanced notification permission...');
+            
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function(permission) {
+                    console.log('Permission result:', permission);
+                    
+                    if (permission === 'granted') {
+                        console.log('✅ Enhanced notification permission granted!');
+                        showNotification('🎉 Perfect! You\'ll now receive rich notifications for meetings, reminders, and instant calls with action buttons and persistence.', 'success');
+                        hideNotificationWarning();
+                        
+                        // Send an enhanced test notification
+                        setTimeout(() => {
+                            sendEnhancedTestNotification();
+                        }, 1000);
+                        
+                        // Set up notification event listeners
+                        setupNotificationEventListeners();
+                        
+                        // Track permission granted for analytics
+                        trackNotificationPermission('granted');
+                    } else {
+                        console.log('❌ Notification permission denied');
+                        showNotification('Notifications were blocked. You can enable them in your browser settings to get meeting reminders and instant call alerts.', 'error');
+                        
+                        // Track permission denied for analytics  
+                        trackNotificationPermission('denied');
+                        
+                        // Keep the banner visible but update the message
+                        updateWarningForDeniedPermission();
+                    }
+                });
+            } else {
+                console.log('❌ Browser does not support notifications');
+                showNotification('Your browser doesn\'t support notifications. Please update your browser for the best experience.', 'error');
+            }
+        }
+
+        // Send an enhanced test notification with action buttons
+        function sendEnhancedTestNotification() {
+            if (Notification.permission === 'granted') {
+                console.log('🔔 Sending enhanced test notification...');
+                
+                const notification = new Notification('🎉 TalkTime Enhanced Notifications Enabled!', {
+                    body: 'You\'ll receive rich notifications like this with action buttons for meetings, reminders, and instant calls. Notifications will persist until you interact with them.',
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico',
+                    tag: 'talktime-enhanced-test',
+                    requireInteraction: false,
+                    actions: [
+                        {
+                            action: 'view_dashboard',
+                            title: '👀 View Dashboard'
+                        },
+                        {
+                            action: 'settings',
+                            title: '⚙️ Settings'
+                        },
+                        {
+                            action: 'dismiss',
+                            title: '✕ Dismiss'
+                        }
+                    ],
+                    data: {
+                        url: '/volunteer/dashboard/students.html',
+                        timestamp: new Date().toISOString(),
+                        type: 'test'
+                    }
+                });
+
+                notification.onclick = function(event) {
+                    console.log('✅ Enhanced test notification clicked');
+                    window.focus();
+                    window.location.href = '/volunteer/dashboard/students.html';
+                    notification.close();
+                };
+
+                // Auto-close after 8 seconds for test
+                setTimeout(() => {
+                    notification.close();
+                }, 8000);
+            }
+        }
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Show notification info modal
+        function showNotificationInfo() {
+            const infoModal = `
+                <div id="notification-info-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeNotificationInfo()">
+                    <div class="bg-white rounded-xl p-8 max-w-lg mx-4 relative" onclick="event.stopPropagation()">
+                        <button onclick="closeNotificationInfo()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                        
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-bell text-blue-600 text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Why Enable Notifications?</h3>
+                        </div>
+                        
+                        <div class="space-y-4 text-sm text-gray-600">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-clock text-blue-500 mt-1"></i>
+                                <div>
+                                    <strong>Meeting Reminders:</strong> Get notified 1 hour, 30 minutes, and 5 minutes before your scheduled meetings.
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-phone text-green-500 mt-1"></i>
+                                <div>
+                                    <strong>Instant Calls:</strong> Receive immediate alerts when students initiate instant calls with you.
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-calendar-alt text-purple-500 mt-1"></i>
+                                <div>
+                                    <strong>Schedule Changes:</strong> Get notified about meeting reschedules, cancellations, and confirmations.
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-shield-alt text-indigo-500 mt-1"></i>
+                                <div>
+                                    <strong>Always Secure:</strong> Notifications only show basic info and never include personal details.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex gap-3">
+                            <button onclick="requestNotificationPermission(); closeNotificationInfo();" 
+                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-bell mr-2"></i>Enable Now
+                            </button>
+                            <button onclick="closeNotificationInfo()" 
+                                    class="px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                                Maybe Later
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', infoModal);
+        }
+
+        // Close notification info modal
+        function closeNotificationInfo() {
+            const modal = document.getElementById('notification-info-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Update warning message for denied permission
+        function updateWarningForDeniedPermission() {
+            const warningBanner = document.getElementById('notification-permission-warning');
+            if (warningBanner) {
+                const content = warningBanner.querySelector('.warning-content');
+                if (content) {
+                    content.innerHTML = `
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="notification-icon">
+                                    <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-white font-bold text-lg mb-2">
+                                    🚫 Notifications Blocked
+                                </h3>
+                                <p class="text-white/90 text-sm mb-4 leading-relaxed">
+                                    Notifications are currently blocked. To enable them:
+                                    <br>• Click the 🔒 lock icon in your browser's address bar
+                                    <br>• Look for "Notifications" and change it to "Allow"
+                                    <br>• Refresh the page and try again
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="hideNotificationWarning()" class="dismiss-btn">
+                                        <i class="fas fa-times mr-2"></i>Got It
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="hideNotificationWarning()" class="close-btn">
+                                <i class="fas fa-times text-white text-xl hover:text-red-200 transition-colors"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Function removed - now defined inside DOMContentLoaded handler
+
+        // Notification initialization moved to main DOMContentLoaded handler
+
+        // Global functions now defined inside DOMContentLoaded handlers
+
         async function initializeApprovalStatus() {
             try {
                 // Use the new JWT authentication utility
@@ -1180,6 +2354,151 @@
         document.addEventListener('DOMContentLoaded', async function() {
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
+            
+            // Initialize enhanced notification system
+            console.log('🚀 Initializing enhanced notification system...');
+            
+            // Initialize notification enforcer for critical actions
+            if (typeof window.talkTimeNotificationEnforcer !== 'undefined') {
+                console.log('🔒 Initializing notification enforcement for critical actions');
+                window.talkTimeNotificationEnforcer.init();
+            } else if (typeof NotificationEnforcer !== 'undefined') {
+                console.log('🔒 Using NotificationEnforcer instance');
+                // NotificationEnforcer auto-initializes, no need to call init manually
+            }
+            
+            // Define notification event listeners function
+            function setupNotificationEventListeners() {
+                // Listen for push notification requests from server
+                if (window.socket) {
+                    window.socket.on('push-notification-request', function(data) {
+                        handleServerPushNotification(data);
+                    });
+                    
+                    window.socket.on('notification-update', function(data) {
+                        handleNotificationUpdate(data);
+                    });
+                }
+            }
+            
+            // Handle server-sent push notification requests
+            function handleServerPushNotification(data) {
+                if (Notification.permission !== 'granted') return;
+                
+                console.log('🔔 Received server push notification request:', data);
+                
+                const { notificationData, metadata, priority } = data;
+                
+                const notification = new Notification(notificationData.title, {
+                    body: notificationData.body,
+                    icon: notificationData.icon || '/favicon.ico',
+                    badge: notificationData.badge || '/favicon.ico',
+                    tag: notificationData.tag || 'talktime-notification',
+                    requireInteraction: notificationData.requireInteraction || false,
+                    actions: notificationData.actions || [
+                        { action: 'view', title: '👀 View' },
+                        { action: 'dismiss', title: '✕ Dismiss' }
+                    ],
+                    data: metadata || {},
+                    renotify: priority === 'urgent'
+                });
+                
+                notification.onclick = function(event) {
+                    console.log('🖱️ Notification clicked:', event);
+                    event.notification.close();
+                    
+                    // Handle click action
+                    if (notificationData.url) {
+                        window.open(notificationData.url, '_blank');
+                    }
+                };
+                
+                notification.onclose = function(event) {
+                    console.log('🔒 Notification closed:', event);
+                };
+                
+                notification.onerror = function(event) {
+                    console.error('❌ Notification error:', event);
+                };
+            }
+            
+            // Handle notification updates (read status, etc.)
+            function handleNotificationUpdate(data) {
+                console.log('📮 Notification update received:', data);
+                
+                // Update notification badge if nav-loader is available
+                if (window.VolunteerNavLoader && window.VolunteerNavLoader.loadNotificationCount) {
+                    window.VolunteerNavLoader.loadNotificationCount();
+                }
+            }
+            
+            // Helper functions for notification warnings
+            function hideNotificationWarning() {
+                const warning = document.getElementById('notification-permission-warning');
+                if (warning) {
+                    warning.style.display = 'none';
+                }
+            }
+            
+            function updateWarningForDeniedPermission() {
+                const warning = document.getElementById('notification-permission-warning');
+                if (warning) {
+                    warning.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">
+                                        Notifications Blocked
+                                    </h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p>Browser notifications are blocked. To enable them:</p>
+                                        <ol class="list-decimal list-inside mt-2 space-y-1">
+                                            <li>Click the lock icon in your browser's address bar</li>
+                                            <li>Change notifications from "Block" to "Allow"</li>
+                                            <li>Refresh this page</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Check notification permission status
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    console.log('✅ Enhanced notifications already enabled');
+                    hideNotificationWarning();
+                    setupNotificationEventListeners();
+                } else if (Notification.permission === 'denied') {
+                    console.log('❌ Notifications denied - showing help message');
+                    updateWarningForDeniedPermission();
+                } else {
+                    console.log('📱 Notification permission not set - showing request banner');
+                    // Banner is shown by default in HTML - ensure it stays visible
+                    const warningBanner = document.getElementById('notification-permission-warning');
+                    if (warningBanner) {
+                        warningBanner.style.display = 'block';
+                    }
+                }
+            } else {
+                console.log('❌ Browser does not support notifications');
+            }
+            
+            // Set up periodic notification cleanup
+            setInterval(() => {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'cleanup-old-notifications'
+                    });
+                }
+            }, 300000); // Clean up every 5 minutes
         });
     </script>
 </body>

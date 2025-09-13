@@ -14,6 +14,7 @@ const createTables = async () => {
       age INT,
       gender VARCHAR(20),
       phone VARCHAR(30),
+      timezone VARCHAR(100) DEFAULT 'America/New_York',
       school_name VARCHAR(255),
       parent_email VARCHAR(100),
       parent_phone VARCHAR(20),
@@ -24,6 +25,12 @@ const createTables = async () => {
       parent_approval_sent_at TIMESTAMP WITH TIME ZONE,
       parent_approved_at TIMESTAMP WITH TIME ZONE,
       profile_image VARCHAR(500),
+      security_question_1 VARCHAR(255),
+      security_answer_1_hash VARCHAR(255),
+      security_question_2 VARCHAR(255),
+      security_answer_2_hash VARCHAR(255),
+      security_question_3 VARCHAR(255),
+      security_answer_3_hash VARCHAR(255),
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;

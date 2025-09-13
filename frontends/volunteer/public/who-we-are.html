@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Who We Are - TalkTime by ADEA Foundation</title>
+    <meta name="description" content="Learn about ADEA Foundation's mission to empower Maasai youth through TalkTime - connecting communities through education and language exchange.">
+    <link rel="canonical" href="/volunteer/who-we-are.html">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="css/main.css" />
+    <!-- JWT Authentication Utility -->
+    <script src="/shared/js/jwt-auth-utils.js"></script>
+    
+    <!-- Newsletter Widget -->
+    <script src="/shared/js/newsletter-widget.js"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    
+    <!-- Navigation Loader -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    
+    <!-- Modal Utilities -->
+    <script src="/volunteer/js/modal-utils.js"></script>
+
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Initialize TalkTimeAuth -->
+    <script>
+        // Ensure TalkTimeAuth is available
+        if (typeof TalkTimeJWTAuth !== 'undefined') {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        }
+    </script>
+    
+    <!-- Custom TalkTime Styles -->
+    <style>
+        html, body {
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            max-width: 100vw;
+            box-sizing: border-box;
+            justify-content: center;
+        }
+        body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            z-index: -1;
+            overflow: hidden;
+            max-width: 100vw;
+        }
+
+        main, section, .container {
+            max-width: 100vw;
+            box-sizing: border-box;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        @media (max-width: 768px) {
+            .blob {
+                display: none;
+            }
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+        }
+        .gradient-text {
+            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.3); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-bg {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pulse-gentle {
+            animation: pulseGentle 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGentle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="gradient-bg text-gray-800">
+    <!-- Background Blobs -->
+    <div class="blob w-96 h-96 bg-purple-300 top-[-10rem] left-[-10rem]"></div>
+    <div class="blob w-96 h-96 bg-blue-300 bottom-[-5rem] right-[-10rem]"></div>
+    <div class="blob w-72 h-72 bg-pink-300 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
+
+    <!-- Navigation Container -->
+    <div id="nav-container">
+        <!-- Navigation will be loaded dynamically -->
+    </div>
+
+    <div class="relative min-h-screen w-full flex flex-col items-center justify-center px-4 z-10 pt-24">
+            <div class="flex flex-col">
+                <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
+                        <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                        <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                    </svg>
+                    <span class="gradient-text">TALK TIME</span>
+                </a>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
+                        Powered by ADEA Foundation
+                    </a>
+                </div>
+            </div>
+          
+            <!-- Desktop Navigation Menu -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <a href="/volunteer/who-we-are.html" class="px-4 py-2 text-gray-700 hover:text-purple-600 transition-colors font-medium">
+                    <i class="fas fa-heart mr-2"></i>Who We Are
+                </a>
+              
+              <!-- Auth buttons - Dynamic based on auth status -->
+              <div id="nav-auth-buttons" class="flex items-center space-x-4">
+                <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors">Login</a>
+                <a href="/volunteer/signup" class="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-all">Sign Up</a>
+              </div>
+            </div>
+            
+            <!-- Profile Section (shown when logged in) -->
+            <div id="nav-profile-section" class="hidden items-center space-x-4">
+              <!-- Notification Bell -->
+              <div class="relative">
+                <a href="/volunteer/notifications.html" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Bell body -->
+                    <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    
+                    <!-- Bell clapper -->
+                    <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span id="notification-badge" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"></span>
+                </a>
+              </div>
+              <div class="relative">
+                <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
+                  <span id="volunteer-greeting" class="font-semibold sm:inline"></span>
+                  <div class="relative">
+                    <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
+                    <div id="volunteer-initial" class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">N</div>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+                <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
+                  <a href="/volunteer/who-we-are.html" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 hover:text-purple-600 rounded mx-2 my-1 transition-colors">
+                    <i class="fas fa-heart mr-2"></i>Who We Are
+                  </a>
+                  <a href="/volunteer/profile.html" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                    <i class="fas fa-user mr-2"></i>My Profile
+                  </a>
+                  <a href="/volunteer/settings" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
+                    <i class="fas fa-cog mr-2"></i>Settings
+                  </a>
+                  <hr class="my-2 border-gray-200">
+                  <a href="#" id="logout-btn" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                  </a>
+                </div>
+              </div>
+            </div>
+          
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+              <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+              </button>
+            </div>
+          
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="md:hidden hidden mt-4 p-4 glass-bg rounded-lg">
+                <div class="flex flex-col space-y-3">
+                    <a href="/" class="block py-2 px-4 text-gray-800 hover:text-green-600">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                    <a href="/volunteer/who-we-are.html" class="block py-2 px-4 text-gray-800 hover:text-purple-600">
+                        <i class="fas fa-heart mr-2"></i>Who We Are
+                    </a>
+                    <a href="/volunteer/dashboard/students.html" class="block py-2 px-4 text-gray-800 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </a>
+                <a href="/volunteer/notifications.html" class="block py-2 px-4 text-gray-800 hover:text-blue-600 font-semibold">
+                    <i class="fas fa-bell mr-2"></i>Notifications
+                </a>
+                <a href="/volunteer/profile" class="block py-2 px-4 text-gray-800 hover:text-purple-600 font-semibold">
+                    <i class="fas fa-user mr-2"></i>My Profile
+                </a>
+                <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+          </nav>
+          
+    </header>
+
+    <div class="relative min-h-screen w-full flex flex-col items-center justify-center px-4 z-10 pt-24">
+        <main class="w-full max-w-6xl mx-auto text-center py-20">
+            <!-- Hero Section -->
+            <section class="flex flex-col items-center gap-8 mb-20">
+                <div class="text-center fade-in-up" style="animation-delay: 0.1s;">
+                    <h1 class="font-poppins text-5xl md:text-7xl font-extrabold leading-tight mb-6 bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent">
+                        Who We Are
+                    </h1>
+                    <p class="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+                        ADEA Foundation is bridging cultures and transforming lives by connecting Maasai youth in Kenya 
+                        with compassionate volunteers worldwide through the power of conversation.
+                    </p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center fade-in-up" style="animation-delay: 0.3s;">
+                    <a href="#our-mission" class="glass-bg hover:shadow-lg text-gray-800 px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-heart mr-3 text-pink-500"></i>Learn Our Story
+                    </a>
+                    <a href="#get-involved" class="bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-hands-helping mr-3"></i>Get Involved
+                    </a>
+                </div>
+            </section>
+
+            <!-- Mission & Vision Section -->
+            <section id="our-mission" class="w-full fade-in-up" style="animation-delay: 0.4s;">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Our Mission & Vision</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        Building bridges of understanding and opportunity across continents
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8 mb-20">
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
+                            <i class="fas fa-bullseye text-3xl text-purple-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Our Mission</h3>
+                        <p class="text-gray-600 text-lg leading-relaxed">
+                            To empower Maasai youth through accessible English language education, 
+                            fostering cross-cultural understanding while preserving indigenous heritage 
+                            and creating pathways to economic opportunity.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="mx-auto bg-orange-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
+                            <i class="fas fa-eye text-3xl text-orange-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Our Vision</h3>
+                        <p class="text-gray-600 text-lg leading-relaxed">
+                            A world where every young person, regardless of their background or location, 
+                            has access to quality education and the opportunity to connect with global 
+                            communities while celebrating their unique cultural identity.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About ADEA Foundation -->
+            <section class="w-full fade-in-up" style="animation-delay: 0.5s;">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">About ADEA Foundation</h2>
+                    <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                        The ADEA Foundation is a non-profit organization dedicated to advancing educational 
+                        opportunities for underserved communities in Africa. Our flagship program, TalkTime, 
+                        represents our commitment to innovative, culturally-sensitive educational solutions.
+                    </p>
+                </div>
+                
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-blue-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-users text-3xl text-blue-600"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800 mb-1">500+</div>
+                        <div class="text-gray-600">Students Served</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-green-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-globe text-3xl text-green-600"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800 mb-1">30+</div>
+                        <div class="text-gray-600">Countries Connected</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-video text-3xl text-purple-600"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800 mb-1">1000+</div>
+                        <div class="text-gray-600">Conversations</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-orange-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-heart text-3xl text-orange-600"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-800 mb-1">100%</div>
+                        <div class="text-gray-600">Free Forever</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Our Values Section -->
+            <section class="w-full fade-in-up" style="animation-delay: 0.6s;">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Our Core Values</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        These principles guide everything we do at ADEA Foundation
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-blue-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-handshake text-3xl text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Cultural Respect</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            We celebrate and preserve the rich Maasai heritage while fostering global connections.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-green-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-balance-scale text-3xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Equity & Access</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            Education should be accessible to all, regardless of geographical or economic barriers.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-yellow-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-lightbulb text-3xl text-yellow-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Innovation</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            We embrace creative solutions that leverage technology to break down barriers.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-users text-3xl text-purple-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Community</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            Building strong, supportive networks that empower both students and volunteers.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-pink-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-seedling text-3xl text-pink-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Sustainability</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            Creating lasting change through programs that can grow and adapt over time.
+                        </p>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <div class="mx-auto bg-teal-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <i class="fas fa-heart text-3xl text-teal-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">Compassion</h3>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            Every interaction is guided by empathy, patience, and genuine care for others.
+                        </p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Final CTA Section -->
+            <section id="get-involved" class="fade-in-up" style="animation-delay: 0.7s;">
+                <div class="text-center">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">Ready to Make a Difference?</h2>
+                    <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                        Join our global community of volunteers and help empower Maasai youth through meaningful conversation.
+                    </p>
+                    <a href="/volunteer/signup" class="pulse-zoom inline-flex items-center bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Become a Volunteer Today
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <!-- About -->
+                <div>
+                    <h4 class="font-bold mb-4">TalkTime</h4>
+                    <p class="text-gray-400 text-sm mb-4">
+                        Connecting Maasai youth with global volunteers through the power of conversation and education.
+                    </p>
+                    <div class="flex items-center space-x-2">
+                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-8 h-8 rounded-full">
+                        <span class="text-sm text-gray-400">ADEA Foundation</span>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <div class="space-y-2">
+                        <a href="/volunteer/" class="text-gray-400 hover:text-white text-sm block transition-colors">Home</a>
+                        <a href="/volunteer/who-we-are.html" class="text-gray-400 hover:text-white text-sm block transition-colors">Who We Are</a>
+                        <a href="/volunteer/signup" class="text-gray-400 hover:text-white text-sm block transition-colors">Volunteer</a>
+                        <a href="/volunteer/login" class="text-gray-400 hover:text-white text-sm block transition-colors">Login</a>
+                    </div>
+                </div>
+                
+                <!-- Support -->
+                <div>
+                    <h4 class="font-bold mb-4">Support</h4>
+                    <div class="space-y-2">
+                        <a href="#donate" class="text-gray-400 hover:text-white text-sm block transition-colors">Donate</a>
+                        <a href="#sponsor" class="text-gray-400 hover:text-white text-sm block transition-colors">Sponsor a Student</a>
+                    </div>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h4 class="font-bold mb-4">Get In Touch</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-envelope text-purple-400"></i>
+                            <span class="text-gray-400 text-sm">info@adeafoundation.org</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-phone text-purple-400"></i>
+                            <span class="text-gray-400 text-sm">+1 (555) 123-4567</span>
+                        </div>
+                        <div class="flex space-x-4 mt-4">
+                            <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
+                                <i class="fab fa-facebook text-xl"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
+                                <i class="fab fa-twitter text-xl"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
+                                <i class="fab fa-instagram text-xl"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-purple-400 transition-colors">
+                                <i class="fab fa-linkedin text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center">
+                <p class="text-gray-400 text-sm">
+                    2024 ADEA Foundation. All rights reserved. | 
+                    <a href="#privacy" class="hover:text-white transition-colors">Privacy Policy</a> | 
+                    <a href="#terms" class="hover:text-white transition-colors">Terms of Service</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Authentication and page initialization
+        async function initializeAuthentication() {
+            console.log('Initializing authentication...');
+            
+            // Wait for TalkTimeAuth to be available
+            let attempts = 0;
+            while (!window.TalkTimeAuth && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.TalkTimeAuth) {
+                console.error('TalkTimeAuth not available after waiting');
+                return;
+            }
+            
+            const dashboardLink = document.getElementById('dashboard-link');
+            const pageWelcomeGreeting = document.getElementById('page-welcome-greeting');
+            const pageProfileAvatar = document.getElementById('page-profile-avatar');
+            const pageAuthButtons = document.getElementById('page-auth-buttons');
+            const pageAvatarInitial = document.getElementById('page-avatar-initial');
+            
+            console.log('Elements found:', {
+                dashboardLink: !!dashboardLink,
+                pageWelcomeGreeting: !!pageWelcomeGreeting,
+                pageProfileAvatar: !!pageProfileAvatar,
+                pageAuthButtons: !!pageAuthButtons,
+                pageAvatarInitial: !!pageAvatarInitial
+            });
+            
+            // Check for tokens in localStorage directly using correct keys
+            const accessToken = localStorage.getItem('volunteer_talktime_access_token');
+            const refreshToken = localStorage.getItem('volunteer_talktime_refresh_token');
+            console.log('Tokens in localStorage:', {
+                accessToken: !!accessToken,
+                refreshToken: !!refreshToken
+            });
+            
+            // Get navigation elements using homepage structure
+            const navAuthButtons = document.getElementById('nav-auth-buttons');
+            const navProfileSection = document.getElementById('nav-profile-section');
+            const volunteerGreeting = document.getElementById('volunteer-greeting');
+            const letterAvatar = document.getElementById('letter-avatar');
+            const profileDropdown = document.getElementById('profile-dropdown');
+            const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
+            const mobileProfileMenu = document.getElementById('mobile-profile-menu');
+            
+            console.log('Navigation elements found:', {
+                navAuthButtons: !!navAuthButtons,
+                navProfileSection: !!navProfileSection,
+                volunteerGreeting: !!volunteerGreeting,
+                letterAvatar: !!letterAvatar
+            });
+            
+            // Force token verification regardless of isAuthenticated status
+            if (accessToken) {
+                try {
+                    console.log('Verifying existing token...');
+                    const isValid = await window.TalkTimeAuth.verifyToken();
+                    console.log('Token verification result:', isValid);
+                    
+                    if (isValid) {
+                        const user = window.TalkTimeAuth.getUser();
+                        console.log('User data from verified token:', user);
+                        
+                        // Update welcome greeting
+                        if (volunteerGreeting && user) {
+                            let displayName = user.username || 
+                                           user.full_name || 
+                                           user.fullName || 
+                                           user.name || 
+                                           'Volunteer';
+                            
+                            // Use first name if full name
+                            if (!user.username && displayName.includes(' ')) {
+                                displayName = displayName.split(' ')[0];
+                            } else if (displayName.includes('@')) {
+                                displayName = displayName.split('@')[0];
+                            }
+                            
+                            volunteerGreeting.textContent = `Welcome, ${displayName}!`;
+                            console.log('Welcome greeting updated:', displayName);
+                        }
+                        
+                        // Update avatar - prioritize profile image over letter
+                        const profileImage = document.getElementById('nav-profile-image');
+                        
+                        if (user.profile_image) {
+                            // Show profile image if available
+                            if (profileImage) {
+                                profileImage.src = `/api/v1/volunteer/profile/image/${user.profile_image}`;
+                                profileImage.classList.remove('hidden');
+                            }
+                            if (letterAvatar) {
+                                letterAvatar.classList.add('hidden');
+                            }
+                        } else {
+                            // Show avatar letter
+                            if (profileImage) {
+                                profileImage.classList.add('hidden');
+                            }
+                            if (letterAvatar) {
+                                const userName = user.nickname || user.username || user.full_name || user.name || 'V';
+                                const avatarLetter = userName.charAt(0).toUpperCase();
+                                letterAvatar.textContent = avatarLetter;
+                                letterAvatar.classList.remove('hidden');
+                                console.log('Avatar letter set to:', avatarLetter, 'from username:', userName);
+                            }
+                        }
+                        
+                        // Show profile section and hide auth buttons
+                        if (navProfileSection && navAuthButtons) {
+                            navProfileSection.classList.remove('hidden');
+                            navProfileSection.classList.add('flex');
+                            navAuthButtons.classList.add('hidden');
+                            console.log('Profile section shown, auth buttons hidden');
+                        }
+                        
+                        // Handle mobile menu
+                        if (mobileAuthButtons && mobileProfileMenu) {
+                            mobileAuthButtons.classList.add('hidden');
+                            mobileProfileMenu.classList.remove('hidden');
+                        }
+                        
+                        return; // Exit early if authentication successful
+                    } else {
+                        console.log('Token verification failed, clearing tokens');
+                        window.TalkTimeAuth.clearAuth();
+                    }
+                } catch (error) {
+                    console.error('Token verification error:', error);
+                    window.TalkTimeAuth.clearAuth();
+                }
+            }
+            
+            // Default state for non-authenticated users
+            console.log('Not authenticated - keeping default state');
+            if (navProfileSection && navAuthButtons) {
+                navProfileSection.classList.add('hidden');
+                navAuthButtons.classList.remove('hidden');
+            }
+            if (mobileAuthButtons && mobileProfileMenu) {
+                mobileAuthButtons.classList.remove('hidden');
+                mobileProfileMenu.classList.add('hidden');
+            }
+            if (pageAuthButtons) {
+                pageAuthButtons.classList.remove('hidden');
+            }
+            if (pageProfileAvatar) {
+                pageProfileAvatar.classList.add('hidden');
+            }
+        }
+        
+        // Profile dropdown functionality
+        function setupProfileDropdown() {
+            const profileBtn = document.getElementById('profile-btn');
+            const profileDropdown = document.getElementById('profile-dropdown');
+            
+            console.log('Setting up profile dropdown...', { profileBtn: !!profileBtn, profileDropdown: !!profileDropdown });
+            
+            if (profileBtn && profileDropdown) {
+                // Remove existing event listeners if any
+                profileBtn.removeEventListener('click', handleProfileClick);
+                
+                // Add new event listener
+                profileBtn.addEventListener('click', handleProfileClick);
+                
+                function handleProfileClick(e) {
+                    console.log('Profile button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const isHidden = profileDropdown.classList.contains('hidden');
+                    console.log('Dropdown is currently hidden:', isHidden);
+                    
+                    if (isHidden) {
+                        // Show dropdown
+                        profileDropdown.classList.remove('hidden');
+                        profileDropdown.classList.remove('opacity-0');
+                        profileDropdown.classList.remove('-translate-y-2');
+                        console.log('Showing dropdown');
+                    } else {
+                        // Hide dropdown
+                        profileDropdown.classList.add('hidden');
+                        profileDropdown.classList.add('opacity-0');
+                        profileDropdown.classList.add('-translate-y-2');
+                        console.log('Hiding dropdown');
+                    }
+                }
+                
+                // Close dropdown when clicking outside (only add if not already added)
+                if (!document.dropdownClickListenerAdded) {
+                    document.addEventListener('click', function(e) {
+                        if (!profileDropdown.classList.contains('hidden') && 
+                            !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                            console.log('Clicking outside, closing dropdown');
+                            profileDropdown.classList.add('hidden');
+                            profileDropdown.classList.add('opacity-0');
+                            profileDropdown.classList.add('-translate-y-2');
+                        }
+                    });
+                    document.dropdownClickListenerAdded = true;
+                }
+                
+                // Prevent dropdown from closing when clicking inside it
+                profileDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                console.log('Profile dropdown setup complete');
+            } else {
+                console.log('Profile button or dropdown not found');
+            }
+            
+            // Logout functionality - desktop
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Clear JWT tokens
+                    window.TalkTimeAuth?.logout();
+                    
+                    // Redirect to home page (which will show login/signup options)
+                    window.location.href = '/volunteer/';
+                });
+            }
+            
+            // Logout functionality - mobile
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Clear JWT tokens
+                    window.TalkTimeAuth?.logout();
+                    
+                    // Redirect to home page (which will show login/signup options)
+                    window.location.href = '/volunteer/';
+                });
+            }
+        }
+        
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+      
+        if (menuToggle && mobileMenu) {
+            menuToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Header scroll behavior to match index page
+        const header = document.getElementById('main-header');
+        const handleScroll = () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOMContentLoaded - initializing authentication');
+            await initializeAuthentication();
+            setupProfileDropdown();
+            
+            // Initialize fade animations
+            const fadeElements = document.querySelectorAll('.fade-in-up');
+            fadeElements.forEach((element, index) => {
+                if (!element.style.animationDelay) {
+                    element.style.animationDelay = `${index * 0.1}s`;
+                }
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Newsletter form submission (if form exists)
+        const newsletterForm = document.querySelector('form');
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = this.querySelector('input[type="email"]').value;
+                
+                // Show success message (placeholder for actual implementation)
+                const button = this.querySelector('button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Subscribed!';
+                button.className = button.className.replace('bg-yellow-400 hover:bg-yellow-300', 'bg-green-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.className = button.className.replace('bg-green-500', 'bg-yellow-400 hover:bg-yellow-300');
+                    this.reset();
+                }, 2000);
+            });
+        }
+
+        // Load notification count and update badge
+        async function loadNotificationCount() {
+            try {
+                if (!window.TalkTimeAuth || !window.TalkTimeAuth.isAuthenticated()) {
+                    return;
+                }
+
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/unread-count');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateNotificationBadge(data.unread_count);
+                    console.log('Notification count loaded:', data.unread_count);
+                } else {
+                    console.error('Failed to load notification count:', response.status);
+                }
+            } catch (error) {
+                console.error('Error loading notification count:', error);
+            }
+        }
+
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notification-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count.toString();
+                    badge.classList.remove('hidden');
+                    console.log('Notification badge updated to:', count);
+                } else {
+                    badge.classList.add('hidden');
+                    console.log('Notification badge hidden (no unread notifications)');
+                }
+            }
+        }
+
+        // Load notification count when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize navigation loader (handles authentication and notifications)
+            if (typeof VolunteerNavLoader !== 'undefined') {
+                await VolunteerNavLoader.init(true);
+            }
+        });
+
+        // Setup real-time notification updates
+        function setupRealtimeNotifications() {
+            try {
+                // Initialize Socket.IO connection for real-time notifications
+                if (typeof io !== 'undefined') {
+                    const socket = io();
+                    
+                    // Listen for new notifications
+                    socket.on('notification', function(notification) {
+                        console.log('New notification received:', notification);
+                        loadNotificationCount();
+                    });
+                    
+                    // Listen for notification updates (like when marked as read)
+                    socket.on('notificationUpdate', function() {
+                        console.log('Notification update received');
+                        loadNotificationCount();
+                    });
+                    
+                    console.log('Socket.IO connection established for notifications on who-we-are page');
+                }
+
+                // Initialize real-time notifications if available (fallback)
+                if (window.realtimeNotifications) {
+                    console.log('Setting up real-time notification updates for who-we-are page');
+                    
+                    // Listen for new notifications
+                    window.realtimeNotifications.on('new-notification', (data) => {
+                        console.log('New notification received, refreshing badge count');
+                        loadNotificationCount();
+                    });
+
+                    // Listen for notification read status changes
+                    window.realtimeNotifications.on('notification-read', (data) => {
+                        console.log('Notification read status changed, refreshing badge count');
+                        loadNotificationCount();
+                    });
+
+                    // Listen for badge updates
+                    window.realtimeNotifications.on('notification-badge-update', (data) => {
+                        console.log('Badge update received:', data);
+                        if (data.unread_count !== undefined) {
+                            updateNotificationBadge(data.unread_count);
+                        } else {
+                            loadNotificationCount();
+                        }
+                    });
+                } else {
+                    console.log('Real-time notifications not available, badge will update on page refresh');
+                }
+            } catch (error) {
+                console.error('Error setting up real-time notifications:', error);
+            }
+        }
+    </script>
+</body>
+</html>

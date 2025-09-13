@@ -60,6 +60,8 @@ export const generateTokens = (user) => {
         email: user.email || null,
         role: user.role,
         fullName: user.full_name || user.fullName,
+        full_name: user.full_name || user.fullName,
+        username: user.username || null,
         // Role-specific data
         ...(user.role === 'student' && {
             admissionNumber: user.admission_number,
@@ -67,7 +69,9 @@ export const generateTokens = (user) => {
         }),
         ...(user.role === 'volunteer' && {
             volunteerId: user.id,
-            isStudentVolunteer: user.is_student_volunteer || false
+            volunteer_type: user.volunteer_type || null,
+            isStudentVolunteer: user.is_student_volunteer || false,
+            is_approved: user.is_approved !== undefined ? user.is_approved : true
         }),
         ...(user.role === 'admin' && {
             adminId: user.id,

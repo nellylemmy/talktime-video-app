@@ -2,7 +2,7 @@
    Scope: Students Dashboard UI tweaks (non-breaking)
 */
 
-/* Smooth greeting transitions */
+/* Smooth tip transitions */
 .greeting-fade {
   transition: opacity 1200ms ease, transform 1200ms ease;
 }
@@ -13,6 +13,24 @@
 .greeting-fade.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Tips card styling to match the reference */
+#rotating-tip {
+  min-height: 3rem; /* Fixed height to accommodate 2 lines of text */
+  height: 3rem; /* Fixed height prevents jumping */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Prevent text overflow */
+  line-height: 1.4; /* Better line spacing for multi-line text */
+}
+
+/* Ensure the tips card has proper spacing and styling */
+.bg-gradient-to-r.from-blue-50.to-purple-50 {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 120px; /* Fixed height for the entire card */
+  height: 120px; /* Prevent card height changes */
 }
 
 /* Buttons */
@@ -201,10 +219,68 @@
 @media (min-width: 1024px) { .students-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .students-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* Sidebar */
-.sidebar { display: none; width: 100%; }
-@media (min-width: 1024px) { .sidebar { display: block; width: 20rem; } }
-@media (min-width: 1280px) { .sidebar { width: 24rem; } }
+/* Sidebar - Fixed responsive visibility (working solution) */
+.sidebar, 
+#page-dashboard .sidebar,
+#dashboard-students .sidebar,
+.tab-pane .sidebar { 
+  display: block !important; 
+  width: 100% !important; 
+  margin-top: 1.5rem !important;
+  position: static !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem !important;
+}
+
+/* Sidebar card styling - ensure visibility */
+.sidebar-card,
+.sidebar .sidebar-card {
+  border-radius: 0.75rem !important; 
+  padding: 1rem !important; 
+  border: 1px solid rgba(255,255,255,0.2) !important; 
+  background: rgba(255,255,255,0.4) !important; 
+  backdrop-filter: blur(12px) !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+@media (min-width: 640px) { 
+  .sidebar, 
+  #page-dashboard .sidebar,
+  #dashboard-students .sidebar,
+  .tab-pane .sidebar { 
+    margin-top: 2rem !important;
+  } 
+}
+@media (min-width: 1024px) { 
+  .sidebar, 
+  #page-dashboard .sidebar,
+  #dashboard-students .sidebar,
+  .tab-pane .sidebar { 
+    display: block !important; 
+    width: 20rem !important; 
+    margin-top: 0 !important;
+    position: fixed !important;
+    right: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 30 !important;
+  } 
+}
+@media (min-width: 1280px) { 
+  .sidebar, 
+  #page-dashboard .sidebar,
+  #dashboard-students .sidebar,
+  .tab-pane .sidebar { 
+    width: 24rem !important; 
+    right: 2rem !important;
+  } 
+}
 .sidebar-card { border-radius: 0.75rem; padding: 1rem; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.4); backdrop-filter: blur(12px); }
 
 /* Skeleton loaders */
@@ -224,14 +300,12 @@
 }
 
 /* Layout: Narrow main content on large screens */
-@media (min-width: 1024px) {
-  /* Only the students dashboard main container */
-  main.container #page-dashboard > .max-w-6xl {
-    max-width: none; /* override Tailwind max width */
-    width: 55%;
-    margin-left: auto;
-    margin-right: auto; /* keep centered */
-  }
+/* Set the main dashboard page to 40% width as maximum for all screen sizes */
+#page-dashboard {
+  max-width: 40vw !important; /* 40% of viewport width */
+  width: 100% !important;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Force key blocks to span 100% within their parents */

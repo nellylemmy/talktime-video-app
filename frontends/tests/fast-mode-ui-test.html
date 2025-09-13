@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete UI Test - Fast Mode - TalkTime</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn.success { background: #34C759; }
+        .btn.danger { background: #FF3B30; }
+        .btn.warning { background: #FF9500; }
+
+        .timer-display {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+
+        .log {
+            background: #000;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .participant-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .participant {
+            flex: 1;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .participant.joined {
+            background: rgba(52, 199, 89, 0.3);
+            border: 2px solid #34C759;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        /* Phone-like Incoming Call UI */
+        .incoming-call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1d1d1f 0%, #2c2c2e 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .incoming-call-overlay.show {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
+
+        .caller-info {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .caller-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            animation: pulse 2s infinite;
+            box-shadow: 0 20px 40px rgba(0, 122, 255, 0.3);
+        }
+
+        .caller-name {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .call-type {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 4px;
+        }
+
+        .call-status {
+            font-size: 16px;
+            color: #007AFF;
+            font-weight: 500;
+        }
+
+        .call-actions {
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .call-action {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .call-action.accept {
+            background: linear-gradient(135deg, #34C759 0%, #30D158 100%);
+            box-shadow: 0 8px 32px rgba(52, 199, 89, 0.4);
+        }
+
+        .call-action.decline {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF453A 100%);
+            box-shadow: 0 8px 32px rgba(255, 59, 48, 0.4);
+        }
+
+        .call-action:hover {
+            transform: scale(1.1);
+        }
+
+        /* Warning overlay */
+        .warning-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 149, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .warning-overlay.show { display: flex; }
+
+        /* Progress indicator */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34C759 0%, #007AFF 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .scenario-button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.4);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Complete UI Test - Fast Mode</h1>
+            <p>Test entire meeting flow with accelerated timing (seconds instead of minutes)</p>
+        </div>
+
+        <!-- Quick Scenario Tests -->
+        <div class="test-section full-width">
+            <h3>🎯 Quick Scenario Tests</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button class="scenario-button" onclick="runCompleteScenario()">
+                    🎬 Complete 40-Second Flow
+                </button>
+                <button class="scenario-button" onclick="runPhoneCallScenario()">
+                    📞 Phone Call Experience (10s)
+                </button>
+                <button class="scenario-button" onclick="runTimerScenario()">
+                    ⏱️ Timer & Warnings (20s)
+                </button>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <!-- Connection & Participants -->
+            <div class="test-section">
+                <h3>🔗 Connection & Participants</h3>
+                <div class="status-grid">
+                    <div class="status-item" id="socketStatus">Socket: Connecting...</div>
+                    <div class="status-item" id="callStatus">Call: None</div>
+                    <div class="status-item" id="timerStatus">Timer: Ready</div>
+                </div>
+                
+                <div class="participant-controls">
+                    <div class="participant" id="volunteerParticipant">
+                        <h4>👨‍🏫 Volunteer</h4>
+                        <div class="controls">
+                            <button class="btn success" onclick="joinAsVolunteer()">Join</button>
+                            <button class="btn danger" onclick="leaveAsVolunteer()">Leave</button>
+                        </div>
+                        <div id="volunteerStatus">Offline</div>
+                    </div>
+                    <div class="participant" id="studentParticipant">
+                        <h4>🎓 Student</h4>
+                        <div class="controls">
+                            <button class="btn success" onclick="joinAsStudent()">Join</button>
+                            <button class="btn danger" onclick="leaveAsStudent()">Leave</button>
+                        </div>
+                        <div id="studentStatus">Offline</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Control -->
+            <div class="test-section">
+                <h3>⏱️ Timer Control</h3>
+                <div class="timer-display" id="timerDisplay">00:40</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="controls">
+                    <button class="btn success" onclick="startTimer()">Start 40s</button>
+                    <button class="btn warning" onclick="startQuickTimer()">Start 10s</button>
+                    <button class="btn" onclick="resetTimer()">Reset</button>
+                    <button class="btn danger" onclick="endTimer()">End</button>
+                </div>
+            </div>
+
+            <!-- Call Control -->
+            <div class="test-section">
+                <h3>📞 Call Control</h3>
+                <div class="controls">
+                    <button class="btn success" onclick="triggerIncomingCall()">Show Incoming Call</button>
+                    <button class="btn warning" onclick="testNotificationPermission()">Test Notifications</button>
+                    <button class="btn" onclick="hideIncomingCall()">Hide Call UI</button>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 12px;">
+                    <strong>Phone UI Features:</strong><br>
+                    • Realistic incoming call overlay<br>
+                    • Audio ringtone simulation<br>
+                    • Accept/Decline actions<br>
+                    • Auto-timeout after 15 seconds
+                </div>
+            </div>
+
+            <!-- Warning Tests -->
+            <div class="test-section">
+                <h3>⚠️ Warning Tests</h3>
+                <div class="controls">
+                    <button class="btn warning" onclick="show30sWarning()">30s Warning</button>
+                    <button class="btn warning" onclick="show15sWarning()">15s Warning</button>
+                    <button class="btn warning" onclick="show5sWarning()">5s Warning</button>
+                    <button class="btn danger" onclick="showEndWarning()">End Warning</button>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 12px;">
+                    <strong>Warning Equivalents:</strong><br>
+                    • 30s = "5 minutes remaining"<br>
+                    • 15s = "2 minutes remaining"<br>
+                    • 5s = "1 minute remaining"
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="test-section">
+            <h3>📝 Event Log</h3>
+            <div class="controls">
+                <button class="btn" onclick="clearLog()">Clear</button>
+                <button class="btn success" onclick="exportLog()">Export</button>
+            </div>
+            <div class="log" id="eventLog"></div>
+        </div>
+    </div>
+
+    <!-- Incoming Call Overlay -->
+    <div class="incoming-call-overlay" id="incomingCallOverlay">
+        <div class="caller-info">
+            <div class="caller-avatar">👨‍🏫</div>
+            <div class="caller-name">Volunteer Teacher</div>
+            <div class="call-type">TalkTime Video Call</div>
+            <div class="call-status">Incoming call...</div>
+        </div>
+        <div class="call-actions">
+            <button class="call-action decline" onclick="declineCall()">✕</button>
+            <button class="call-action accept" onclick="acceptCall()">📞</button>
+        </div>
+    </div>
+
+    <!-- Warning Overlay -->
+    <div class="warning-overlay" id="warningOverlay">
+        <div>
+            <div id="warningText">Meeting will end soon!</div>
+            <div style="font-size: 16px; margin-top: 20px;">
+                <button class="btn" onclick="hideWarning()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fast Mode Test Variables
+        let socket;
+        let timer;
+        let timeRemaining = 40;
+        let maxTime = 40;
+        let timerRunning = false;
+        let volunteerJoined = false;
+        let studentJoined = false;
+        let callState = 'idle';
+        let testMeetingId = 'fast-test-' + Date.now();
+
+        // Initialize Socket.IO
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', () => {
+                log('✅ Connected to server');
+                updateStatus('socketStatus', 'Socket: Connected');
+                
+                socket.emit('join-meeting', {
+                    meetingId: testMeetingId,
+                    userId: 'fast-test-user',
+                    userType: 'test'
+                });
+            });
+
+            socket.on('disconnect', () => {
+                log('❌ Disconnected from server');
+                updateStatus('socketStatus', 'Socket: Disconnected');
+            });
+
+            // Timer events
+            socket.on('meeting-timer-start', (data) => {
+                log(`🕒 Timer started: ${data.duration}s`);
+            });
+
+            socket.on('meeting-timer-warning', (data) => {
+                log(`⚠️ Timer warning: ${data.warning}`);
+                showWarning(data.warning);
+            });
+
+            socket.on('meeting-auto-end', (data) => {
+                log('🔚 Meeting auto-ended');
+                showWarning('Meeting has ended');
+                endTimer();
+            });
+
+            // Call events
+            socket.on('volunteer-joined-meeting', (data) => {
+                log('🎓 Volunteer joined - triggering call');
+                if (studentJoined) {
+                    setTimeout(() => triggerIncomingCall(), 1000);
+                }
+            });
+        }
+
+        // Participant functions
+        function joinAsVolunteer() {
+            volunteerJoined = true;
+            document.getElementById('volunteerParticipant').classList.add('joined');
+            document.getElementById('volunteerStatus').textContent = 'Online';
+            
+            socket.emit('volunteer-joined-meeting', {
+                meetingId: testMeetingId,
+                volunteerId: 'maina@mail.com',
+                studentId: 'neleki96'
+            });
+            
+            log('🎓 Volunteer joined meeting');
+            checkAutoStart();
+        }
+
+        function joinAsStudent() {
+            studentJoined = true;
+            document.getElementById('studentParticipant').classList.add('joined');
+            document.getElementById('studentStatus').textContent = 'Online';
+            
+            socket.emit('participant-joined', {
+                meetingId: testMeetingId,
+                userId: 'neleki96',
+                userType: 'student'
+            });
+            
+            log('🎒 Student joined meeting');
+            checkAutoStart();
+        }
+
+        function leaveAsVolunteer() {
+            volunteerJoined = false;
+            document.getElementById('volunteerParticipant').classList.remove('joined');
+            document.getElementById('volunteerStatus').textContent = 'Offline';
+            log('🎓 Volunteer left meeting');
+        }
+
+        function leaveAsStudent() {
+            studentJoined = false;
+            document.getElementById('studentParticipant').classList.remove('joined');
+            document.getElementById('studentStatus').textContent = 'Offline';
+            log('🎒 Student left meeting');
+        }
+
+        function checkAutoStart() {
+            if (volunteerJoined && studentJoined && !timerRunning) {
+                log('👥 Both participants joined - auto-starting timer in 2s');
+                setTimeout(() => startTimer(), 2000);
+            }
+        }
+
+        // Timer functions
+        function startTimer() {
+            if (timerRunning) return;
+            
+            timeRemaining = 40;
+            maxTime = 40;
+            timerRunning = true;
+            updateStatus('timerStatus', 'Timer: Running');
+            
+            socket.emit('meeting-timer-start', {
+                meetingId: testMeetingId,
+                duration: timeRemaining
+            });
+            
+            log('🕒 Started 40-second timer');
+            runTimer();
+        }
+
+        function startQuickTimer() {
+            if (timerRunning) return;
+            
+            timeRemaining = 10;
+            maxTime = 10;
+            timerRunning = true;
+            updateStatus('timerStatus', 'Timer: Running');
+            
+            log('⚡ Started 10-second quick timer');
+            runTimer();
+        }
+
+        function runTimer() {
+            timer = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                updateProgress();
+                
+                // Warnings for 40s timer
+                if (maxTime === 40) {
+                    if (timeRemaining === 30) show30sWarning();
+                    else if (timeRemaining === 15) show15sWarning();
+                    else if (timeRemaining === 5) show5sWarning();
+                }
+                // Warnings for 10s timer
+                else if (maxTime === 10) {
+                    if (timeRemaining === 7) show30sWarning();
+                    else if (timeRemaining === 4) show15sWarning();
+                    else if (timeRemaining === 2) show5sWarning();
+                }
+                
+                if (timeRemaining <= 0) {
+                    endTimer();
+                    showEndWarning();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timerDisplay').textContent = display;
+            
+            // Color changes
+            const timerEl = document.getElementById('timerDisplay');
+            if (timeRemaining <= 5) {
+                timerEl.style.color = '#FF3B30';
+                timerEl.style.animation = 'pulse 0.5s infinite';
+            } else if (timeRemaining <= 15) {
+                timerEl.style.color = '#FF9500';
+            } else if (timeRemaining <= 30) {
+                timerEl.style.color = '#FFCC00';
+            } else {
+                timerEl.style.color = 'white';
+                timerEl.style.animation = 'none';
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((maxTime - timeRemaining) / maxTime) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timerRunning = false;
+            timeRemaining = 40;
+            maxTime = 40;
+            updateTimerDisplay();
+            updateProgress();
+            updateStatus('timerStatus', 'Timer: Ready');
+            hideWarning();
+            log('🔄 Timer reset');
+        }
+
+        function endTimer() {
+            clearInterval(timer);
+            timerRunning = false;
+            updateStatus('timerStatus', 'Timer: Ended');
+            
+            socket.emit('meeting-auto-end', {
+                meetingId: testMeetingId,
+                reason: 'Time limit reached'
+            });
+            
+            log('🔚 Timer ended');
+        }
+
+        // Call functions
+        function triggerIncomingCall() {
+            if (callState !== 'idle') return;
+            
+            callState = 'incoming';
+            updateStatus('callStatus', 'Call: Incoming');
+            showIncomingCallUI();
+            playRingtone();
+            log('📞 Incoming call UI displayed');
+            
+            // Auto-hide after 15 seconds
+            setTimeout(() => {
+                if (callState === 'incoming') {
+                    declineCall();
+                }
+            }, 15000);
+        }
+
+        function acceptCall() {
+            if (callState !== 'incoming') return;
+            
+            callState = 'active';
+            updateStatus('callStatus', 'Call: Active');
+            hideIncomingCall();
+            log('✅ Call accepted');
+            
+            // Simulate redirect to video call
+            setTimeout(() => {
+                log('🎥 Redirecting to video call...');
+                updateStatus('callStatus', 'Call: In Video');
+            }, 1000);
+        }
+
+        function declineCall() {
+            callState = 'idle';
+            updateStatus('callStatus', 'Call: Declined');
+            hideIncomingCall();
+            log('❌ Call declined');
+        }
+
+        function showIncomingCallUI() {
+            document.getElementById('incomingCallOverlay').classList.add('show');
+        }
+
+        function hideIncomingCall() {
+            document.getElementById('incomingCallOverlay').classList.remove('show');
+            callState = 'idle';
+            updateStatus('callStatus', 'Call: None');
+        }
+
+        // Warning functions
+        function show30sWarning() {
+            showWarning('30 seconds remaining (5-min equivalent)');
+            socket.emit('meeting-timer-warning', {
+                meetingId: testMeetingId,
+                warning: '30 seconds remaining',
+                timeRemaining: timeRemaining
+            });
+        }
+
+        function show15sWarning() {
+            showWarning('15 seconds remaining (2-min equivalent)');
+            socket.emit('meeting-timer-warning', {
+                meetingId: testMeetingId,
+                warning: '15 seconds remaining',
+                timeRemaining: timeRemaining
+            });
+        }
+
+        function show5sWarning() {
+            showWarning('5 seconds remaining (1-min equivalent)');
+            socket.emit('meeting-timer-warning', {
+                meetingId: testMeetingId,
+                warning: '5 seconds remaining',
+                timeRemaining: timeRemaining
+            });
+        }
+
+        function showEndWarning() {
+            showWarning('Meeting has ended due to time limit');
+        }
+
+        function showWarning(message) {
+            document.getElementById('warningText').textContent = message;
+            document.getElementById('warningOverlay').classList.add('show');
+            log(`⚠️ Warning: ${message}`);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => hideWarning(), 3000);
+        }
+
+        function hideWarning() {
+            document.getElementById('warningOverlay').classList.remove('show');
+        }
+
+        // Notification functions
+        function testNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification('TalkTime Test', {
+                            body: 'Notifications are working!',
+                            icon: '/images/default-profile.jpg'
+                        });
+                        log('✅ Notification permission granted');
+                    } else {
+                        log('❌ Notification permission denied');
+                    }
+                });
+            }
+        }
+
+        function playRingtone() {
+            // Simple beep sound
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                log('🔊 Ringtone played');
+            } catch (error) {
+                log('🔇 Audio not available');
+            }
+        }
+
+        // Scenario functions
+        function runCompleteScenario() {
+            log('🎬 Starting complete 40-second scenario');
+            resetTimer();
+            hideIncomingCall();
+            
+            // Step 1: Volunteer joins (1s)
+            setTimeout(() => joinAsVolunteer(), 1000);
+            
+            // Step 2: Student joins (2s)
+            setTimeout(() => joinAsStudent(), 2000);
+            
+            // Timer will auto-start after both join (4s total)
+            // At 30s remaining: First warning (14s from start)
+            // At 15s remaining: Second warning (29s from start)
+            // At 5s remaining: Final warning (39s from start)
+            // At 0s: End (44s from start)
+            
+            log('🎯 Complete scenario will run for ~44 seconds total');
+        }
+
+        function runPhoneCallScenario() {
+            log('📞 Starting phone call scenario');
+            hideIncomingCall();
+            
+            // Volunteer joins
+            setTimeout(() => joinAsVolunteer(), 500);
+            
+            // Student joins
+            setTimeout(() => joinAsStudent(), 1000);
+            
+            // Incoming call appears
+            setTimeout(() => triggerIncomingCall(), 2000);
+            
+            log('📱 Phone call will appear in 2 seconds');
+        }
+
+        function runTimerScenario() {
+            log('⏱️ Starting 20-second timer scenario');
+            resetTimer();
+            
+            // Start 10s timer with faster warnings
+            setTimeout(() => {
+                timeRemaining = 20;
+                maxTime = 20;
+                timerRunning = true;
+                updateStatus('timerStatus', 'Timer: Running');
+                
+                timer = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    updateProgress();
+                    
+                    if (timeRemaining === 15) show30sWarning();
+                    else if (timeRemaining === 10) show15sWarning();
+                    else if (timeRemaining === 5) show5sWarning();
+                    
+                    if (timeRemaining <= 0) {
+                        endTimer();
+                        showEndWarning();
+                    }
+                }, 1000);
+                
+                log('⏰ 20-second timer with warnings started');
+            }, 1000);
+        }
+
+        // Utility functions
+        function updateStatus(elementId, text) {
+            document.getElementById(elementId).textContent = text;
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('eventLog').innerHTML = '';
+        }
+
+        function exportLog() {
+            const logContent = document.getElementById('eventLog').textContent;
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fast-test-log-${new Date().toISOString().slice(0, 19)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('🚀 Fast Mode UI Test loaded');
+            initializeSocket();
+            updateTimerDisplay();
+            updateProgress();
+        });
+
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

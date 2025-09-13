@@ -1115,6 +1115,66 @@
                 width: 150px;
             }
         }
+        
+        /* Meeting timer warning animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Meeting notification styles */
+        .meeting-time-warning {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .meeting-time-warning .warning-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .meeting-time-warning .warning-content i {
+            font-size: 18px;
+        }
+        
+        .meeting-ended-notification {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .meeting-ended-notification .notification-content h3 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            color: #e74c3c;
+        }
+        
+        .meeting-ended-notification .notification-content p {
+            margin: 8px 0;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        
+        .meeting-ended-notification .notification-content i {
+            font-size: 32px;
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -1578,6 +1638,17 @@
         let isVideoOff = false;
         let isScreenSharing = false;
         let waitingLocalStream = null;
+        
+        // Meeting timer variables (40-minute limit)
+        let meetingTimerDuration = 40 * 60 * 1000; // 40 minutes in milliseconds
+        let meetingTimeRemaining = meetingTimerDuration;
+        let bothParticipantsJoined = false;
+        let meetingWarningsShown = {
+            fiveMinutes: false,
+            twoMinutes: false,
+            oneMinute: false
+        };
+        let meetingAutoEndScheduled = false;
 
         // DOM Elements
         const startScreen = document.getElementById('startScreen');
@@ -1746,6 +1817,17 @@
                 console.log('🔍 Current state:', { isInitiator, localStream, waitingLocalStream });
                 remoteSocketId = socketId;
                 
+                // Handle participant joined for meeting timer
+                handleParticipantJoined();
+                
+                // Emit participant joined event to server for meeting tracking
+                socket.emit('participant-joined-room', {
+                    roomId: currentRoomId,
+                    participantId: socket.id,
+                    remoteParticipantId: socketId,
+                    timestamp: Date.now()
+                });
+                
                 // Update waiting screen to show both participants are connected
                 const waitingMessage = document.querySelector('.waiting-message');
                 if (waitingMessage) {
@@ -1849,6 +1931,23 @@
             socket.on('kicked', () => {
                 console.log('❌ You have been kicked from the call');
                 endCall();
+            });
+            
+            // Handle meeting timer warning from other participants
+            socket.on('meeting-timer-warning', (data) => {
+                console.log('⚠️ Received meeting timer warning:', data);
+                showMeetingTimeWarning(data.minutesRemaining);
+            });
+            
+            // Handle meeting auto-end from server
+            socket.on('meeting-auto-end', (data) => {
+                console.log('🔚 Received meeting auto-end signal:', data);
+                showFinalMeetingNotification();
+                
+                // End the call after a brief delay
+                setTimeout(() => {
+                    endCall();
+                }, 3000);
             });
         }
 
@@ -2739,17 +2838,211 @@
             statusText.textContent = connected ? 'Connected' : 'Disconnected';
         }
 
-        // Start Timer
+        // Start Timer (Enhanced with 40-minute meeting limit)
         function startTimer() {
             callStartTime = Date.now();
             timeContainer.classList.add('visible');
+            
+            // Check if both participants have joined for meeting timer
+            if (bothParticipantsJoined && !meetingAutoEndScheduled) {
+                console.log('🕒 Starting 40-minute meeting timer for both participants');
+                socket.emit('meeting-timer-start', { 
+                    roomId: currentRoomId,
+                    duration: meetingTimerDuration,
+                    timestamp: Date.now()
+                });
+                meetingAutoEndScheduled = true;
+            }
             
             timeInterval = setInterval(() => {
                 const elapsed = Date.now() - callStartTime;
                 const minutes = Math.floor(elapsed / 60000);
                 const seconds = Math.floor((elapsed % 60000) / 1000);
+                
+                // Update display
                 timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Meeting timer logic (only if both participants joined)
+                if (bothParticipantsJoined) {
+                    meetingTimeRemaining = meetingTimerDuration - elapsed;
+                    
+                    // Check for warnings and auto-end
+                    checkMeetingTimeWarnings(meetingTimeRemaining);
+                    
+                    // Auto-end if time is up
+                    if (meetingTimeRemaining <= 0) {
+                        console.log('⏰ Meeting time expired, auto-ending call');
+                        autoEndMeeting();
+                        return;
+                    }
+                    
+                    // Change timer color based on remaining time
+                    updateTimerColor(meetingTimeRemaining);
+                }
             }, 1000);
+        }
+        
+        // Check for meeting time warnings
+        function checkMeetingTimeWarnings(timeRemaining) {
+            const minutesRemaining = Math.floor(timeRemaining / 60000);
+            
+            // 5-minute warning
+            if (minutesRemaining <= 5 && !meetingWarningsShown.fiveMinutes) {
+                meetingWarningsShown.fiveMinutes = true;
+                showMeetingTimeWarning(5);
+                socket.emit('meeting-timer-warning', { 
+                    roomId: currentRoomId, 
+                    minutesRemaining: 5 
+                });
+            }
+            
+            // 2-minute warning
+            if (minutesRemaining <= 2 && !meetingWarningsShown.twoMinutes) {
+                meetingWarningsShown.twoMinutes = true;
+                showMeetingTimeWarning(2);
+                socket.emit('meeting-timer-warning', { 
+                    roomId: currentRoomId, 
+                    minutesRemaining: 2 
+                });
+            }
+            
+            // 1-minute warning
+            if (minutesRemaining <= 1 && !meetingWarningsShown.oneMinute) {
+                meetingWarningsShown.oneMinute = true;
+                showMeetingTimeWarning(1);
+                socket.emit('meeting-timer-warning', { 
+                    roomId: currentRoomId, 
+                    minutesRemaining: 1 
+                });
+            }
+        }
+        
+        // Show meeting time warning
+        function showMeetingTimeWarning(minutes) {
+            const warningMessage = `⏰ Meeting will end in ${minutes} minute${minutes > 1 ? 's' : ''}`;
+            
+            // Create warning notification
+            const warning = document.createElement('div');
+            warning.className = 'meeting-time-warning';
+            warning.innerHTML = `
+                <div class="warning-content">
+                    <i class="fas fa-clock"></i>
+                    <span>${warningMessage}</span>
+                </div>
+            `;
+            warning.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #ff6b6b;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                z-index: 10000;
+                font-weight: bold;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            document.body.appendChild(warning);
+            
+            // Remove warning after 5 seconds
+            setTimeout(() => {
+                warning.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => warning.remove(), 300);
+            }, 5000);
+            
+            console.log('⚠️ Meeting time warning:', warningMessage);
+        }
+        
+        // Update timer color based on remaining time
+        function updateTimerColor(timeRemaining) {
+            const minutesRemaining = Math.floor(timeRemaining / 60000);
+            
+            if (minutesRemaining <= 1) {
+                timeDisplay.style.color = '#ff4444'; // Red for last minute
+                timeDisplay.style.fontWeight = 'bold';
+            } else if (minutesRemaining <= 2) {
+                timeDisplay.style.color = '#ff8800'; // Orange for last 2 minutes
+            } else if (minutesRemaining <= 5) {
+                timeDisplay.style.color = '#ffaa00'; // Yellow for last 5 minutes
+            } else {
+                timeDisplay.style.color = ''; // Default color
+                timeDisplay.style.fontWeight = '';
+            }
+        }
+        
+        // Auto-end meeting when time expires
+        function autoEndMeeting() {
+            console.log('🔚 Auto-ending meeting due to time limit');
+            
+            // Clear the timer
+            if (timeInterval) {
+                clearInterval(timeInterval);
+                timeInterval = null;
+            }
+            
+            // Emit auto-end event to server
+            socket.emit('meeting-auto-end', { 
+                roomId: currentRoomId,
+                reason: 'time_limit',
+                timestamp: Date.now()
+            });
+            
+            // Show final notification
+            showFinalMeetingNotification();
+            
+            // End the call after a brief delay
+            setTimeout(() => {
+                endCall();
+            }, 3000);
+        }
+        
+        // Show final meeting notification
+        function showFinalMeetingNotification() {
+            const notification = document.createElement('div');
+            notification.className = 'meeting-ended-notification';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-clock"></i>
+                    <h3>Meeting Time Ended</h3>
+                    <p>Your 40-minute meeting session has completed.</p>
+                    <p>Redirecting you now...</p>
+                </div>
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #2c3e50;
+                color: white;
+                padding: 30px;
+                border-radius: 12px;
+                z-index: 10001;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                min-width: 300px;
+            `;
+            
+            document.body.appendChild(notification);
+        }
+        
+        // Handle participant joined event
+        function handleParticipantJoined() {
+            bothParticipantsJoined = true;
+            console.log('👥 Both participants joined - meeting timer eligible to start');
+            
+            // If timer is already running, it will pick up the meeting timer logic
+            if (timeInterval && !meetingAutoEndScheduled) {
+                console.log('🕒 Enabling meeting timer for existing call');
+                socket.emit('meeting-timer-start', { 
+                    roomId: currentRoomId,
+                    duration: meetingTimerDuration,
+                    timestamp: Date.now()
+                });
+                meetingAutoEndScheduled = true;
+            }
         }
 
         // Toggle Fullscreen

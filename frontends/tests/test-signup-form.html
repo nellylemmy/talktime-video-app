@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Signup Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .field { margin: 10px 0; }
+        input, select { margin: 5px; padding: 8px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin: 20px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Test Volunteer Signup Form Data</h1>
+    
+    <div class="field">
+        <label>First Name: <input type="text" id="first-name" value="John"></label>
+    </div>
+    
+    <div class="field">
+        <label>Last Name: <input type="text" id="last-name" value="Doe"></label>
+    </div>
+    
+    <div class="field">
+        <label>Username: <input type="text" id="username" value="john"></label>
+    </div>
+    
+    <div class="field">
+        <label>Email: <input type="email" id="email" value="john@example.com"></label>
+    </div>
+    
+    <div class="field">
+        <label>Password: <input type="password" id="password" value="password123"></label>
+    </div>
+    
+    <div class="field">
+        <label>Age: <input type="number" id="age" value="25"></label>
+    </div>
+    
+    <div class="field">
+        <label>Gender: 
+            <select id="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+            </select>
+        </label>
+    </div>
+    
+    <div class="field">
+        <label>Phone: <input type="tel" id="phone" value="1234567890"></label>
+    </div>
+    
+    <div class="field">
+        <label>Timezone: 
+            <select id="timezone">
+                <option value="America/New_York">Eastern Time</option>
+                <option value="America/Los_Angeles">Pacific Time</option>
+                <option value="Europe/London">London</option>
+            </select>
+        </label>
+    </div>
+    
+    <button onclick="testFormData()">Test Form Data Generation</button>
+    
+    <div id="result" class="result"></div>
+    
+    <script>
+        function testFormData() {
+            const firstName = document.getElementById('first-name').value.trim();
+            const lastName = document.getElementById('last-name').value.trim();
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            const formData = {
+                username: document.getElementById('username').value,
+                full_name: fullName,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                age: parseInt(document.getElementById('age').value),
+                gender: document.getElementById('gender').value,
+                phone: '+1' + document.getElementById('phone').value,
+                timezone: document.getElementById('timezone').value,
+                volunteer_type: 'standard'
+            };
+            
+            document.getElementById('result').innerHTML = 
+                '<h3>Generated Form Data:</h3>' +
+                '<pre>' + JSON.stringify(formData, null, 2) + '</pre>' +
+                '<p><strong>Full Name Generated:</strong> "' + fullName + '"</p>' +
+                '<p><strong>Valid:</strong> ' + (firstName && lastName ? 'Yes' : 'No') + '</p>';
+        }
+        
+        // Test automatically on load
+        testFormData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+../shared/notification-sw.js
