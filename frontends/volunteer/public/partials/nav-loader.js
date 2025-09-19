@@ -176,7 +176,7 @@ class VolunteerNavLoader {
         try {
             let navPath;
             if (this.isAuthenticated) {
-                navPath = '/volunteer/partials/nav-authenticated.html';
+                navPath = '/shared/partials/nav-authenticated.html';
             } else {
                 navPath = '/volunteer/partials/nav-unauthenticated.html';
             }
@@ -248,7 +248,7 @@ class VolunteerNavLoader {
             }
             
             greetingElement.textContent = `Welcome, ${displayName}!`;
-            greetingElement.classList.remove('hidden'); // Ensure it's visible
+            // Removed: greetingElement.classList.remove('hidden'); // Let CSS handle visibility
             console.log('Updated greeting to:', `Welcome, ${displayName}!`);
         } else {
             console.log('Greeting element not found');
@@ -280,11 +280,7 @@ class VolunteerNavLoader {
         }
 
         // Also update any other name displays in mobile menu or dropdowns
-        const mobileGreeting = document.querySelector('#mobile-menu .volunteer-name');
-        if (mobileGreeting) {
-            const displayName = this.userInfo.username || this.userInfo.name || 'Volunteer';
-            mobileGreeting.textContent = displayName;
-        }
+        // Mobile menu removed - all navigation now in profile dropdown
     }
 
     /**
@@ -402,15 +398,11 @@ class VolunteerNavLoader {
         
         const profileBtn = document.getElementById('profile-btn');
         const profileDropdown = document.getElementById('profile-dropdown');
-        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-        const mobileMenu = document.getElementById('mobile-menu');
         const logoutLink = document.getElementById('logout-link');
 
         console.log('Elements found:', {
             profileBtn: !!profileBtn,
             profileDropdown: !!profileDropdown,
-            mobileMenuToggle: !!mobileMenuToggle,
-            mobileMenu: !!mobileMenu,
             logoutLink: !!logoutLink
         });
 
@@ -515,14 +507,6 @@ class VolunteerNavLoader {
                         window.location.href = '/volunteer/';
                     }
                 }
-            });
-        }
-
-        // Mobile menu toggle
-        if (mobileMenuToggle && mobileMenu) {
-            mobileMenuToggle.addEventListener('click', () => {
-                console.log('Mobile menu toggle clicked');
-                mobileMenu.classList.toggle('hidden');
             });
         }
 
