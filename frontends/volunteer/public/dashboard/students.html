@@ -22,7 +22,10 @@
     
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
+
+    <!-- Main Styles (includes responsive framework) -->
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+
     <!-- Dashboard Polishing Styles -->
     <link rel="stylesheet" href="/css/dashboard.css">
     
@@ -520,6 +523,363 @@
             }
         }
 
+        /* Student Cards Grid - Responsive Layout */
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .students-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                margin-top: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .students-grid {
+                gap: 0.5rem;
+                margin-top: 0.75rem;
+            }
+        }
+
+        /* Header and Content Spacing - Mobile Responsive */
+        @media (max-width: 768px) {
+            main.container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                padding-top: 1.5rem !important;
+                padding-bottom: 1.5rem !important;
+            }
+            
+            .text-center.mb-3 .bg-gradient-to-r {
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .text-center.mb-3 .bg-gradient-to-r h2 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            #rotating-tip {
+                font-size: 0.9rem !important;
+                line-height: 1.5 !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r {
+                padding: 1rem !important;
+                margin-bottom: 1.5rem !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r h3 {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r p {
+                font-size: 0.85rem !important;
+                line-height: 1.5 !important;
+            }
+            
+            /* Section headers */
+            h2.text-2xl.font-bold {
+                font-size: 1.5rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            /* Flex layouts in headers - More specific to avoid nav conflicts */
+            .section-header.flex.items-center.justify-between.mb-6,
+            .dashboard-section .flex.items-center.justify-between.mb-6 {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 1rem !important;
+                margin-bottom: 1.5rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            main.container {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+            
+            .text-center.mb-3 .bg-gradient-to-r {
+                padding: 0.875rem !important;
+                margin-bottom: 0.875rem !important;
+            }
+            
+            .text-center.mb-3 .bg-gradient-to-r h2 {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.625rem !important;
+            }
+            
+            #rotating-tip {
+                font-size: 0.85rem !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r {
+                padding: 0.875rem !important;
+                margin-bottom: 1.25rem !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r h3 {
+                font-size: 1rem !important;
+                margin-bottom: 0.625rem !important;
+            }
+            
+            .text-center.mb-6 .bg-gradient-to-r p {
+                font-size: 0.8rem !important;
+            }
+            
+        /* Touch Targets and Buttons - Mobile Responsive */
+        @media (max-width: 768px) {
+            /* Ensure all buttons meet minimum touch target size */
+            button, .btn, [role="button"], input[type="button"], input[type="submit"] {
+                min-height: 44px !important;
+                min-width: 44px !important;
+                padding: 0.75rem 1rem !important;
+                font-size: 16px !important; /* Prevents zoom on iOS */
+            }
+            
+            /* Specific button classes */
+            .tt-btn-primary, .enable-btn, .dismiss-btn, .info-btn {
+                min-height: 48px !important;
+                padding: 0.875rem 1.25rem !important;
+                font-size: 16px !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            /* Close buttons */
+            .close-btn {
+                min-height: 44px !important;
+                min-width: 44px !important;
+                padding: 0.5rem !important;
+            }
+            
+            /* FAB buttons */
+            #upcoming-fab-btn {
+                min-height: 56px !important;
+                min-width: 56px !important;
+                padding: 1rem !important;
+            }
+            
+            /* Interactive cards and elements */
+            .student-card, .meeting-card {
+                min-height: 48px !important;
+            }
+            
+            /* Form inputs */
+            input, select, textarea {
+                font-size: 16px !important; /* Prevents zoom on iOS */
+                min-height: 44px !important;
+                padding: 0.75rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            button, .btn, [role="button"], input[type="button"], input[type="submit"] {
+                min-height: 48px !important;
+                padding: 0.875rem 1.25rem !important;
+            }
+            
+            .tt-btn-primary, .enable-btn, .dismiss-btn, .info-btn {
+                min-height: 52px !important;
+                padding: 1rem 1.5rem !important;
+            }
+            
+            .close-btn {
+                min-height: 48px !important;
+                min-width: 48px !important;
+                padding: 0.625rem !important;
+            }
+            
+        /* Modals and Notifications - Mobile Responsive */
+        @media (max-width: 768px) {
+            /* Notification warning banner */
+            .notification-warning-banner {
+                top: 80px !important;
+                width: 95% !important;
+                max-width: 100% !important;
+                margin: 0 2.5% !important;
+                border-radius: 12px !important;
+            }
+            
+            .warning-content {
+                padding: 1.25rem !important;
+            }
+            
+            .warning-content h3 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            .warning-content p {
+                font-size: 0.9rem !important;
+                line-height: 1.5 !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .flex.flex-wrap.gap-3 {
+                flex-direction: column !important;
+                gap: 0.75rem !important;
+            }
+            
+            .enable-btn, .dismiss-btn, .info-btn {
+                width: 100% !important;
+                padding: 0.875rem 1rem !important;
+                font-size: 16px !important;
+                text-align: center !important;
+            }
+            
+            /* Modal dialogs */
+            .modal .modal-content {
+                margin: 1rem !important;
+                max-width: calc(100vw - 2rem) !important;
+                border-radius: 12px !important;
+            }
+            
+            /* Newsletter modal */
+            #newsletter-expanded .glass-card {
+                margin: 1rem !important;
+                max-width: calc(100vw - 2rem) !important;
+                padding: 1.5rem !important;
+            }
+            
+            /* FAB panel */
+            #upcoming-fab-panel {
+                width: calc(100vw - 2rem) !important;
+                max-width: 380px !important;
+                margin: 0 1rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .notification-warning-banner {
+                top: 75px !important;
+                width: 92% !important;
+                margin: 0 4% !important;
+                border-radius: 10px !important;
+            }
+            
+            .warning-content {
+                padding: 1rem !important;
+            }
+            
+            .warning-content h3 {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.625rem !important;
+            }
+            
+            .warning-content p {
+                font-size: 0.85rem !important;
+                margin-bottom: 0.875rem !important;
+            }
+            
+            .enable-btn, .dismiss-btn, .info-btn {
+                padding: 1rem 1.25rem !important;
+                font-size: 15px !important;
+            }
+            
+            .modal .modal-content {
+                margin: 0.75rem !important;
+                max-width: calc(100vw - 1.5rem) !important;
+            }
+            
+            #newsletter-expanded .glass-card {
+                margin: 0.75rem !important;
+                max-width: calc(100vw - 1.5rem) !important;
+                padding: 1.25rem !important;
+            }
+            
+            #upcoming-fab-panel {
+                width: calc(100vw - 1.5rem) !important;
+                margin: 0 0.75rem !important;
+            }
+        }
+
+        /* Overall Layout and Container - Mobile Responsive */
+        @media (max-width: 768px) {
+            /* Main container adjustments */
+            .max-w-6xl.mx-auto {
+                max-width: 100% !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            
+            /* Sticky navigation improvements */
+            #page-nav-sticky {
+                padding: 0.75rem 1rem !important;
+            }
+            
+            #page-nav-sticky .container.mx-auto {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            
+            /* Sidebar adjustments */
+            .sidebar {
+                margin-top: 2rem !important;
+                padding: 0 1rem !important;
+            }
+            
+            .sidebar-card {
+                padding: 1.25rem !important;
+            }
+            
+            /* Space-y adjustments for mobile */
+            .space-y-8 > * + * {
+                margin-top: 1.5rem !important;
+            }
+            
+            .space-y-3 > * + * {
+                margin-top: 0.75rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Further mobile optimizations */
+            #page-nav-sticky {
+                padding: 0.625rem 0.75rem !important;
+            }
+            
+            .sidebar {
+                margin-top: 1.5rem !important;
+                padding: 0 0.75rem !important;
+            }
+            
+            .sidebar-card {
+                padding: 1rem !important;
+            }
+            
+            .space-y-8 > * + * {
+                margin-top: 1.25rem !important;
+            }
+            
+            .space-y-3 > * + * {
+                margin-top: 0.625rem !important;
+            }
+            
+            /* Make date filter responsive on mobile */
+            #date-filter-container {
+                width: 100% !important;
+                max-width: calc(100vw - 1.5rem) !important;
+            }
+            
+            /* Increase main container padding for better mobile readability */
+            main.container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                padding-top: 1.5rem !important;
+                padding-bottom: 1.5rem !important;
+            }
+        }
+
         /* Notification Permission Warning Banner */
         .notification-warning-banner {
             position: fixed;
@@ -667,6 +1027,8 @@
                 font-size: 13px;
             }
         }
+    }
+    }
     </style>
 </head>
 <body>
@@ -680,7 +1042,7 @@
     </div>
 
     <!-- Sticky Navigation Bar (only shows on profile and scheduler pages) -->
-    <div id="page-nav-sticky" class="hidden sticky top-16 z-10 glass-bg border-b border-white/20 shadow-sm">
+    <div id="page-nav-sticky" class="hidden sticky top-0 z-10 glass-bg border-b border-white/20 shadow-sm">
         <div class="container mx-auto px-4 py-3">
             <div id="page-nav-content" class="flex justify-between items-center">
                 <!-- Content will be dynamically inserted here -->
