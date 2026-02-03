@@ -12,15 +12,21 @@ import studentJWTAuthRoutes from './api/v1/routes/studentAuthRoutes.js';
 import studentRoutes from './api/v1/routes/studentRoutes.js';
 import volunteerRoutes from './api/v1/routes/volunteerRoutes.js';
 import adminRoutes from './api/v1/routes/adminRoutes.js';
-import analyticsRoutes from './api/v1/routes/analyticsRoutes.js';
-import meetingRoutes from './api/v1/routes/meetingRoutes.js';
+// Analytics routes REMOVED - handled by analytics-service microservice
+// import analyticsRoutes from './api/v1/routes/analyticsRoutes.js';
+// Meeting routes REMOVED - handled by meeting-service microservice
+// import meetingRoutes from './api/v1/routes/meetingRoutes.js';
 import meetingValidationRoutes from './api/v1/routes/meetingValidationRoutes.js';
 // Legacy instantCalls routes removed - using unified users table only
 // Legacy enhancedInstantCalls routes removed - using unified users table only
 import meetingAccessRoutes from './routes/meetingAccess.js';
 import parentalApprovalRoutes from './routes/parentalApproval.js';
-import notificationRoutes from './routes/notifications.js';
+// Notification routes REMOVED - handled by notification-service microservice
+// import notificationRoutes from './routes/notifications.js';
+// Newsletter routes REMOVED - handled by newsletter-service microservice
+// import newsletterRoutes from './routes/newsletter.js';
 // import uploadRoutes from './routes/upload.js';
+import mailchimpRoutes from './api/v1/routes/mailchimpRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initializeSocket } from './socket.js';
 import { redisClient } from './config/cache.js';
@@ -41,6 +47,9 @@ console.log('⚠️  Skipping Redis connection - running without caching');
 
 // Redis is now used only for caching, not for sessions
 // All authentication is handled via JWT tokens
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '../uploads')));
 
 // Middleware setup
 app.use(cors({
@@ -77,6 +86,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Public routes (no authentication required)
 app.use('/api/v1/parental-approval', parentalApprovalRoutes); // Parental approval routes
+// Newsletter routes REMOVED - handled by newsletter-service microservice
 
 // JWT Authentication routes (no additional middleware needed)
 app.use('/api/v1/jwt-auth', jwtAuthRoutes);
@@ -85,8 +95,15 @@ app.use('/api/v1/students', studentRoutes);
 
 // Register route handlers with appropriate JWT protection
 // LEGACY STUDENT ROUTES REMOVED - Using unified users table only
+
+// Test endpoint to verify volunteer routes work (before JWT middleware)
+app.get('/api/v1/volunteers/ping', (req, res) => {
+    res.json({ success: true, message: 'Volunteer routes base path is accessible' });
+});
+
 app.use('/api/v1/volunteers', volunteerJWTMiddleware, volunteerRoutes);
-app.use('/api/v1/meetings', adminOrVolunteerJWTMiddleware, meetingRoutes);
+// Meeting routes REMOVED - handled by meeting-service microservice
+// app.use('/api/v1/meetings', adminOrVolunteerJWTMiddleware, meetingRoutes);
 app.use('/api/v1/meeting-validation', adminOrStudentJWTMiddleware, meetingValidationRoutes);
 
 // Admin routes - signup is public, other routes are protected
@@ -96,8 +113,8 @@ app.use('/api/v1/admin', adminRoutes);
 // Then register protected admin routes with JWT middleware
 app.use('/api/v1/admin', adminJWTMiddleware, adminAuthRoutes);
 
-// Analytics routes with admin JWT protection
-app.use('/api/v1/analytics', analyticsRoutes);
+// Analytics routes REMOVED - handled by analytics-service microservice
+// app.use('/api/v1/analytics', analyticsRoutes);
 
 // Instant call routes with JWT protection
 
@@ -105,7 +122,9 @@ app.use('/api/v1/analytics', analyticsRoutes);
 // Legacy instant-calls routes removed - using unified users table only
 // Legacy enhanced-instant-calls routes removed - using unified users table only
 app.use('/api/v1/meeting', jwtAuthMiddleware, meetingAccessRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
+// Notification routes REMOVED - handled by notification-service microservice
+// app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/mailchimp', mailchimpRoutes);
 // app.use('/api/v1/upload', uploadRoutes);
 
 // Health check endpoint

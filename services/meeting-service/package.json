@@ -1,0 +1,23 @@
+{
+  "name": "talktime-meeting-service",
+  "version": "1.0.0",
+  "description": "TalkTime Meeting Management Microservice",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^4.17.1",
+    "ioredis": "^5.6.1",
+    "node-cron": "^3.0.3",
+    "pg": "^8.16.3",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
