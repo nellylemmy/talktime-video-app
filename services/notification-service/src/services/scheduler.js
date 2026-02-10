@@ -21,7 +21,7 @@ export const startScheduler = () => {
         }
     }, {
         scheduled: true,
-        timezone: 'Africa/Nairobi'
+        timezone: 'UTC' // Use UTC for global timezone support
     });
 
     console.log('[Notification Service] Scheduler started (processing every minute)');

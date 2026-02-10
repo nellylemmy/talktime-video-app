@@ -1,0 +1,564 @@
+/* TalkTime Responsive Forms
+   Mobile-first, touch-optimized form styles
+   Based on modern responsive design principles */
+
+/* ============================================
+   FORM CONTAINER & LAYOUT
+   ============================================ */
+
+/* Form wrapper */
+.form-container {
+  width: 100%;
+  max-width: min(100%, 600px);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+/* Form sections */
+.form-section {
+  margin-bottom: var(--space-lg);
+}
+
+.form-section-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: #333;
+}
+
+/* ============================================
+   FORM GROUPS & FIELDS
+   ============================================ */
+
+/* Form group wrapper */
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+/* Form labels */
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: var(--space-xs);
+}
+
+.form-label-required::after {
+  content: " *";
+  color: var(--color-error);
+}
+
+/* Base input styles - Mobile First */
+.form-input,
+.form-textarea,
+.form-select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="url"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 3vw, 1.25rem);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: #1f2937;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Touch optimization */
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+/* Focus states */
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.1);
+}
+
+/* Hover states for desktop */
+@media (hover: hover) and (pointer: fine) {
+  .form-input:hover:not(:focus),
+  .form-textarea:hover:not(:focus),
+  .form-select:hover:not(:focus),
+  input:hover:not(:focus),
+  select:hover:not(:focus),
+  textarea:hover:not(:focus) {
+    border-color: #9ca3af;
+  }
+}
+
+/* Disabled states */
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================
+   SPECIFIC INPUT TYPES
+   ============================================ */
+
+/* Textarea */
+.form-textarea,
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Select dropdown */
+.form-select,
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 3rem;
+  cursor: pointer;
+}
+
+/* Number input - remove spinners on mobile */
+@media (max-width: 768px) {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* ============================================
+   CHECKBOX & RADIO
+   ============================================ */
+
+/* Checkbox/Radio wrapper */
+.form-checkbox-group,
+.form-radio-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* Custom checkbox/radio */
+.form-checkbox,
+.form-radio,
+input[type="checkbox"],
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin-right: var(--space-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Checkbox/Radio label */
+.form-checkbox-label,
+.form-radio-label {
+  font-size: var(--text-base);
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Touch target enhancement */
+@media (pointer: coarse) {
+  .form-checkbox-group,
+  .form-radio-group {
+    padding: var(--space-xs) 0;
+  }
+}
+
+/* ============================================
+   FORM BUTTONS
+   ============================================ */
+
+/* Button group */
+.form-button-group {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .form-button-group {
+    flex-direction: row;
+  }
+}
+
+/* Form buttons */
+.form-button,
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem);
+  font-size: var(--text-base);
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border: none;
+  min-height: 48px;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+@media (min-width: 640px) {
+  .form-button,
+  .btn-primary,
+  .btn-secondary {
+    width: auto;
+  }
+}
+
+/* Primary button */
+.btn-primary {
+  background-color: var(--brand-primary);
+  color: white;
+}
+
+/* Primary button states */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background-color: var(--brand-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.25);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Secondary button */
+.btn-secondary {
+  background-color: white;
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-primary);
+}
+
+/* Secondary button states */
+@media (hover: hover) and (pointer: fine) {
+  .btn-secondary:hover {
+    background-color: #f3f4ff;
+    transform: translateY(-1px);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ============================================
+   FORM VALIDATION
+   ============================================ */
+
+/* Error states */
+.form-input-error,
+.form-textarea-error,
+.form-select-error,
+input.error,
+select.error,
+textarea.error {
+  border-color: var(--color-error);
+}
+
+.form-input-error:focus,
+.form-textarea-error:focus,
+.form-select-error:focus,
+input.error:focus,
+select.error:focus,
+textarea.error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(125, 0, 0, 0.1);
+}
+
+/* Error message */
+.form-error-message {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  margin-top: var(--space-xs);
+}
+
+/* Success states */
+.form-input-success,
+input.success {
+  border-color: var(--color-success);
+}
+
+.form-input-success:focus,
+input.success:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(17, 108, 0, 0.1);
+}
+
+/* Success message */
+.form-success-message {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-success);
+  margin-top: var(--space-xs);
+}
+
+/* ============================================
+   FORM HELPERS
+   ============================================ */
+
+/* Help text */
+.form-help-text {
+  display: block;
+  font-size: var(--text-sm);
+  color: #6b7280;
+  margin-top: var(--space-xs);
+}
+
+/* Character counter */
+.form-char-counter {
+  display: block;
+  font-size: var(--text-xs);
+  color: #9ca3af;
+  text-align: right;
+  margin-top: var(--space-xs);
+}
+
+/* ============================================
+   FILE UPLOAD
+   ============================================ */
+
+/* File upload area */
+.form-file-upload {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 120px;
+}
+
+.form-file-upload:hover {
+  border-color: #9ca3af;
+  background-color: #f3f4f6;
+}
+
+.form-file-upload.dragover {
+  border-color: var(--brand-primary);
+  background-color: #f3f4ff;
+}
+
+/* File input (hidden) */
+.form-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* File upload text */
+.form-file-text {
+  font-size: var(--text-sm);
+  color: #6b7280;
+  text-align: center;
+}
+
+/* ============================================
+   RESPONSIVE FORM LAYOUTS
+   ============================================ */
+
+/* Two column layout on larger screens */
+.form-grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .form-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Full width column */
+.form-col-full {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
+   INLINE FORMS
+   ============================================ */
+
+/* Inline form for search/filters */
+.form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 640px) {
+  .form-inline {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .form-inline .form-group {
+    margin-bottom: 0;
+    flex: 1;
+  }
+
+  .form-inline .form-button {
+    flex-shrink: 0;
+  }
+}
+
+/* ============================================
+   FLOATING LABELS
+   ============================================ */
+
+/* Floating label container */
+.form-floating {
+  position: relative;
+  margin-bottom: var(--space-md);
+}
+
+.form-floating input,
+.form-floating textarea,
+.form-floating select {
+  padding-top: 1.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.form-floating label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  padding: 1rem 1.25rem;
+  pointer-events: none;
+  border: 1px solid transparent;
+  transform-origin: 0 0;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.form-floating input:focus ~ label,
+.form-floating input:not(:placeholder-shown) ~ label,
+.form-floating textarea:focus ~ label,
+.form-floating textarea:not(:placeholder-shown) ~ label,
+.form-floating select:focus ~ label,
+.form-floating select:valid ~ label {
+  transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+  padding: 0.25rem;
+  background-color: white;
+  color: var(--brand-primary);
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus visible for keyboard navigation */
+.form-input:focus-visible,
+.form-textarea:focus-visible,
+.form-select:focus-visible,
+.form-checkbox:focus-visible,
+.form-radio:focus-visible,
+.form-button:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+/* Loading spinner for buttons */
+.btn-loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}

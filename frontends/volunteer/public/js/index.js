@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const header = document.getElementById('main-header');
+    // Header element - check for both authenticated nav (main-header) and unauthenticated nav (home-unauthenticated-nav)
+    // The authenticated nav is loaded dynamically by nav-loader.js, so we need to handle cases where it's not yet available
+    let header = document.getElementById('main-header') || document.getElementById('home-unauthenticated-nav');
+
     const modal = document.getElementById('coming-soon-modal');
-    const modalContent = modal.querySelector('.modal-content');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
     const closeModalBtn = document.getElementById('close-modal-btn');
     const openModalTriggers = document.querySelectorAll('.coming-soon-trigger');
-    
-    // Authentication-related elements
+
+    // Authentication-related elements (these are now managed by nav-loader.js for authenticated users)
     const navAuthButtons = document.getElementById('nav-auth-buttons');
     const navProfileSection = document.getElementById('nav-profile-section');
     const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
@@ -18,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const volunteerGreeting = document.getElementById('volunteer-greeting');
     const profileAvatar = document.getElementById('profile-avatar');
     const logoutBtn = document.getElementById('logout-btn');
-    
+
     // Get all signup/login related elements throughout the page
     const volunteerSignupBtn = document.querySelector('a[href="/volunteer/signup"]');
     const studentLoginBtn = document.querySelector('a[href="/student/login"]');
@@ -26,10 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Header Scroll Logic ---
     const handleScroll = () => {
+        // Re-check for header in case it was loaded dynamically by nav-loader
+        const currentHeader = header || document.getElementById('main-header') || document.getElementById('home-unauthenticated-nav');
+        if (!currentHeader) return; // Header not available yet
+
         if (window.scrollY > 50) {
-            header.classList.add('scrolled');
+            currentHeader.classList.add('scrolled');
         } else {
-            header.classList.remove('scrolled');
+            currentHeader.classList.remove('scrolled');
         }
     };
     window.addEventListener('scroll', handleScroll);
@@ -54,25 +61,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300); 
     };
     
-    // Only attach modal logic to buttons that aren't for main app flow
-    openModalTriggers.forEach(trigger => {
-        trigger.addEventListener('click', openModal);
-    });
+    // Only attach modal logic if modal elements exist
+    if (modal && modalContent) {
+        openModalTriggers.forEach(trigger => {
+            trigger.addEventListener('click', openModal);
+        });
 
-    closeModalBtn.addEventListener('click', closeModal);
-    // Close modal by clicking on the overlay
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', closeModal);
         }
-    });
+
+        // Close modal by clicking on the overlay
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
     
     // Profile dropdown toggle
-    if (profileBtn) {
+    if (profileBtn && profileDropdown) {
         profileBtn.addEventListener('click', () => {
             profileDropdown.classList.toggle('hidden');
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
@@ -252,11 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (letterAvatar && fullName) {
                         const firstLetter = fullName.charAt(0).toUpperCase();
                         
-                        // Generate a consistent color based on the name
-                        const colors = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#c026d3'];
-                        const colorIndex = Math.abs(firstLetter.charCodeAt(0)) % colors.length;
-                        const bgColor = colors[colorIndex];
-                        
+                        // Use white background for all avatars
+                        const bgColor = 'white';
+
                         // Update and show letter avatar
                         letterAvatar.textContent = firstLetter;
                         letterAvatar.style.backgroundColor = bgColor;
@@ -264,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (letterAvatar) {
                         // Fallback avatar if no name
                         letterAvatar.textContent = 'V';
-                        letterAvatar.style.backgroundColor = '#4f46e5';
+                        letterAvatar.style.backgroundColor = 'white';
                         letterAvatar.classList.remove('hidden');
                     }
                 }

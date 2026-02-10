@@ -31,11 +31,15 @@ export const initializeScheduler = () => {
                     console.log(`📅 [CRON] Processed ${count} scheduled notifications`);
                 }
             } catch (error) {
-                console.error('❌ [CRON] Error processing scheduled notifications:', error);
+                // Log error but don't crash - scheduler will retry next minute
+                console.error('❌ [CRON] Error processing scheduled notifications:', error.message);
+                if (error.code === 'EAI_AGAIN') {
+                    console.log('⚠️ DNS resolution issue detected - will retry next cycle');
+                }
             }
         }, {
             scheduled: true,
-            timezone: "Africa/Nairobi" // EAT timezone for meeting scheduling
+            timezone: "UTC" // Use UTC for global timezone support - user timezones handled at display layer
         });
 
         // Process notifications immediately on startup
@@ -47,17 +51,18 @@ export const initializeScheduler = () => {
                 console.log('✅ Scheduler initialized successfully');
             })
             .catch(error => {
-                console.error('❌ [STARTUP] Error processing notifications:', error);
+                console.error('❌ [STARTUP] Error processing notifications:', error.message);
             });
 
         schedulerInitialized = true;
-        
+
         // Log scheduler status
         console.log('📅 Notification scheduler started:');
         console.log('   - Frequency: Every minute');
-        console.log('   - Timezone: Africa/Nairobi (EAT)');
+        console.log('   - Timezone: UTC (user timezones applied at display)');
         console.log('   - Auto-launch: Enabled for 5-minute reminders');
         console.log('   - Docker Compatible: Yes');
+        console.log('   - Error Handling: Retry on DNS failures');
 
     } catch (error) {
         console.error('❌ Failed to initialize scheduler service:', error);
@@ -87,13 +92,14 @@ export const getSchedulerStatus = () => {
     return {
         initialized: schedulerInitialized,
         running: notificationCronJob ? true : false,
-        timezone: 'Africa/Nairobi',
+        timezone: 'UTC',
         frequency: 'Every minute',
         features: [
             'Scheduled notifications',
             'Meeting auto-launch',
             'Docker compatible',
-            'EAT timezone support'
+            'Global timezone support',
+            'DNS failure retry'
         ]
     };
 };

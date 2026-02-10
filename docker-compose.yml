@@ -27,7 +27,7 @@ services:
       - backend
     networks:
       talktime_network:
-        ipv4_address: 172.19.0.10
+        ipv4_address: 172.19.0.20
     restart: unless-stopped
     deploy:
       resources:
@@ -59,6 +59,8 @@ services:
       FRONTEND_URL: https://talktime.adeafoundation.org
       CORS_ORIGINS: "https://talktime.adeafoundation.org"
       VAPID_SUBJECT: "mailto:support@talktime.app"
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       NOTIFICATION_PERSISTENCE_ENABLED: "true"
       NOTIFICATION_ANALYTICS_ENABLED: "true"
       ADMIN_SECRET_CODE: "136767"
@@ -68,6 +70,10 @@ services:
       USE_AUTH_SERVICE: ${USE_AUTH_SERVICE:-false}
       AUTH_SERVICE_URL: http://auth-service:3002
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-talktime-internal-key-change-in-production}
+      # Self-hosted coturn TURN server for WebRTC relay
+      COTURN_SECRET: ${COTURN_SECRET:-}
+      TURN_HOST: ${TURN_HOST:-62.72.3.138}
+      TURN_PORT: ${TURN_PORT:-3478}
     depends_on:
       - db
       - redis
@@ -124,6 +130,21 @@ services:
         reservations:
           cpus: '0.05'
           memory: 64M
+
+  # coturn TURN server — WebRTC relay fallback for symmetric NAT
+  coturn:
+    image: coturn/coturn:4.6.3
+    container_name: talktime_coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: -c /etc/coturn/turnserver.conf --static-auth-secret=${COTURN_SECRET:-change-this}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   # Notification Service (Microservice)
   notification-service:

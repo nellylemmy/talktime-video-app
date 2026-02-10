@@ -69,8 +69,8 @@ VAPID_PRIVATE_KEY=your_generated_private_key_here
 
 ### Step 4: Run Database Migration
 ```bash
-cd backend
-sqlite3 database.db < migrations/create_push_notification_system.sql
+# Via docker-compose (production)
+docker-compose exec db psql -U postgres -d talktime -f /migrations/create_push_notification_system.sql
 ```
 
 ### Step 5: Update Backend Routes

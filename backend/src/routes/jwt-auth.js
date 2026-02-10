@@ -32,8 +32,8 @@ router.post('/volunteer/login', async (req, res) => {
             });
         }
 
-        // Find user by email
-        const query = 'SELECT * FROM users WHERE email = $1 AND role = $2';
+        // Find user by email (case-insensitive)
+        const query = 'SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND role = $2';
         const { rows } = await pool.query(query, [email, 'volunteer']);
         const user = rows[0];
 
@@ -91,8 +91,8 @@ router.post('/volunteer/forgot-password', async (req, res) => {
             });
         }
 
-        // Find user by email
-        const query = 'SELECT id, email, full_name, security_question_1, security_question_2, security_question_3 FROM users WHERE email = $1 AND role = $2';
+        // Find user by email (case-insensitive)
+        const query = 'SELECT id, email, full_name, security_question_1, security_question_2, security_question_3 FROM users WHERE LOWER(email) = LOWER($1) AND role = $2';
         const { rows } = await pool.query(query, [email, 'volunteer']);
         const user = rows[0];
 
@@ -153,8 +153,8 @@ router.post('/volunteer/verify-security-answers', async (req, res) => {
             });
         }
 
-        // Find user with security question hashes
-        const query = 'SELECT id, email, full_name, security_answer_1_hash, security_answer_2_hash, security_answer_3_hash FROM users WHERE email = $1 AND role = $2';
+        // Find user with security question hashes (case-insensitive)
+        const query = 'SELECT id, email, full_name, security_answer_1_hash, security_answer_2_hash, security_answer_3_hash FROM users WHERE LOWER(email) = LOWER($1) AND role = $2';
         const { rows } = await pool.query(query, [email, 'volunteer']);
         const user = rows[0];
 
@@ -328,8 +328,8 @@ router.post('/volunteer/signup', async (req, res) => {
             }
         }
         
-        // Check if user already exists
-        const checkQuery = 'SELECT * FROM users WHERE email = $1';
+        // Check if user already exists (case-insensitive)
+        const checkQuery = 'SELECT * FROM users WHERE LOWER(email) = LOWER($1)';
         const { rows: existingRows } = await pool.query(checkQuery, [email]);
         const existingUser = existingRows[0];
         if (existingUser) {
@@ -488,12 +488,13 @@ router.post('/student/login', async (req, res) => {
         }
         
         // Find student by credentials using unified users table
-        // Match by full name and handle both "ADM0001" and "0001" admission number formats
+        // Match by full name (case-insensitive) and handle both "ADM0001" and "0001" admission number formats
         const trimmedAdmissionNumber = admission_number.trim();
-        const normalizedAdmissionNumber = trimmedAdmissionNumber.startsWith('ADM') ? 
+        const normalizedAdmissionNumber = trimmedAdmissionNumber.startsWith('ADM') ?
             trimmedAdmissionNumber : `ADM${trimmedAdmissionNumber}`;
-        
-        const query = 'SELECT * FROM users WHERE full_name = $1 AND username LIKE $2 AND role = $3';
+
+        // Use LOWER() for case-insensitive name matching (nelson, Nelson, NELSON all match)
+        const query = 'SELECT * FROM users WHERE LOWER(full_name) = LOWER($1) AND username LIKE $2 AND role = $3';
         const { rows } = await pool.query(query, [name.trim(), `${normalizedAdmissionNumber}%`, 'student']);
         const student = rows[0];
         if (!student) {
@@ -560,8 +561,8 @@ router.post('/admin/login', async (req, res) => {
             });
         }
         
-        // Find user by email
-        const query = 'SELECT * FROM users WHERE email = $1';
+        // Find user by email (case-insensitive)
+        const query = 'SELECT * FROM users WHERE LOWER(email) = LOWER($1)';
         const { rows } = await pool.query(query, [email]);
         const user = rows[0];
         console.log('JWT Admin login - User lookup result:', user ? { id: user.id, email: user.email, role: user.role } : 'User not found');
@@ -640,17 +641,44 @@ router.post('/admin/signup', async (req, res) => {
             });
         }
         
-        // Verify secret code
-        const expectedSecretCode = process.env.ADMIN_SECRET_CODE;
-        if (!expectedSecretCode || secret_code !== expectedSecretCode) {
+        // Verify secret code - support both single code and array of codes
+        let validCodes = [];
+
+        // Check for single code
+        if (process.env.ADMIN_SECRET_CODE) {
+            validCodes.push(process.env.ADMIN_SECRET_CODE);
+        }
+
+        // Check for multiple codes
+        if (process.env.ADMIN_SECRET_CODES) {
+            try {
+                const codes = JSON.parse(process.env.ADMIN_SECRET_CODES);
+                validCodes = validCodes.concat(codes);
+            } catch (e) {
+                console.error('Failed to parse ADMIN_SECRET_CODES:', e);
+            }
+        }
+
+        // If no codes configured, reject
+        if (validCodes.length === 0) {
+            console.error('No admin secret codes configured in environment');
+            return res.status(401).json({
+                success: false,
+                error: 'Admin signup is not configured'
+            });
+        }
+
+        // Check if provided code is valid
+        if (!validCodes.includes(secret_code)) {
+            console.log('Invalid secret code attempt:', secret_code);
             return res.status(401).json({
                 success: false,
                 error: 'Invalid secret code'
             });
         }
         
-        // Check if admin already exists
-        const checkQuery = 'SELECT * FROM users WHERE email = $1';
+        // Check if admin already exists (case-insensitive)
+        const checkQuery = 'SELECT * FROM users WHERE LOWER(email) = LOWER($1)';
         const { rows: existingRows } = await pool.query(checkQuery, [email]);
         const existingUser = existingRows[0];
         if (existingUser) {

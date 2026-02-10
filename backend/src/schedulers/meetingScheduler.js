@@ -33,7 +33,7 @@ export const startMeetingScheduler = () => {
         }
     }, {
         scheduled: true,
-        timezone: 'Africa/Nairobi' // EAT timezone for Kenyan users
+        timezone: 'UTC' // Use UTC for global timezone support - user timezones handled at display layer
     });
     
     console.log('✅ Meeting scheduler started successfully');

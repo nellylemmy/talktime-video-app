@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - TalkTime</title>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .error-code {
+            font-size: clamp(80px, 20vw, 140px);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--brand-primary, #D10100), var(--brand-secondary, #3867FF));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .error-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, rgba(209, 1, 0, 0.1), rgba(56, 103, 255, 0.1));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-icon i {
+            font-size: 28px;
+            color: var(--brand-primary, #D10100);
+        }
+
+        .error-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .error-message {
+            font-size: 15px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 280px;
+            height: 48px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffffff;
+            background-color: var(--brand-primary, #D10100);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--brand-primary-dark, #7d0000);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 280px;
+            height: 48px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--brand-primary, #D10100);
+            background: transparent;
+            border: 1.5px solid var(--brand-primary, #D10100);
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(209, 1, 0, 0.05);
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        .footer-text {
+            margin-top: 48px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        @media (min-width: 640px) {
+            .error-title {
+                font-size: 28px;
+            }
+
+            .error-message {
+                font-size: 16px;
+            }
+
+            .action-buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-map-signs"></i>
+        </div>
+        <div class="error-code">404</div>
+        <h1 class="error-title">Page Not Found</h1>
+        <p class="error-message">The page you're looking for doesn't exist or may have been moved. Let's get you back on track.</p>
+        <div class="action-buttons">
+            <a href="/volunteer/login" class="btn-primary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Login
+            </a>
+            <a href="javascript:history.back()" class="btn-secondary">
+                <i class="fas fa-undo"></i>
+                Go Back
+            </a>
+        </div>
+    </div>
+    <p class="footer-text">&copy; 2025 TalkTime by ADEA Foundation</p>
+
+    <script>
+        // If user is logged in, point the primary button to dashboard instead
+        try {
+            var token = localStorage.getItem('volunteer_talktime_access_token');
+            if (token) {
+                var btn = document.querySelector('.btn-primary');
+                btn.href = '/volunteer/dashboard/students';
+                btn.innerHTML = '<i class="fas fa-home"></i> Go to Dashboard';
+            }
+        } catch (e) {}
+    </script>
+</body>
+</html>

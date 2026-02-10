@@ -2,58 +2,432 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Notifications - TalkTime by ADEA Foundation</title>
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <meta name="description" content="View and manage your TalkTime notifications">
-    <link rel="canonical" href="/volunteer/notifications.html">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Main Styles -->
-    <link rel="stylesheet" href="css/main.css" />
-    
-    <!-- Nav Loader for consistent navigation -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
-    
-    <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
-    
-    <!-- Socket.IO for real-time notifications -->
-        <!-- Socket.IO Client -->
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
-    
-    <!-- Google Fonts: Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/notifications">
+
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive-framework.css">
+    <link rel="stylesheet" href="css/responsive-forms.css">
+    <link rel="stylesheet" href="css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="css/volunteer-dashboard.css">
+
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="js/dashboard-nav.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
     
     <style>
+        /* Section heading - flat color, no gradient */
+        .section-heading {
+            color: #111827;
+            font-weight: 700;
+        }
+
+        /* Page background override - match student design */
+        .content-area {
+            background: transparent;
+        }
+
+        /* Remove white card wrapper - let cards sit on page background */
+        .notifications-wrapper {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        /* ==========================================
+           NOTIFICATION CARDS - Student Design Match
+           Flat design with blue-accented unread states
+           ========================================== */
+
+        /* Notification Item - Flat Card Design */
         .notification-item {
-            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0 0 8px 0;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            width: 100%;
         }
-        .notification-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        .notification-item:last-of-type {
+            margin-bottom: 0;
         }
-        .unread {
-            border-left: 4px solid #3b82f6;
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+
+        .notification-item:active {
+            background: #f3f4f6;
         }
-        .priority-high {
-            border-left-color: #ef4444;
+
+        @media (min-width: 768px) {
+            .notification-item {
+                padding: 16px;
+            }
+            .notification-item:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                background: #fafafa;
+            }
         }
-        .priority-medium {
-            border-left-color: #f59e0b;
+
+        /* Read State - Clean white background */
+        .notification-item.read {
+            border-color: #f3f4f6;
+            background: #ffffff;
         }
-        .priority-low {
-            border-left-color: #10b981;
+
+        .notification-item.read .notif-title {
+            color: #374151;
         }
+
+        .notification-item.read .notif-message {
+            color: #6b7280;
+        }
+
+        /* Unread State - Blue accent (matches student design) */
+        .notification-item.unread {
+            border: 1px solid #bfdbfe;
+            background: rgba(239, 246, 255, 0.5);
+        }
+
+        .notification-item.unread .notif-title {
+            color: #111827;
+        }
+
+        .notification-item.unread .notif-message {
+            color: #374151;
+        }
+
+        /* Type Icon - Circular (matches student design) */
+        .notif-type-icon {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .notif-type-icon.meeting {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .notif-type-icon.reminder {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .notif-type-icon.system {
+            background: #f3e8ff;
+            color: #9333ea;
+        }
+        .notif-type-icon.call {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .notif-type-icon.canceled {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .notif-type-icon.rescheduled {
+            background: #ffedd5;
+            color: #ea580c;
+        }
+        .notif-type-icon.message {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        /* Unread Indicator - Blue dot on icon (matches student) */
+        .notif-unread-indicator {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 12px;
+            height: 12px;
+            background: #3b82f6;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+        }
+
+        /* Content */
+        .notif-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Title row with "New" badge */
+        .notif-title-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .notif-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.4;
+            word-break: break-word;
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* "New" Badge for unread (matches student design) */
+        .notif-new-badge {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            flex-shrink: 0;
+        }
+
+        .notif-message {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .notif-time {
+            font-size: 12px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .notif-time i {
+            font-size: 11px;
+        }
+
+        /* Actions - Hidden by default, show on hover (desktop) */
+        .notif-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            opacity: 1;
+            transition: opacity 0.15s ease;
+        }
+
+        @media (min-width: 768px) {
+            .notif-actions {
+                opacity: 0;
+            }
+            .notification-item:hover .notif-actions {
+                opacity: 1;
+            }
+        }
+
+        .notif-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .notif-action-btn:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .notif-action-btn.delete:hover {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            padding: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filter-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            .filter-pills {
+                padding-bottom: 8px;
+            }
+        }
+
+        .filter-pill {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .filter-pill:hover {
+            border-color: #d1d5db;
+            background: #f9fafb;
+        }
+
+        .filter-pill.active {
+            background: var(--brand-primary, #D10100);
+            border-color: var(--brand-primary, #D10100);
+            color: white;
+        }
+
+        .filter-pill-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            margin-left: 6px;
+            border-radius: 9px;
+            background: rgba(0,0,0,0.1);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .filter-pill.active .filter-pill-count {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Skeleton Loading - Matches card design */
+        .notif-skeleton {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            margin: 0 0 8px 0;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #f3f4f6;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .notif-skeleton {
+                padding: 16px;
+            }
+        }
+
+        .notif-skeleton-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        .notif-skeleton-content {
+            flex: 1;
+        }
+
+        .notif-skeleton-line {
+            height: 14px;
+            border-radius: 7px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+        }
+
+        .notif-skeleton-line:last-child {
+            width: 50%;
+            margin-bottom: 0;
+        }
+
+        @keyframes skeleton-pulse {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Date Group Header - Clean separator for card layout */
+        .notif-date-group {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 16px 0 8px;
+            background: transparent;
+        }
+
+        .notif-date-group:first-child {
+            padding-top: 0;
+        }
+
+        /* Empty State */
+        .notif-empty {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .notif-empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #9ca3af;
+        }
+
+        /* Legacy spinner support */
         .loading {
             animation: spin 1s linear infinite;
         }
@@ -63,100 +437,87 @@
         }
     </style>
 </head>
-<body class="gradient-bg text-gray-800 min-h-screen">
-    <!-- Background Blobs -->
-    <div class="blob w-96 h-96 bg-purple-300 top-[-10rem] left-[-10rem]"></div>
-    <div class="blob w-96 h-96 bg-blue-300 bottom-[-5rem] right-[-10rem]"></div>
-    <div class="blob w-72 h-72 bg-pink-300 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
+<body class="dashboard-page" style="opacity:0">
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
 
-    <!-- Navigation will be loaded by nav-loader.js -->
-    <div id="nav-container"></div>
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
 
-    <!-- Main Content -->
-    <div class="pt-24 pb-12 px-4">
-        <div class="container mx-auto max-w-6xl py-20">
-            <!-- Page Header -->
-            <div class="glass-card rounded-2xl p-8 mb-8 fade-in-up">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                            <i class="fas fa-bell text-blue-500 mr-3"></i>
-                            Notifications
-                        </h1>
-                        <p class="text-gray-600">Stay updated with your TalkTime activities</p>
-                    </div>
-                    <div class="mt-4 sm:mt-0 flex space-x-3">
-                        <button id="mark-all-read-btn" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Mark All Read
-                        </button>
-                        <button id="refresh-btn" class="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all">
-                            <svg id="refresh-icon" class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="glass-card rounded-2xl p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select id="status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all">All</option>
-                        <option value="unread">Unread</option>
-                        <option value="read">Read</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="priority-filter" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                    <select id="priority-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all">All</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="type-filter" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select id="type-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all">All</option>
-                        <option value="meeting">Meeting</option>
-                        <option value="reminder">Reminder</option>
-                        <option value="system">System</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button id="clear-filters-btn" class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Clear Filters
+    <main class="content-area">
+        <div class="w-full">
+            <!-- Page Header - Stacked layout for 600px width -->
+            <div class="flex flex-col gap-4 mb-6">
+                <h1 class="text-2xl font-bold section-heading">
+                    <i class="fas fa-bell mr-2"></i>Notifications
+                </h1>
+                <div class="flex flex-wrap gap-2">
+                    <button id="mark-all-read-btn" class="flex-1 min-w-0 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-check-double mr-2 text-gray-500"></i>
+                        <span class="truncate">Mark All Read</span>
+                    </button>
+                    <button id="refresh-btn" class="flex-1 min-w-0 inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-brand-primary hover:opacity-90 transition-all">
+                        <i id="refresh-icon" class="fas fa-sync-alt mr-2"></i>
+                        <span class="truncate">Refresh</span>
                     </button>
                 </div>
             </div>
-        </div>
 
-            <!-- Notifications List -->
-            <div class="glass-card rounded-2xl">
+            <!-- Filter Pills -->
+            <div class="filter-pills mb-6" id="filter-tabs">
+                <button class="filter-pill active" data-filter="all">
+                    All<span class="filter-pill-count" id="count-all">0</span>
+                </button>
+                <button class="filter-pill" data-filter="unread">
+                    Unread<span class="filter-pill-count" id="count-unread">0</span>
+                </button>
+                <button class="filter-pill" data-filter="meeting">
+                    Meetings<span class="filter-pill-count" id="count-meeting">0</span>
+                </button>
+                <button class="filter-pill" data-filter="reminder">
+                    Reminders<span class="filter-pill-count" id="count-reminder">0</span>
+                </button>
+                <button class="filter-pill" data-filter="system">
+                    System<span class="filter-pill-count" id="count-system">0</span>
+                </button>
+            </div>
+
+            <!-- Notifications List - No wrapper, cards sit on page background -->
+            <div class="notifications-wrapper">
             <div id="notifications-container">
-                <!-- Loading State -->
-                <div id="loading-state" class="p-8 text-center">
-                    <svg class="loading w-8 h-8 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    <p class="mt-2 text-gray-600">Loading notifications...</p>
+                <!-- Loading State - Skeleton (hidden initially, shown by JS) -->
+                <div id="loading-state" class="hidden">
+                    <div class="notif-skeleton">
+                        <div class="notif-skeleton-icon"></div>
+                        <div class="notif-skeleton-content">
+                            <div class="notif-skeleton-line"></div>
+                            <div class="notif-skeleton-line"></div>
+                        </div>
+                    </div>
+                    <div class="notif-skeleton">
+                        <div class="notif-skeleton-icon"></div>
+                        <div class="notif-skeleton-content">
+                            <div class="notif-skeleton-line"></div>
+                            <div class="notif-skeleton-line"></div>
+                        </div>
+                    </div>
+                    <div class="notif-skeleton">
+                        <div class="notif-skeleton-icon"></div>
+                        <div class="notif-skeleton-content">
+                            <div class="notif-skeleton-line"></div>
+                            <div class="notif-skeleton-line"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Empty State -->
-                <div id="empty-state" class="hidden p-8 text-center">
-                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11.293 7.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4z"></path>
-                    </svg>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-                    <p class="text-gray-600">You're all caught up! Check back later for new notifications.</p>
+                <div id="empty-state" class="hidden notif-empty">
+                    <div class="notif-empty-icon">
+                        <i class="fas fa-bell-slash"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">All caught up!</h3>
+                    <p class="text-gray-500 text-sm">No notifications right now. We'll let you know when something new arrives.</p>
                 </div>
 
                 <!-- Notifications will be populated here -->
@@ -164,16 +525,16 @@
             </div>
 
             <!-- Pagination -->
-            <div id="pagination-container" class="hidden border-t border-gray-200 px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-700">
+            <div id="pagination-container" class="hidden border-t border-gray-200 py-4 mt-4">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-sm text-gray-700 text-center sm:text-left">
                         Showing <span id="pagination-info"></span>
                     </div>
-                    <div class="flex space-x-2">
-                        <button id="prev-page-btn" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="prev-page-btn" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                             Previous
                         </button>
-                        <button id="next-page-btn" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="next-page-btn" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                             Next
                         </button>
                     </div>
@@ -181,15 +542,13 @@
             </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
 
     <script src="/shared/js/realtime-notifications.js"></script>
     <script>
-        // Real-time notifications will be initialized by nav-loader
-        
         let currentPage = 1;
         let totalPages = 1;
         let currentFilters = {
@@ -200,20 +559,23 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait for nav-loader to initialize, then load notifications
+            document.body.classList.add('page-ready');
+            // Initialize TalkTimeAuth if not already done
+            if (!window.TalkTimeAuth && typeof TalkTimeJWTAuth !== 'undefined') {
+                window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+            }
+
+            // Short delay to ensure auth is ready
             setTimeout(async () => {
-                if (window.TalkTimeAuth) {
+                if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
                     await loadNotifications();
                     setupEventListeners();
                 } else {
-                    console.error('TalkTimeAuth not available after nav-loader initialization');
+                    console.error('User not authenticated');
+                    window.location.href = '/volunteer/login';
                 }
-            }, 2000); // Increased wait time
+            }, 500);
         });
-
-        // Real-time notifications handled by nav-loader
-
-        // Authentication handled by nav-loader
 
         async function loadNotifications() {
             try {
@@ -234,7 +596,8 @@
                 const data = await response.json();
                 displayNotifications(data.notifications);
                 updatePagination(data.pagination);
-                updateUnreadCount(data.unread_count);
+                // Handle both field names (unreadCount from notification-service, unread_count from backend)
+                updateUnreadCount(data.unreadCount || data.unread_count || 0);
                 
             } catch (error) {
                 console.error('Error loading notifications:', error);
@@ -244,10 +607,23 @@
             }
         }
 
+        // Store all notifications for client-side filtering
+        let allNotifications = [];
+
         function displayNotifications(notifications) {
             const container = document.getElementById('notifications-list');
             const emptyState = document.getElementById('empty-state');
-            
+            const loadingState = document.getElementById('loading-state');
+
+            // Hide loading state immediately when displaying
+            if (loadingState) loadingState.classList.add('hidden');
+
+            // Store for filtering
+            allNotifications = notifications || [];
+
+            // Update filter counts
+            updateFilterCounts(allNotifications);
+
             if (!notifications || notifications.length === 0) {
                 container.innerHTML = '';
                 emptyState.classList.remove('hidden');
@@ -255,53 +631,144 @@
             }
 
             emptyState.classList.add('hidden');
-            
-            container.innerHTML = notifications.map(notification => `
-                <div class="notification-item ${!notification.is_read ? 'unread' : ''} priority-${notification.priority} border-l-4 p-6 border-b border-gray-200 last:border-b-0" data-id="${notification.id}">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(notification.priority)}">
-                                    ${notification.priority}
-                                </span>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadgeClass(notification.type)}">
-                                    ${notification.type}
-                                </span>
-                                ${!notification.is_read ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Unread</span>' : ''}
+
+            // Group by date
+            const grouped = groupByDate(notifications);
+            let html = '';
+
+            const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older'];
+            groupOrder.forEach(groupName => {
+                if (!grouped[groupName] || grouped[groupName].length === 0) return;
+
+                html += `<div class="notif-date-group">${groupName}</div>`;
+
+                grouped[groupName].forEach(notification => {
+                    const typeIcon = getTypeIcon(notification.type);
+                    const isUnread = !notification.is_read;
+                    const stateClass = isUnread ? 'unread' : 'read';
+
+                    html += `
+                        <div class="notification-item ${stateClass}" data-id="${notification.id}">
+                            <div class="notif-type-icon ${typeIcon.class}">
+                                <i class="fas ${typeIcon.icon}"></i>
+                                ${isUnread ? '<span class="notif-unread-indicator"></span>' : ''}
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${notification.title}</h3>
-                            <p class="text-gray-600 mb-3">${notification.message}</p>
-                            <p class="text-sm text-gray-500">${formatDate(notification.created_at)}</p>
+                            <div class="notif-content">
+                                <div class="notif-title-row">
+                                    <div class="notif-title">${escapeHtml(notification.title || 'Notification')}</div>
+                                    ${isUnread ? '<span class="notif-new-badge">New</span>' : ''}
+                                </div>
+                                <div class="notif-message">${escapeHtml(notification.message || '')}</div>
+                                <div class="notif-time">
+                                    <i class="fas fa-clock"></i>
+                                    ${formatDate(notification.created_at)}
+                                </div>
+                            </div>
+                            <div class="notif-actions">
+                                <button class="notif-action-btn delete delete-btn" data-id="${notification.id}" title="Delete">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2 ml-4">
-                            ${!notification.is_read ? `<button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium" data-id="${notification.id}">Mark as Read</button>` : ''}
-                            <button class="delete-btn text-red-600 hover:text-red-800" data-id="${notification.id}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                    `;
+                });
+            });
+
+            container.innerHTML = html;
         }
 
-        function getPriorityBadgeClass(priority) {
-            switch (priority) {
-                case 'high': return 'bg-red-100 text-red-800';
-                case 'medium': return 'bg-yellow-100 text-yellow-800';
-                case 'low': return 'bg-green-100 text-green-800';
-                default: return 'bg-gray-100 text-gray-800';
-            }
+        function groupByDate(notifications) {
+            const groups = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Older': [] };
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today - 86400000);
+            const weekAgo = new Date(today - 7 * 86400000);
+
+            notifications.forEach(n => {
+                const date = new Date(n.created_at);
+                if (date >= today) {
+                    groups['Today'].push(n);
+                } else if (date >= yesterday) {
+                    groups['Yesterday'].push(n);
+                } else if (date >= weekAgo) {
+                    groups['This Week'].push(n);
+                } else {
+                    groups['Older'].push(n);
+                }
+            });
+
+            return groups;
         }
 
-        function getTypeBadgeClass(type) {
-            switch (type) {
-                case 'meeting': return 'bg-blue-100 text-blue-800';
-                case 'reminder': return 'bg-purple-100 text-purple-800';
-                case 'system': return 'bg-indigo-100 text-indigo-800';
-                default: return 'bg-gray-100 text-gray-800';
+        function getTypeIcon(type) {
+            if (!type) return { icon: 'fa-bell', class: 'system' };
+            type = type.toLowerCase();
+
+            // Canceled meetings - red
+            if (type.includes('cancel')) {
+                return { icon: 'fa-calendar-times', class: 'canceled' };
             }
+            // Rescheduled meetings - orange
+            if (type.includes('reschedul')) {
+                return { icon: 'fa-calendar-alt', class: 'rescheduled' };
+            }
+            // Messages - blue
+            if (type.includes('message')) {
+                return { icon: 'fa-comment-dots', class: 'message' };
+            }
+            // Missed calls - amber (check before generic 'call')
+            if (type.includes('missed')) {
+                return { icon: 'fa-phone-slash', class: 'rescheduled' }; // Use orange/amber style
+            }
+            // Scheduled meetings - green
+            if (type.includes('scheduled') || type.includes('meeting')) {
+                return { icon: 'fa-calendar-check', class: 'meeting' };
+            }
+            // Instant calls - green
+            if (type.includes('call') || type.includes('instant')) {
+                return { icon: 'fa-phone-alt', class: 'call' };
+            }
+            // Reminders - blue
+            if (type.includes('reminder')) {
+                return { icon: 'fa-clock', class: 'reminder' };
+            }
+            // System/default - purple
+            return { icon: 'fa-bullhorn', class: 'system' };
+        }
+
+        function getNotifCategory(type) {
+            if (!type) return 'system';
+            type = type.toLowerCase();
+            if (type.includes('message')) return 'message';
+            if (type.includes('meeting') || type.includes('call') || type.includes('scheduled')) return 'meeting';
+            if (type.includes('reminder')) return 'reminder';
+            return 'system';
+        }
+
+        function updateFilterCounts(notifications) {
+            const counts = {
+                all: notifications.length,
+                unread: notifications.filter(n => !n.is_read).length,
+                meeting: notifications.filter(n => getNotifCategory(n.type) === 'meeting').length,
+                reminder: notifications.filter(n => getNotifCategory(n.type) === 'reminder').length,
+                system: notifications.filter(n => getNotifCategory(n.type) === 'system').length
+            };
+
+            document.getElementById('count-all').textContent = counts.all;
+            document.getElementById('count-unread').textContent = counts.unread;
+            document.getElementById('count-meeting').textContent = counts.meeting;
+            document.getElementById('count-reminder').textContent = counts.reminder;
+            document.getElementById('count-system').textContent = counts.system;
+
+            // Also update the nav badge to keep it in sync
+            updateUnreadCount(counts.unread);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function updatePagination(pagination) {
@@ -310,51 +777,131 @@
             const prevBtn = document.getElementById('prev-page-btn');
             const nextBtn = document.getElementById('next-page-btn');
 
-            if (pagination.total_pages <= 1) {
+            // Handle missing or invalid pagination data
+            if (!pagination || !pagination.total_pages || pagination.total_pages <= 1) {
                 container.classList.add('hidden');
                 return;
             }
 
             container.classList.remove('hidden');
-            totalPages = pagination.total_pages;
-            
-            const start = ((pagination.current_page - 1) * pagination.per_page) + 1;
-            const end = Math.min(start + pagination.per_page - 1, pagination.total_count);
-            
-            info.textContent = `${start}-${end} of ${pagination.total_count} notifications`;
-            
+            totalPages = pagination.total_pages || 1;
+
+            const currentPage = pagination.current_page || 1;
+            const perPage = pagination.per_page || 20;
+            const totalCount = pagination.total_count || 0;
+
+            const start = ((currentPage - 1) * perPage) + 1;
+            const end = Math.min(start + perPage - 1, totalCount);
+
+            info.textContent = `${start}-${end} of ${totalCount} notifications`;
+
             prevBtn.disabled = !pagination.has_prev_page;
             nextBtn.disabled = !pagination.has_next_page;
         }
 
         function updateUnreadCount(count) {
-            // Update notification badge in navigation if it exists
-            const badge = document.getElementById('notification-badge');
-            if (badge) {
-                badge.textContent = count > 0 ? count : '';
-                badge.classList.toggle('hidden', count === 0);
+            // Update all notification badges via the dashboard nav component
+            if (window.VolunteerDashboardNav) {
+                window.VolunteerDashboardNav.updateNotificationBadge(count);
+            } else {
+                // Fallback: Update header badge directly
+                const badge = document.getElementById('notification-badge');
+                if (badge) {
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
             }
         }
 
+        let currentPillFilter = 'all';
+
         function setupEventListeners() {
-            // Filter changes
-            ['status-filter', 'priority-filter', 'type-filter'].forEach(id => {
-                document.getElementById(id).addEventListener('change', (e) => {
-                    currentFilters[id.replace('-filter', '')] = e.target.value;
-                    currentPage = 1;
-                    loadNotifications();
+            // Pill filter clicks
+            document.querySelectorAll('.filter-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+
+                    // Apply filter
+                    currentPillFilter = pill.dataset.filter;
+                    applyClientSideFilter();
                 });
             });
 
-            // Clear filters
-            document.getElementById('clear-filters-btn').addEventListener('click', () => {
-                currentFilters = { status: 'all', priority: 'all', type: 'all' };
-                document.getElementById('status-filter').value = 'all';
-                document.getElementById('priority-filter').value = 'all';
-                document.getElementById('type-filter').value = 'all';
-                currentPage = 1;
-                loadNotifications();
-            });
+            function applyClientSideFilter() {
+                let filtered = allNotifications;
+
+                if (currentPillFilter === 'unread') {
+                    filtered = allNotifications.filter(n => !n.is_read);
+                } else if (currentPillFilter === 'meeting') {
+                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'meeting');
+                } else if (currentPillFilter === 'reminder') {
+                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'reminder');
+                } else if (currentPillFilter === 'system') {
+                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'system');
+                }
+
+                // Re-render with filtered data
+                const container = document.getElementById('notifications-list');
+                const emptyState = document.getElementById('empty-state');
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+
+                // Group and render
+                const grouped = groupByDate(filtered);
+                let html = '';
+
+                const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older'];
+                groupOrder.forEach(groupName => {
+                    if (!grouped[groupName] || grouped[groupName].length === 0) return;
+
+                    html += `<div class="notif-date-group">${groupName}</div>`;
+
+                    grouped[groupName].forEach(notification => {
+                        const typeIcon = getTypeIcon(notification.type);
+                        const isUnread = !notification.is_read;
+                        const stateClass = isUnread ? 'unread' : 'read';
+
+                        html += `
+                            <div class="notification-item ${stateClass}" data-id="${notification.id}">
+                                <div class="notif-type-icon ${typeIcon.class}">
+                                    <i class="fas ${typeIcon.icon}"></i>
+                                    ${isUnread ? '<span class="notif-unread-indicator"></span>' : ''}
+                                </div>
+                                <div class="notif-content">
+                                    <div class="notif-title-row">
+                                        <div class="notif-title">${escapeHtml(notification.title || 'Notification')}</div>
+                                        ${isUnread ? '<span class="notif-new-badge">New</span>' : ''}
+                                    </div>
+                                    <div class="notif-message">${escapeHtml(notification.message || '')}</div>
+                                    <div class="notif-time">
+                                        <i class="fas fa-clock"></i>
+                                        ${formatDate(notification.created_at)}
+                                    </div>
+                                </div>
+                                <div class="notif-actions">
+                                    <button class="notif-action-btn delete delete-btn" data-id="${notification.id}" title="Delete">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+
+                container.innerHTML = html;
+            }
 
             // Pagination
             document.getElementById('prev-page-btn').addEventListener('click', () => {
@@ -398,41 +945,24 @@
                 });
             });
 
-            // Individual notification actions
+            // Individual notification actions (delegated)
             document.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('mark-read-btn') || e.target.closest('.mark-read-btn')) {
-                    const btn = e.target.classList.contains('mark-read-btn') ? e.target : e.target.closest('.mark-read-btn');
-                    const id = btn.dataset.id;
-                    await markAsRead(id);
-                } else if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-                    const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.closest('.delete-btn');
-                    const id = btn.dataset.id;
-                    await deleteNotification(id);
+                const markReadBtn = e.target.closest('.mark-read-btn');
+                const deleteBtn = e.target.closest('.delete-btn');
+                const notifItem = e.target.closest('.notification-item');
+
+                if (markReadBtn) {
+                    e.stopPropagation();
+                    await markAsRead(markReadBtn.dataset.id);
+                } else if (deleteBtn) {
+                    e.stopPropagation();
+                    await deleteNotification(deleteBtn.dataset.id);
+                } else if (notifItem && notifItem.classList.contains('unread')) {
+                    // Mark as read when clicking an unread notification
+                    const id = notifItem.dataset.id;
+                    if (id) await markAsRead(id);
                 }
             });
-
-            // Profile dropdown
-            setupProfileDropdown();
-
-            // Logout handlers
-            const logoutLink = document.getElementById('logout-link');
-            const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-            
-            if (logoutLink) {
-                logoutLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.TalkTimeAuth.logout();
-                    window.location.href = '/volunteer/login.html';
-                });
-            }
-            
-            if (mobileLogoutBtn) {
-                mobileLogoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.TalkTimeAuth.logout();
-                    window.location.href = '/volunteer/login.html';
-                });
-            }
         }
 
         async function markAsRead(id) {
@@ -452,7 +982,11 @@
         }
 
         async function deleteNotification(id) {
-            if (!confirm('Are you sure you want to delete this notification?')) {
+            const confirmed = window.showConfirmation
+                ? await window.showConfirmation('Are you sure you want to delete this notification?', { title: 'Delete Notification', confirmText: 'Delete', cancelText: 'Cancel', type: 'warning' })
+                : confirm('Are you sure you want to delete this notification?');
+
+            if (!confirmed) {
                 return;
             }
 
@@ -471,26 +1005,20 @@
             }
         }
 
-        function setupProfileDropdown() {
-            const profileBtn = document.getElementById('profile-btn');
-            const dropdown = document.getElementById('profile-dropdown');
-
-            profileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-                dropdown.classList.toggle('opacity-0');
-                dropdown.classList.toggle('-translate-y-2');
-            });
-
-            document.addEventListener('click', () => {
-                dropdown.classList.add('hidden');
-                dropdown.classList.add('opacity-0');
-                dropdown.classList.add('-translate-y-2');
-            });
-        }
-
         function showLoading(show) {
-            document.getElementById('loading-state').classList.toggle('hidden', !show);
+            const loadingState = document.getElementById('loading-state');
+            const notificationsList = document.getElementById('notifications-list');
+            const emptyState = document.getElementById('empty-state');
+
+            if (show) {
+                // Show skeleton, hide content
+                loadingState.classList.remove('hidden');
+                if (notificationsList) notificationsList.innerHTML = '';
+                if (emptyState) emptyState.classList.add('hidden');
+            } else {
+                // Hide skeleton
+                loadingState.classList.add('hidden');
+            }
         }
 
         function showToast(message, type = 'info') {
@@ -528,12 +1056,11 @@
         }
     </script>
 
-    <!-- Initialize Navigation -->
+    <!-- Initialize TalkTimeAuth -->
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize navigation with authentication requirement
-            await VolunteerNavLoader.init(true);
-        });
+        if (typeof TalkTimeJWTAuth !== 'undefined') {
+            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+        }
     </script>
 </body>
 </html>

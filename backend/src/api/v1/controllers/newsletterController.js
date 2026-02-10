@@ -11,7 +11,7 @@ class NewsletterController {
     async subscribe(req, res) {
         try {
             // Basic validation
-            const { email, role = 'visitor' } = req.body;
+            const { email, name, role = 'visitor' } = req.body;
             
             if (!email || typeof email !== 'string') {
                 return res.status(400).json({
@@ -35,13 +35,20 @@ class NewsletterController {
                 });
             }
 
-            const { 
-                interests = [], 
-                source = 'widget', 
-                placement = 'floating', 
+            const {
+                interests = [],
+                source = 'widget',
+                placement = 'floating',
                 page,
                 metadata = {}
             } = req.body;
+
+            // Add name to metadata if provided
+            const subscriberMetadata = {
+                ...metadata,
+                name: name || metadata.name || null,
+                subscribed_via_auth: !!req.headers.authorization
+            };
 
             const clientIp = req.ip || req.connection.remoteAddress;
             const userAgent = req.get('User-Agent');
@@ -103,7 +110,7 @@ class NewsletterController {
                             userAgent,
                             verificationToken,
                             unsubscribeToken,
-                            JSON.stringify(metadata),
+                            JSON.stringify(subscriberMetadata),
                             email
                         ]
                     );
@@ -129,7 +136,7 @@ class NewsletterController {
                             userAgent,
                             verificationToken,
                             unsubscribeToken,
-                            JSON.stringify(metadata)
+                            JSON.stringify(subscriberMetadata)
                         ]
                     );
                     

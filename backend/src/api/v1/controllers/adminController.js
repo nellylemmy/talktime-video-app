@@ -1,6 +1,9 @@
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import pool from '../../../config/database.js';
+import configService from '../../../services/configService.js';
+import { capitalizeName } from '../../../utils/nameUtils.js';
+import { generateAccessToken } from '../../../utils/jwt.js';
 
 dotenv.config();
 
@@ -94,7 +97,7 @@ export const login = async (req, res) => {
         }
 
         // Find user by email using actual database schema
-        const userQuery = 'SELECT id, name, email, password_hash, role FROM users WHERE email = $1';
+        const userQuery = 'SELECT id, full_name, email, password_hash, role FROM users WHERE email = $1';
         const userResult = await pool.query(userQuery, [email]);
         if (userResult.rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -133,22 +136,21 @@ export const login = async (req, res) => {
         });
         console.log('🧹 Cleared all conflicting jwt_auth cookies for admin login');
 
-        // Generate JWT token for admin
-        const token = jwt.sign(
-            {
-                id: user.id,
-                fullName: user.full_name,
-                email: user.email,
-                role: user.role
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Generate JWT token for admin using shared utility (includes audience/issuer)
+        const token = generateAccessToken({
+            id: user.id,
+            fullName: user.full_name,
+            email: user.email,
+            role: user.role,
+            adminId: user.id,
+            permissions: ['all']
+        });
 
-        // Return success
+        // Return success with token
         res.status(200).json({
             success: true,
             message: 'Admin login successful',
+            token,
             user: {
                 id: user.id,
                 name: user.full_name,
@@ -362,33 +364,35 @@ export const getAllMeetings = async (req, res) => {
 export const getAllStudents = async (req, res) => {
     try {
         const query = `
-            SELECT 
+            SELECT
                 id,
                 full_name as "fullName",
-                username as "admissionNumber",
-                email,
+                admission_number as "admissionNumber",
                 age,
                 gender,
-                profile_image as "profilePictureUrl",
+                bio,
+                story,
+                photo_url as "profilePictureUrl",
+                gallery,
+                is_available as "isAvailable",
                 created_at as "createdAt"
-            FROM users 
-            WHERE role = 'student'
+            FROM students
             ORDER BY created_at DESC
         `;
-        
+
         const result = await pool.query(query);
-        
+
         res.json({
             success: true,
             students: result.rows,
             total: result.rows.length
         });
-        
+
     } catch (error) {
         console.error('Error fetching students:', error);
-        res.status(500).json({ 
-            error: 'Failed to fetch students', 
-            details: error.message 
+        res.status(500).json({
+            error: 'Failed to fetch students',
+            details: error.message
         });
     }
 };
@@ -398,16 +402,16 @@ export const getAllStudents = async (req, res) => {
  */
 export const createStudent = async (req, res) => {
     try {
-        const { 
-            firstName, 
-            lastName, 
-            admissionNumber, 
-            age, 
-            gender, 
-            bio, 
-            story, 
-            studentStory, 
-            profilePictureUrl, 
+        const {
+            firstName,
+            lastName,
+            admissionNumber,
+            age,
+            gender,
+            bio,
+            story,
+            studentStory,
+            profilePictureUrl,
             photoUrl,
             galleryUrls,
             gallery,
@@ -417,28 +421,41 @@ export const createStudent = async (req, res) => {
             learningGoals,
             preferredTopics
         } = req.body;
-        
+
         // Validate required fields
         if (!firstName || !lastName || !admissionNumber) {
-            return res.status(400).json({ 
-                error: 'First name, last name, and admission number are required' 
+            return res.status(400).json({
+                error: 'First name, last name, and admission number are required'
             });
         }
-        
-        const fullName = `${firstName} ${lastName}`;
-        
-        // Check if admission number already exists
-        const existingStudent = await pool.query(
-            'SELECT id FROM users WHERE username = $1 AND role = $2',
-            [admissionNumber, 'student']
+
+        // Capitalize the name properly
+        const fullName = capitalizeName(`${firstName} ${lastName}`);
+
+        // Check if admission number already exists in users table
+        const existingUser = await pool.query(
+            'SELECT id FROM users WHERE LOWER(username) LIKE LOWER($1) AND role = $2',
+            [`${admissionNumber}%`, 'student']
         );
-        
-        if (existingStudent.rows.length > 0) {
-            return res.status(400).json({ 
-                error: 'A student with this admission number already exists' 
+
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({
+                error: 'A student with this admission number already exists'
             });
         }
-        
+
+        // Also check students table
+        const existingStudent = await pool.query(
+            'SELECT id FROM students WHERE LOWER(admission_number) LIKE LOWER($1)',
+            [`${admissionNumber}%`]
+        );
+
+        if (existingStudent.rows.length > 0) {
+            return res.status(400).json({
+                error: 'A student with this admission number already exists'
+            });
+        }
+
         // Process gallery URLs - handle both string and array formats
         let galleryImages = [];
         if (gallery || galleryUrls) {
@@ -451,70 +468,93 @@ export const createStudent = async (req, res) => {
             }
         }
 
-        const query = `
+        // Generate username from admission number
+        const username = `${admissionNumber}-${fullName.toLowerCase().replace(/\s+/g, '-')}`;
+        const email = `${fullName.toLowerCase().replace(/\s+/g, '.')}@talktime.local`;
+
+        // Step 1: Create user account in users table (required for login)
+        const userQuery = `
             INSERT INTO users (
-                full_name, 
-                username, 
-                email, 
-                role, 
-                age, 
-                gender, 
-                profile_image,
-                bio,
-                story,
-                location,
-                interests,
-                gallery_images,
-                english_level,
-                learning_goals,
-                preferred_topics,
-                password_hash
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-            RETURNING 
-                id,
-                full_name as "fullName",
-                username as "admissionNumber",
+                username,
+                full_name,
                 email,
+                password_hash,
+                role,
                 age,
                 gender,
-                profile_image as "profilePictureUrl",
+                is_approved,
+                created_at,
+                updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            RETURNING id
+        `;
+
+        const userResult = await pool.query(userQuery, [
+            username,                    // $1 - username (ADM0001-john-doe)
+            fullName,                    // $2 - full_name
+            email,                       // $3 - email (placeholder)
+            'student-no-password',       // $4 - password_hash (students login by name, not password)
+            'student',                   // $5 - role
+            age || null,                 // $6 - age
+            gender || null,              // $7 - gender
+            true                         // $8 - is_approved
+        ]);
+
+        const userId = userResult.rows[0].id;
+
+        // Step 2: Create student profile in students table
+        const studentQuery = `
+            INSERT INTO students (
+                full_name,
+                admission_number,
+                age,
+                gender,
                 bio,
                 story,
-                location,
-                interests,
-                created_at as "createdAt"
+                photo_url,
+                gallery,
+                is_available,
+                user_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING
+                id,
+                full_name as "fullName",
+                admission_number as "admissionNumber",
+                age,
+                gender,
+                photo_url as "profilePictureUrl",
+                bio,
+                story,
+                gallery,
+                is_available as "isAvailable",
+                created_at as "createdAt",
+                user_id as "userId"
         `;
-        
-        const result = await pool.query(query, [
+
+        const result = await pool.query(studentQuery, [
             fullName,                                           // $1
-            admissionNumber,                                    // $2
-            `${admissionNumber}@talktime.student`,             // $3 - Generate email from admission number
-            'student',                                         // $4
-            age || null,                                       // $5
-            gender || null,                                    // $6
-            profilePictureUrl || photoUrl || null,            // $7 - profile_image
-            bio || null,                                       // $8
-            story || studentStory || null,                     // $9
-            location || 'Kenya',                               // $10
-            interests || 'English conversation practice',      // $11
-            galleryImages.length > 0 ? JSON.stringify(galleryImages) : null, // $12 - gallery_images JSON array
-            englishLevel || 'Beginner',                       // $13
-            learningGoals || 'Improve English conversation skills', // $14
-            preferredTopics || 'General conversation',        // $15
-            'defaultpassword'                                  // $16 - Temporary password hash for students
+            username,                                           // $2 - admission_number (same as username)
+            age || null,                                       // $3
+            gender || null,                                    // $4
+            bio || null,                                       // $5
+            story || studentStory || null,                     // $6
+            profilePictureUrl || photoUrl || null,            // $7 - photo_url
+            galleryImages.length > 0 ? galleryImages : null,  // $8 - gallery array
+            true,                                              // $9 - is_available
+            userId                                             // $10 - user_id (link to users table)
         ]);
-        
+
         res.status(201).json({
             success: true,
             student: result.rows[0],
             message: 'Student created successfully'
         });
-        
+
     } catch (error) {
         console.error('Error creating student:', error);
-        res.status(500).json({ 
-            error: 'Failed to create student', 
-            details: error.message 
+        res.status(500).json({
+            error: 'Failed to create student',
+            details: error.message
         });
     }
 };
@@ -525,73 +565,51 @@ export const createStudent = async (req, res) => {
 export const getStudent = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Validate student ID
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ error: 'Valid student ID is required' });
         }
-        
-        // Get student from unified users table including all profile fields
+
+        // Get student from students table
         const query = `
-            SELECT 
+            SELECT
                 id,
                 full_name as "fullName",
-                username as "admissionNumber",
-                email,
+                admission_number as "admissionNumber",
                 age,
                 gender,
-                phone,
-                school_name as "schoolName",
-                profile_image as "profileImage",
                 bio,
                 story,
-                location,
-                interests,
-                gallery_images,
-                english_level as "englishLevel",
-                learning_goals as "learningGoals",
-                preferred_topics as "preferredTopics",
+                photo_url as "profilePictureUrl",
+                gallery,
                 is_available as "isAvailable",
                 created_at as "createdAt"
-            FROM users 
-            WHERE id = $1 AND role = $2
+            FROM students
+            WHERE id = $1
         `;
-        
-        const result = await pool.query(query, [Number(id), 'student']);
-        
+
+        const result = await pool.query(query, [Number(id)]);
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Student not found' });
         }
-        
+
         const student = result.rows[0];
-        
-        // Parse gallery_images JSON array
-        let gallery = [];
-        if (student.gallery_images) {
-            try {
-                gallery = JSON.parse(student.gallery_images);
-            } catch (e) {
-                console.warn('Failed to parse gallery_images JSON:', e);
-                gallery = [];
-            }
-        }
-        
-        // Add gallery array to student object
-        student.gallery = gallery;
-        
+
         // Also add photoUrl alias for profile image (frontend compatibility)
-        student.photoUrl = student.profileImage;
-        
+        student.photoUrl = student.profilePictureUrl;
+
         res.json({
             success: true,
             student: student
         });
-        
+
     } catch (error) {
         console.error('Error fetching student:', error);
-        res.status(500).json({ 
-            error: 'Failed to fetch student', 
-            details: error.message 
+        res.status(500).json({
+            error: 'Failed to fetch student',
+            details: error.message
         });
     }
 };
@@ -631,8 +649,8 @@ export const updateStudent = async (req, res) => {
         
         // Check if student exists
         const existingStudent = await pool.query(
-            'SELECT id FROM users WHERE id = $1 AND role = $2',
-            [Number(id), 'student']
+            'SELECT id FROM students WHERE id = $1',
+            [Number(id)]
         );
         
         if (existingStudent.rows.length === 0) {
@@ -665,90 +683,46 @@ export const updateStudent = async (req, res) => {
         }
         
         if (admissionNumber) {
-            // Format admission number with ADM prefix for storage
-            const formattedAdmission = admissionNumber.startsWith('ADM') ? admissionNumber : `ADM${admissionNumber.padStart(4, '0')}-${firstName?.toLowerCase() || 'student'}-${lastName?.toLowerCase() || 'user'}`;
-            updates.push(`username = $${paramCount}`);
-            values.push(formattedAdmission);
+            updates.push(`admission_number = $${paramCount}`);
+            values.push(admissionNumber);
             paramCount++;
         }
-        
+
         if (age !== undefined) {
             updates.push(`age = $${paramCount}`);
             values.push(age || null);
             paramCount++;
         }
-        
+
         if (gender !== undefined) {
             updates.push(`gender = $${paramCount}`);
             values.push(gender || null);
             paramCount++;
         }
-        
-        if (phone !== undefined) {
-            updates.push(`phone = $${paramCount}`);
-            values.push(phone || null);
-            paramCount++;
-        }
-        
-        if (schoolName !== undefined) {
-            updates.push(`school_name = $${paramCount}`);
-            values.push(schoolName || null);
-            paramCount++;
-        }
-        
-        // Add new profile fields
+
+        // Add profile fields supported by students table
         if (bio !== undefined) {
             updates.push(`bio = $${paramCount}`);
             values.push(bio || null);
             paramCount++;
         }
-        
+
         if (story !== undefined || studentStory !== undefined) {
             updates.push(`story = $${paramCount}`);
             values.push(story || studentStory || null);
             paramCount++;
         }
-        
+
         if (profilePictureUrl !== undefined || photoUrl !== undefined) {
-            updates.push(`profile_image = $${paramCount}`);
+            updates.push(`photo_url = $${paramCount}`);
             values.push(profilePictureUrl || photoUrl || null);
             paramCount++;
         }
-        
-        if (location !== undefined) {
-            updates.push(`location = $${paramCount}`);
-            values.push(location || 'Kenya');
-            paramCount++;
-        }
-        
-        if (interests !== undefined) {
-            updates.push(`interests = $${paramCount}`);
-            values.push(interests || 'English conversation practice');
-            paramCount++;
-        }
-        
-        if (englishLevel !== undefined) {
-            updates.push(`english_level = $${paramCount}`);
-            values.push(englishLevel || 'Beginner');
-            paramCount++;
-        }
-        
-        if (learningGoals !== undefined) {
-            updates.push(`learning_goals = $${paramCount}`);
-            values.push(learningGoals || null);
-            paramCount++;
-        }
-        
-        if (preferredTopics !== undefined) {
-            updates.push(`preferred_topics = $${paramCount}`);
-            values.push(preferredTopics || null);
-            paramCount++;
-        }
-        
-        // Handle gallery images if provided - store as JSON array for unlimited images
+
+        // Handle gallery images if provided
         if (galleryImages.length > 0 || (gallery !== undefined || galleryUrls !== undefined)) {
-            updates.push(`gallery_images = $${paramCount}`);
-            values.push(galleryImages.length > 0 ? JSON.stringify(galleryImages) : null);
+            updates.push(`gallery = $${paramCount}`);
+            values.push(galleryImages.length > 0 ? galleryImages : null);
             paramCount++;
         }
         
@@ -759,27 +733,20 @@ export const updateStudent = async (req, res) => {
         values.push(Number(id));
         
         const query = `
-            UPDATE users 
+            UPDATE students
             SET ${updates.join(', ')}
-            WHERE id = $${paramCount} AND role = 'student'
-            RETURNING 
+            WHERE id = $${paramCount}
+            RETURNING
                 id,
                 full_name as "fullName",
-                username as "admissionNumber",
-                email,
+                admission_number as "admissionNumber",
                 age,
                 gender,
-                phone,
-                school_name as "schoolName",
-                profile_image as "profileImage",
                 bio,
                 story,
-                location,
-                interests,
-                gallery_images,
-                english_level as "englishLevel",
-                learning_goals as "learningGoals",
-                preferred_topics as "preferredTopics",
+                photo_url as "profilePictureUrl",
+                gallery,
+                is_available as "isAvailable",
                 created_at as "createdAt"
         `;
         
@@ -814,18 +781,18 @@ export const deleteStudent = async (req, res) => {
         
         // Check if student exists
         const existingStudent = await pool.query(
-            'SELECT id, full_name FROM users WHERE id = $1 AND role = $2',
-            [Number(id), 'student']
+            'SELECT id, full_name FROM students WHERE id = $1',
+            [Number(id)]
         );
-        
+
         if (existingStudent.rows.length === 0) {
             return res.status(404).json({ error: 'Student not found' });
         }
-        
+
         // Delete the student
         await pool.query(
-            'DELETE FROM users WHERE id = $1 AND role = $2',
-            [Number(id), 'student']
+            'DELETE FROM students WHERE id = $1',
+            [Number(id)]
         );
         
         res.json({
@@ -849,12 +816,11 @@ export const deleteAllStudents = async (req, res) => {
     try {
         // Get count of students before deletion
         const countResult = await pool.query(
-            'SELECT COUNT(*) as count FROM users WHERE role = $1',
-            ['student']
+            'SELECT COUNT(*) as count FROM students'
         );
-        
+
         const studentCount = parseInt(countResult.rows[0].count);
-        
+
         if (studentCount === 0) {
             return res.json({
                 success: true,
@@ -862,21 +828,926 @@ export const deleteAllStudents = async (req, res) => {
                 deletedCount: 0
             });
         }
-        
+
         // Delete all students
-        await pool.query('DELETE FROM users WHERE role = $1', ['student']);
-        
+        await pool.query('DELETE FROM students');
+
         res.json({
             success: true,
             message: `Successfully deleted ${studentCount} students`,
             deletedCount: studentCount
         });
-        
+
     } catch (error) {
         console.error('Error deleting all students:', error);
-        res.status(500).json({ 
-            error: 'Failed to delete students', 
-            details: error.message 
+        res.status(500).json({
+            error: 'Failed to delete students',
+            details: error.message
+        });
+    }
+};
+
+// ============================================
+// Volunteer Management
+// ============================================
+
+/**
+ * Get all volunteers with performance metrics
+ * Shows restriction status so admin can identify who needs attention
+ */
+export const getAllVolunteers = async (req, res) => {
+    try {
+        const query = `
+            SELECT
+                u.id,
+                u.full_name,
+                u.email,
+                u.volunteer_type,
+                u.profile_image,
+                u.created_at,
+                COUNT(m.id) FILTER (WHERE m.status = 'completed' AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as completed_calls,
+                COUNT(m.id) FILTER (WHERE m.status IN ('canceled', 'cancelled') AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as cancelled_calls,
+                COUNT(m.id) FILTER (WHERE m.status = 'missed' AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as missed_calls,
+                COUNT(m.id) FILTER (WHERE m.status IN ('completed', 'canceled', 'cancelled', 'missed') AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as total_scheduled,
+                COUNT(m.id) FILTER (WHERE m.cleared_by_admin = TRUE) as cleared_meetings
+            FROM users u
+            LEFT JOIN meetings m ON u.id = m.volunteer_id
+            WHERE u.role = 'volunteer'
+            GROUP BY u.id
+            ORDER BY u.full_name ASC
+        `;
+
+        const result = await pool.query(query);
+
+        const volunteers = result.rows.map(v => {
+            const completed = parseInt(v.completed_calls);
+            const cancelled = parseInt(v.cancelled_calls);
+            const missed = parseInt(v.missed_calls);
+            const total = parseInt(v.total_scheduled);
+
+            const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+            const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
+            const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
+            const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+
+            return {
+                id: v.id,
+                fullName: v.full_name,
+                email: v.email,
+                volunteerType: v.volunteer_type,
+                profileImage: v.profile_image,
+                createdAt: v.created_at,
+                completedCalls: completed,
+                cancelledCalls: cancelled,
+                missedCalls: missed,
+                totalScheduled: total,
+                cancelledRate,
+                missedRate,
+                reputationScore,
+                isRestricted,
+                clearedMeetings: parseInt(v.cleared_meetings)
+            };
+        });
+
+        res.json({
+            success: true,
+            volunteers,
+            total: volunteers.length,
+            restricted: volunteers.filter(v => v.isRestricted).length
+        });
+
+    } catch (error) {
+        console.error('Error fetching volunteers:', error);
+        res.status(500).json({
+            error: 'Failed to fetch volunteers',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Get detailed performance for a single volunteer
+ */
+export const getVolunteerPerformance = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ error: 'Valid volunteer ID is required' });
+        }
+
+        // Verify volunteer exists
+        const userResult = await pool.query(
+            'SELECT id, full_name, email, volunteer_type, profile_image, created_at FROM users WHERE id = $1 AND role = $2',
+            [Number(id), 'volunteer']
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        const volunteer = userResult.rows[0];
+
+        // Get performance metrics (excluding cleared meetings)
+        const performanceResult = await pool.query(`
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled')) as cancelled_calls,
+                COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled,
+                COUNT(DISTINCT student_id) FILTER (WHERE status = 'completed') as students_impacted
+            FROM meetings
+            WHERE volunteer_id = $1 AND scheduled_time < NOW()
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+        `, [Number(id)]);
+
+        const metrics = performanceResult.rows[0];
+        const completed = parseInt(metrics.completed_calls);
+        const cancelled = parseInt(metrics.cancelled_calls);
+        const missed = parseInt(metrics.missed_calls);
+        const total = parseInt(metrics.total_scheduled);
+
+        const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+        const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
+        const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
+        const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+
+        // Get meetings that could be cleared (canceled/missed, not already cleared)
+        const clearableResult = await pool.query(`
+            SELECT id, status, scheduled_time, student_id,
+                   (SELECT full_name FROM users WHERE id = m.student_id) as student_name
+            FROM meetings m
+            WHERE volunteer_id = $1
+            AND status IN ('canceled', 'cancelled', 'missed')
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+            AND scheduled_time < NOW()
+            ORDER BY scheduled_time DESC
+        `, [Number(id)]);
+
+        // Get already cleared meetings
+        const clearedResult = await pool.query(`
+            SELECT id, status, scheduled_time, cleared_by_admin_at,
+                   (SELECT full_name FROM users WHERE id = m.student_id) as student_name
+            FROM meetings m
+            WHERE volunteer_id = $1 AND cleared_by_admin = TRUE
+            ORDER BY cleared_by_admin_at DESC
+        `, [Number(id)]);
+
+        res.json({
+            success: true,
+            volunteer: {
+                id: volunteer.id,
+                fullName: volunteer.full_name,
+                email: volunteer.email,
+                volunteerType: volunteer.volunteer_type,
+                profileImage: volunteer.profile_image,
+                createdAt: volunteer.created_at
+            },
+            performance: {
+                completedCalls: completed,
+                cancelledCalls: cancelled,
+                missedCalls: missed,
+                totalScheduled: total,
+                cancelledRate,
+                missedRate,
+                reputationScore,
+                isRestricted,
+                studentsImpacted: parseInt(metrics.students_impacted)
+            },
+            clearableMeetings: clearableResult.rows.map(m => ({
+                id: m.id,
+                status: m.status,
+                scheduledTime: m.scheduled_time,
+                studentName: m.student_name
+            })),
+            clearedMeetings: clearedResult.rows.map(m => ({
+                id: m.id,
+                status: m.status,
+                scheduledTime: m.scheduled_time,
+                clearedAt: m.cleared_by_admin_at,
+                studentName: m.student_name
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching volunteer performance:', error);
+        res.status(500).json({
+            error: 'Failed to fetch volunteer performance',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Clear a volunteer's bad record
+ * Marks canceled/missed meetings as cleared so they no longer count toward restriction
+ * Original status is preserved — only the cleared_by_admin flag changes
+ */
+export const clearVolunteerRecord = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { meetingIds } = req.body;
+
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ error: 'Valid volunteer ID is required' });
+        }
+
+        // Verify volunteer exists
+        const volunteerResult = await pool.query(
+            'SELECT id, full_name FROM users WHERE id = $1 AND role = $2',
+            [Number(id), 'volunteer']
+        );
+
+        if (volunteerResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        let result;
+
+        if (meetingIds && Array.isArray(meetingIds) && meetingIds.length > 0) {
+            // Clear specific meetings
+            result = await pool.query(`
+                UPDATE meetings
+                SET cleared_by_admin = TRUE, cleared_by_admin_at = NOW()
+                WHERE id = ANY($1::int[])
+                AND volunteer_id = $2
+                AND status IN ('canceled', 'cancelled', 'missed')
+                AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+                RETURNING id
+            `, [meetingIds, Number(id)]);
+        } else {
+            // Clear all bad meetings for this volunteer
+            result = await pool.query(`
+                UPDATE meetings
+                SET cleared_by_admin = TRUE, cleared_by_admin_at = NOW()
+                WHERE volunteer_id = $1
+                AND status IN ('canceled', 'cancelled', 'missed')
+                AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+                AND scheduled_time < NOW()
+                RETURNING id
+            `, [Number(id)]);
+        }
+
+        res.json({
+            success: true,
+            message: `Cleared ${result.rows.length} meetings for ${volunteerResult.rows[0].full_name}`,
+            clearedCount: result.rows.length
+        });
+
+    } catch (error) {
+        console.error('Error clearing volunteer record:', error);
+        res.status(500).json({
+            error: 'Failed to clear volunteer record',
+            details: error.message
+        });
+    }
+};
+
+// ============================================
+// Volunteer Detail & Management
+// ============================================
+
+/**
+ * Get full volunteer details including profile, meetings, and students worked with
+ */
+export const getVolunteerDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ error: 'Valid volunteer ID is required' });
+        }
+
+        // Get full profile
+        const userResult = await pool.query(
+            `SELECT id, username, full_name, email, role, volunteer_type, age, gender, phone,
+                    timezone, school_name, is_under_18, is_approved, parent_approved,
+                    profile_image, created_at, updated_at
+             FROM users WHERE id = $1 AND role = 'volunteer'`,
+            [Number(id)]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        const volunteer = userResult.rows[0];
+
+        // Get performance metrics (excluding cleared meetings)
+        const performanceResult = await pool.query(`
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled')) as cancelled_calls,
+                COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled,
+                COUNT(DISTINCT student_id) FILTER (WHERE status = 'completed') as students_impacted
+            FROM meetings
+            WHERE volunteer_id = $1 AND scheduled_time < NOW()
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+        `, [Number(id)]);
+
+        const metrics = performanceResult.rows[0];
+        const completed = parseInt(metrics.completed_calls);
+        const cancelled = parseInt(metrics.cancelled_calls);
+        const missed = parseInt(metrics.missed_calls);
+        const total = parseInt(metrics.total_scheduled);
+        const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+        const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
+        const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
+        const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+
+        // Get meeting history (last 100)
+        const meetingsResult = await pool.query(`
+            SELECT m.id, m.scheduled_time, m.status, m.is_instant, m.reschedule_count,
+                   m.cleared_by_admin, m.created_at,
+                   u.full_name as student_name
+            FROM meetings m
+            LEFT JOIN users u ON m.student_id = u.id
+            WHERE m.volunteer_id = $1
+            ORDER BY m.scheduled_time DESC
+            LIMIT 100
+        `, [Number(id)]);
+
+        // Get students worked with (distinct)
+        const studentsResult = await pool.query(`
+            SELECT u.id, u.full_name,
+                   COUNT(m.id) as meeting_count,
+                   MAX(m.scheduled_time) as last_meeting
+            FROM meetings m
+            JOIN users u ON m.student_id = u.id
+            WHERE m.volunteer_id = $1
+            GROUP BY u.id, u.full_name
+            ORDER BY last_meeting DESC
+        `, [Number(id)]);
+
+        // Get clearable meetings
+        const clearableResult = await pool.query(`
+            SELECT id, status, scheduled_time, student_id,
+                   (SELECT full_name FROM users WHERE id = m.student_id) as student_name
+            FROM meetings m
+            WHERE volunteer_id = $1
+            AND status IN ('canceled', 'cancelled', 'missed')
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+            AND scheduled_time < NOW()
+            ORDER BY scheduled_time DESC
+        `, [Number(id)]);
+
+        // Get cleared meetings
+        const clearedResult = await pool.query(`
+            SELECT id, status, scheduled_time, cleared_by_admin_at,
+                   (SELECT full_name FROM users WHERE id = m.student_id) as student_name
+            FROM meetings m
+            WHERE volunteer_id = $1 AND cleared_by_admin = TRUE
+            ORDER BY cleared_by_admin_at DESC
+        `, [Number(id)]);
+
+        res.json({
+            success: true,
+            volunteer: {
+                id: volunteer.id,
+                username: volunteer.username,
+                fullName: volunteer.full_name,
+                email: volunteer.email,
+                volunteerType: volunteer.volunteer_type,
+                age: volunteer.age,
+                gender: volunteer.gender,
+                phone: volunteer.phone,
+                timezone: volunteer.timezone,
+                schoolName: volunteer.school_name,
+                isUnder18: volunteer.is_under_18,
+                isApproved: volunteer.is_approved,
+                parentApproved: volunteer.parent_approved,
+                profileImage: volunteer.profile_image,
+                createdAt: volunteer.created_at,
+                updatedAt: volunteer.updated_at
+            },
+            performance: {
+                completedCalls: completed,
+                cancelledCalls: cancelled,
+                missedCalls: missed,
+                totalScheduled: total,
+                cancelledRate,
+                missedRate,
+                reputationScore,
+                isRestricted,
+                studentsImpacted: parseInt(metrics.students_impacted)
+            },
+            meetings: meetingsResult.rows.map(m => ({
+                id: m.id,
+                scheduledTime: m.scheduled_time,
+                status: m.status,
+                isInstant: m.is_instant,
+                rescheduleCount: m.reschedule_count,
+                clearedByAdmin: m.cleared_by_admin,
+                studentName: m.student_name,
+                createdAt: m.created_at
+            })),
+            studentsWorkedWith: studentsResult.rows.map(s => ({
+                id: s.id,
+                fullName: s.full_name,
+                meetingCount: parseInt(s.meeting_count),
+                lastMeeting: s.last_meeting
+            })),
+            clearableMeetings: clearableResult.rows.map(m => ({
+                id: m.id,
+                status: m.status,
+                scheduledTime: m.scheduled_time,
+                studentName: m.student_name
+            })),
+            clearedMeetings: clearedResult.rows.map(m => ({
+                id: m.id,
+                status: m.status,
+                scheduledTime: m.scheduled_time,
+                clearedAt: m.cleared_by_admin_at,
+                studentName: m.student_name
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching volunteer details:', error);
+        res.status(500).json({
+            error: 'Failed to fetch volunteer details',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Delete a volunteer account
+ * Checks for future scheduled meetings first
+ */
+export const deleteVolunteer = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ error: 'Valid volunteer ID is required' });
+        }
+
+        // Verify user exists and is a volunteer
+        const userResult = await pool.query(
+            'SELECT id, full_name FROM users WHERE id = $1 AND role = $2',
+            [Number(id), 'volunteer']
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        const volunteerName = userResult.rows[0].full_name;
+
+        // Check for future scheduled or in-progress meetings
+        const futureMeetings = await pool.query(`
+            SELECT COUNT(*) as count FROM meetings
+            WHERE volunteer_id = $1
+            AND status IN ('scheduled', 'pending', 'confirmed', 'in_progress', 'active')
+            AND scheduled_time > NOW()
+        `, [Number(id)]);
+
+        if (parseInt(futureMeetings.rows[0].count) > 0) {
+            return res.status(409).json({
+                error: `Cannot delete ${volunteerName}: they have ${futureMeetings.rows[0].count} upcoming meeting(s). Cancel or complete them first.`
+            });
+        }
+
+        // Manually clean up all FK references (live DB lacks ON DELETE CASCADE on some tables)
+        const vid = Number(id);
+
+        // Null out rescheduled_by references from any meeting
+        await pool.query('UPDATE meetings SET rescheduled_by = NULL WHERE rescheduled_by = $1', [vid]);
+
+        // Delete meetings where this volunteer is volunteer_id or student_id
+        await pool.query('DELETE FROM meetings WHERE volunteer_id = $1 OR student_id = $1', [vid]);
+
+        // Delete messages sent by this user (recipient cascade may exist but be safe)
+        await pool.query('DELETE FROM messages WHERE sender_id = $1 OR recipient_id = $1', [vid]);
+
+        // Delete notifications
+        await pool.query('DELETE FROM notifications WHERE user_id = $1', [vid]);
+
+        // Null out newsletter_campaigns created_by
+        await pool.query('UPDATE newsletter_campaigns SET created_by = NULL WHERE created_by = $1', [vid]).catch(() => {});
+
+        // Delete the user (volunteer_settings + activity_log handled by CASCADE/SET NULL)
+        await pool.query('DELETE FROM users WHERE id = $1', [vid]);
+
+        res.json({
+            success: true,
+            message: `Volunteer ${volunteerName} has been deleted successfully`
+        });
+
+    } catch (error) {
+        console.error('Error deleting volunteer:', error);
+        res.status(500).json({
+            error: 'Failed to delete volunteer',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Get volunteer activity feed
+ * Reconstructs activity from meetings, messages, and security_events
+ */
+export const getVolunteerActivity = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const offset = parseInt(req.query.offset) || 0;
+
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ error: 'Valid volunteer ID is required' });
+        }
+
+        // Verify volunteer exists
+        const userResult = await pool.query(
+            'SELECT id FROM users WHERE id = $1 AND role = $2',
+            [Number(id), 'volunteer']
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        // UNION query across meetings and messages
+        const activityResult = await pool.query(`
+            (
+                SELECT
+                    'meeting' as source,
+                    m.status as action,
+                    json_build_object(
+                        'meetingId', m.id,
+                        'studentName', u.full_name,
+                        'scheduledTime', m.scheduled_time,
+                        'isInstant', m.is_instant
+                    ) as details,
+                    COALESCE(m.updated_at, m.created_at) as created_at
+                FROM meetings m
+                LEFT JOIN users u ON m.student_id = u.id
+                WHERE m.volunteer_id = $1
+            )
+            UNION ALL
+            (
+                SELECT
+                    'message' as source,
+                    'sent' as action,
+                    json_build_object(
+                        'recipientName', u.full_name,
+                        'messageId', msg.id
+                    ) as details,
+                    msg.created_at
+                FROM messages msg
+                LEFT JOIN users u ON msg.recipient_id = u.id
+                WHERE msg.sender_id = $1
+            )
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+        `, [Number(id), limit, offset]);
+
+        res.json({
+            success: true,
+            activity: activityResult.rows,
+            count: activityResult.rows.length,
+            limit,
+            offset
+        });
+
+    } catch (error) {
+        console.error('Error fetching volunteer activity:', error);
+        res.status(500).json({
+            error: 'Failed to fetch volunteer activity',
+            details: error.message
+        });
+    }
+};
+
+// ============================================
+// Analytics (served from monolith)
+// ============================================
+
+/**
+ * System stats: user counts, meeting counts, completion rate
+ */
+export const getAnalyticsSystemStats = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                (SELECT COUNT(*) FROM users WHERE role = 'volunteer') as total_volunteers,
+                (SELECT COUNT(*) FROM users WHERE role = 'student') as total_students,
+                (SELECT COUNT(*) FROM meetings) as total_meetings,
+                (SELECT COUNT(*) FROM meetings WHERE status = 'completed') as completed_meetings,
+                (SELECT COUNT(*) FROM meetings WHERE status IN ('canceled', 'cancelled')) as cancelled_meetings,
+                (SELECT COUNT(*) FROM meetings WHERE status = 'scheduled' AND scheduled_time > NOW()) as scheduled_meetings,
+                (SELECT COUNT(*) FROM meetings WHERE status IN ('in_progress', 'active')) as ongoing_meetings,
+                (SELECT COUNT(DISTINCT volunteer_id) FROM meetings WHERE scheduled_time::date = CURRENT_DATE) as active_volunteers_today,
+                (SELECT COUNT(DISTINCT student_id) FROM meetings WHERE scheduled_time::date = CURRENT_DATE) as students_with_meetings
+        `);
+
+        const stats = result.rows[0];
+        const totalMeetings = parseInt(stats.total_meetings);
+        const completedMeetings = parseInt(stats.completed_meetings);
+        const totalStudents = parseInt(stats.total_students);
+        const completionRate = totalMeetings > 0 ? Math.round((completedMeetings / totalMeetings) * 100) : 0;
+        const averagePerStudent = totalStudents > 0 ? Math.round((totalMeetings / totalStudents) * 10) / 10 : 0;
+
+        res.json({
+            success: true,
+            stats: {
+                totalVolunteers: parseInt(stats.total_volunteers),
+                totalStudents,
+                totalMeetings,
+                completionRate,
+                averagePerStudent,
+                ongoingMeetings: parseInt(stats.ongoing_meetings),
+                activeVolunteersToday: parseInt(stats.active_volunteers_today),
+                studentsWithMeetings: parseInt(stats.students_with_meetings),
+                meetingStats: {
+                    completed: completedMeetings,
+                    cancelled: parseInt(stats.cancelled_meetings),
+                    scheduled: parseInt(stats.scheduled_meetings)
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching system stats:', error);
+        res.status(500).json({ error: 'Failed to fetch system statistics', details: error.message });
+    }
+};
+
+/**
+ * Meeting stats grouped by date for charting
+ */
+export const getAnalyticsMeetingStats = async (req, res) => {
+    try {
+        const period = req.query.period || 'week';
+
+        let interval, dateFormat;
+        switch (period) {
+            case 'day':
+                interval = '24 hours';
+                dateFormat = 'YYYY-MM-DD HH24:00';
+                break;
+            case 'month':
+                interval = '30 days';
+                dateFormat = 'YYYY-MM-DD';
+                break;
+            case 'year':
+                interval = '365 days';
+                dateFormat = 'YYYY-MM';
+                break;
+            default: // week
+                interval = '7 days';
+                dateFormat = 'YYYY-MM-DD';
+                break;
+        }
+
+        const result = await pool.query(`
+            SELECT
+                TO_CHAR(scheduled_time, $1) as date,
+                COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled,
+                COUNT(*) FILTER (WHERE status = 'completed') as completed,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled')) as cancelled
+            FROM meetings
+            WHERE scheduled_time >= NOW() - $2::interval
+            GROUP BY TO_CHAR(scheduled_time, $1)
+            ORDER BY date ASC
+        `, [dateFormat, interval]);
+
+        res.json({
+            success: true,
+            period,
+            stats: result.rows.map(row => ({
+                date: row.date,
+                scheduled: parseInt(row.scheduled),
+                completed: parseInt(row.completed),
+                cancelled: parseInt(row.cancelled)
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching meeting stats:', error);
+        res.status(500).json({ error: 'Failed to fetch meeting statistics', details: error.message });
+    }
+};
+
+/**
+ * Top volunteers ranked by completed meetings
+ */
+export const getAnalyticsTopVolunteers = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+
+        const result = await pool.query(`
+            SELECT
+                u.id, u.full_name, u.email,
+                COUNT(m.id) as meeting_count,
+                COUNT(m.id) FILTER (WHERE m.status = 'completed') as completed_count
+            FROM users u
+            LEFT JOIN meetings m ON u.id = m.volunteer_id
+            WHERE u.role = 'volunteer'
+            GROUP BY u.id, u.full_name, u.email
+            ORDER BY completed_count DESC
+            LIMIT $1
+        `, [limit]);
+
+        res.json({
+            success: true,
+            volunteers: result.rows.map(row => ({
+                id: row.id,
+                fullName: row.full_name,
+                email: row.email,
+                meetingCount: parseInt(row.meeting_count),
+                completedCount: parseInt(row.completed_count)
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching top volunteers:', error);
+        res.status(500).json({ error: 'Failed to fetch top volunteers', details: error.message });
+    }
+};
+
+/**
+ * Student engagement: meeting counts per student
+ */
+export const getAnalyticsStudentEngagement = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                u.id, u.full_name, u.username as admission_number,
+                COUNT(m.id) as meeting_count,
+                MAX(m.scheduled_time) as last_meeting
+            FROM users u
+            LEFT JOIN meetings m ON u.id = m.student_id
+            WHERE u.role = 'student'
+            GROUP BY u.id, u.full_name, u.username
+            ORDER BY meeting_count DESC
+        `);
+
+        res.json({
+            success: true,
+            students: result.rows.map(row => ({
+                id: row.id,
+                fullName: row.full_name,
+                admissionNumber: row.admission_number,
+                meetingCount: parseInt(row.meeting_count),
+                lastMeeting: row.last_meeting
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching student engagement:', error);
+        res.status(500).json({ error: 'Failed to fetch student engagement', details: error.message });
+    }
+};
+
+// ============================================
+// Application Settings Management
+// ============================================
+
+/**
+ * Get all application settings
+ * Admin can see all settings, including non-public ones
+ */
+export const getAllSettings = async (req, res) => {
+    try {
+        const settings = await configService.getAllSettings(false);
+
+        // Get full details from database for admin view
+        const result = await pool.query(`
+            SELECT key, value, data_type, category, description, is_public, updated_at
+            FROM app_settings
+            ORDER BY category, key
+        `);
+
+        res.json({
+            success: true,
+            settings: result.rows.map(row => ({
+                key: row.key,
+                value: configService.DEFAULT_SETTINGS[row.key] !== undefined
+                    ? settings[row.key]
+                    : row.value,
+                dataType: row.data_type,
+                category: row.category,
+                description: row.description,
+                isPublic: row.is_public,
+                updatedAt: row.updated_at
+            })),
+            categories: [...new Set(result.rows.map(r => r.category))]
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({
+            error: 'Failed to fetch settings',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Get settings by category
+ */
+export const getSettingsByCategory = async (req, res) => {
+    try {
+        const { category } = req.params;
+
+        if (!category) {
+            return res.status(400).json({ error: 'Category is required' });
+        }
+
+        const settings = await configService.getSettingsByCategory(category);
+
+        res.json({
+            success: true,
+            category,
+            settings
+        });
+    } catch (error) {
+        console.error('Error fetching settings by category:', error);
+        res.status(500).json({
+            error: 'Failed to fetch settings',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Update a single setting
+ */
+export const updateSetting = async (req, res) => {
+    try {
+        const { key } = req.params;
+        const { value } = req.body;
+
+        if (!key) {
+            return res.status(400).json({ error: 'Setting key is required' });
+        }
+
+        if (value === undefined) {
+            return res.status(400).json({ error: 'Value is required' });
+        }
+
+        const updated = await configService.updateSetting(key, value);
+
+        res.json({
+            success: true,
+            setting: updated,
+            message: `Setting ${key} updated successfully`
+        });
+    } catch (error) {
+        console.error('Error updating setting:', error);
+        res.status(500).json({
+            error: 'Failed to update setting',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Update multiple settings at once
+ */
+export const updateSettings = async (req, res) => {
+    try {
+        const { settings } = req.body;
+
+        if (!settings || typeof settings !== 'object') {
+            return res.status(400).json({ error: 'Settings object is required' });
+        }
+
+        const updated = await configService.updateSettings(settings);
+
+        res.json({
+            success: true,
+            updated,
+            message: `${Object.keys(updated).length} settings updated successfully`
+        });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({
+            error: 'Failed to update settings',
+            details: error.message
+        });
+    }
+};
+
+/**
+ * Invalidate settings cache
+ * Useful after manual database changes
+ */
+export const invalidateSettingsCache = async (req, res) => {
+    try {
+        await configService.invalidateAllCache();
+
+        res.json({
+            success: true,
+            message: 'Settings cache invalidated successfully'
+        });
+    } catch (error) {
+        console.error('Error invalidating cache:', error);
+        res.status(500).json({
+            error: 'Failed to invalidate cache',
+            details: error.message
         });
     }
 };

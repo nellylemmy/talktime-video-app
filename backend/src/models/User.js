@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
+import { capitalizeName } from '../utils/nameUtils.js';
 
 const SALT_ROUNDS = 10;
 
@@ -41,7 +42,10 @@ class User {
         } = userData;
 
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-        
+
+        // Capitalize name fields for proper formatting
+        const capitalizedFullName = capitalizeName(fullName);
+
         // Determine approval status based on age
         // Under 18 users start with parent_approved = false and need approval
         // 18+ users are automatically approved
@@ -51,12 +55,12 @@ class User {
         const result = await pool.query(
             `INSERT INTO users (
                 username, full_name, email, password_hash, role, volunteer_type,
-                age, gender, phone, school_name, parent_email, parent_phone, 
+                age, gender, phone, school_name, parent_email, parent_phone,
                 is_under_18, is_approved, parent_approved
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *`,
             [
-                username || email, fullName, email, passwordHash, role, volunteer_type,
+                username || email, capitalizedFullName, email, passwordHash, role, volunteer_type,
                 age, gender, phone, school_name, parent_email, parent_phone,
                 is_under_18, isApproved, parentApproved
             ]
@@ -65,10 +69,13 @@ class User {
     }
 
     static async findByEmail(email) {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await pool.query(
+            'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
+            [email]
+        );
         return result.rows[0] || null;
     }
-    
+
     static async findById(id) {
         const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
         return result.rows[0] || null;
@@ -76,7 +83,7 @@ class User {
 
     static async findByUsernameOrEmail(identifier) {
         const result = await pool.query(
-            'SELECT * FROM users WHERE username = $1 OR email = $1', 
+            'SELECT * FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)',
             [identifier]
         );
         return result.rows[0] || null;
@@ -102,11 +109,19 @@ class User {
         const fields = [];
         const values = [];
         let index = 1;
-        
+
+        // Fields that should be capitalized
+        const nameFields = ['full_name', 'fullName', 'guardian_name'];
+
         // Build dynamic query based on provided fields
         for (const [key, value] of Object.entries(updateData)) {
             fields.push(`${key} = $${index}`);
-            values.push(value);
+            // Capitalize name fields
+            if (nameFields.includes(key) && typeof value === 'string') {
+                values.push(capitalizeName(value));
+            } else {
+                values.push(value);
+            }
             index++;
         }
         

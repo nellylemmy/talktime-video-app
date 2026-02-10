@@ -149,14 +149,76 @@ class Notification {
     static async deleteByMeetingId(meetingId) {
         try {
             const result = await db.query(
-                `DELETE FROM notifications 
+                `DELETE FROM notifications
                 WHERE meeting_id = $1`,
                 [meetingId]
             );
-            
+
             return result.rowCount > 0;
         } catch (error) {
             console.error('Error deleting notifications by meeting ID:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a notification by ID (with user ownership check)
+     * @param {string} id - Notification ID
+     * @param {string} userId - User ID (for ownership verification)
+     * @returns {boolean} Success status
+     */
+    static async deleteById(id, userId) {
+        try {
+            const result = await db.query(
+                `DELETE FROM notifications
+                WHERE id = $1 AND (user_id = $2 OR recipient_id = $2)`,
+                [id, userId]
+            );
+
+            return result.rowCount > 0;
+        } catch (error) {
+            console.error('Error deleting notification by ID:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Mark all notifications as read for a user
+     * @param {string} userId - User ID
+     * @returns {number} Number of notifications updated
+     */
+    static async markAllAsReadByUserId(userId) {
+        try {
+            const result = await db.query(
+                `UPDATE notifications
+                SET is_read = true
+                WHERE (user_id = $1 OR recipient_id = $1) AND is_read = false`,
+                [userId]
+            );
+
+            return result.rowCount;
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get unread count for a user
+     * @param {string} userId - User ID
+     * @returns {number} Unread count
+     */
+    static async getUnreadCount(userId) {
+        try {
+            const result = await db.query(
+                `SELECT COUNT(*) as count FROM notifications
+                WHERE (user_id = $1 OR recipient_id = $1) AND is_read = false`,
+                [userId]
+            );
+
+            return parseInt(result.rows[0].count) || 0;
+        } catch (error) {
+            console.error('Error getting unread count:', error);
             throw error;
         }
     }

@@ -33,16 +33,25 @@ router.post('/login', async (req, res) => {
         }
         
         // Find student user by username (admission number) and full name
+        // Handle various admission number formats
+        const formattedName = name.trim().toLowerCase().replace(/\s+/g, '-');
+        const admissionVariants = [
+            admission_number.trim(),
+            `ADM${admission_number.trim()}`,
+            `ADM${admission_number.trim()}-${formattedName}`,
+            `${admission_number.trim()}-${formattedName}`
+        ];
+
         const userQuery = `
-            SELECT * FROM users 
-            WHERE role = 'student' 
-            AND (username = $1 OR username = $2)
+            SELECT * FROM users
+            WHERE role = 'student'
+            AND (username = ANY($1) OR username LIKE $2)
             AND LOWER(full_name) = LOWER($3)
         `;
-        
+
         const userResult = await pool.query(userQuery, [
-            admission_number.trim(),
-            `ADM${admission_number.trim()}`, // Try with ADM prefix
+            admissionVariants,
+            `%${admission_number.trim()}%`,
             name.trim()
         ]);
         
@@ -59,18 +68,26 @@ router.post('/login', async (req, res) => {
         // In production, you might want to set a default password or implement a different auth method
         
         // Generate JWT token for student authentication
+        // Include all relevant student data (exclude sensitive fields like password_hash)
         const tokenPayload = {
             id: user.id,
             fullName: user.full_name,
             username: user.username,
+            admissionNumber: user.username, // Admission number = username
             role: user.role,
-            email: user.email
+            email: user.email,
+            profileImage: user.profile_image || null,
+            age: user.age || null,
+            gender: user.gender || null,
+            phone: user.phone || null,
+            timezone: user.timezone || 'UTC',
+            schoolName: user.school_name || null
         };
-        
+
         const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '24h' });
-        
-        console.log('Student JWT login successful:', tokenPayload);
-        
+
+        console.log('Student JWT login successful:', { id: user.id, fullName: user.full_name, username: user.username });
+
         res.json({
             success: true,
             message: 'Login successful',
@@ -79,8 +96,16 @@ router.post('/login', async (req, res) => {
                 id: user.id,
                 fullName: user.full_name,
                 username: user.username,
+                admissionNumber: user.username,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                profileImage: user.profile_image || null,
+                age: user.age || null,
+                gender: user.gender || null,
+                phone: user.phone || null,
+                timezone: user.timezone || 'UTC',
+                schoolName: user.school_name || null,
+                createdAt: user.created_at
             },
             redirectUrl: '/student/dashboard'
         });

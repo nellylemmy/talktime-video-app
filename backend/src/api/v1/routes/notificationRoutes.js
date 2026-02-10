@@ -18,11 +18,32 @@ import trackingRouter from './notificationTracking.js';
 router.get('/', isAuthenticated, notificationController.getUserNotifications);
 
 /**
+ * @route   GET /api/v1/notifications/unread-count
+ * @desc    Get unread notification count
+ * @access  Private
+ */
+router.get('/unread-count', isAuthenticated, notificationController.getUnreadCount);
+
+/**
+ * @route   PUT /api/v1/notifications/read-all
+ * @desc    Mark all notifications as read
+ * @access  Private
+ */
+router.put('/read-all', isAuthenticated, notificationController.markAllNotificationsAsRead);
+
+/**
  * @route   PUT /api/v1/notifications/:id/read
  * @desc    Mark notification as read
  * @access  Private
  */
 router.put('/:id/read', isAuthenticated, notificationController.markNotificationAsRead);
+
+/**
+ * @route   DELETE /api/v1/notifications/:id
+ * @desc    Delete a notification
+ * @access  Private
+ */
+router.delete('/:id', isAuthenticated, notificationController.deleteNotification);
 
 /**
  * @route   POST /api/v1/notifications

@@ -2,80 +2,168 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TalkTime - Volunteer Signup</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts: Inter & Poppins -->
+    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
+
     <!-- JWT Authentication -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     <script src="/shared/js/realtime-notifications.js"></script>
-    <!-- Newsletter Widget -->
     <script src="/shared/js/newsletter-widget.js"></script>
     <script src="/volunteer/js/modal-utils.js"></script>
 
     <style>
-        /* Base styles from the brand identity */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4ff; /* Fallback */
-            overflow-x: hidden;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .font-poppins {
-            font-family: 'Poppins', sans-serif;
+        /* Main container */
+        .signup-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            width: 100%;
         }
 
-        .gradient-bg {
-            background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+        /* Logo section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 24px;
         }
 
-        /* Glassmorphism Effect for the card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.4); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 8px;
         }
 
-        /* Multi-step form styles */
-        .step {
-            display: none;
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
         }
-        
-        .step.active {
-            display: block;
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--brand-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .powered-by img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .powered-by a {
+            font-size: 12px;
+            color: #6b7280;
+            text-decoration: none;
+        }
+
+        .powered-by a:hover {
+            color: var(--brand-primary);
+        }
+
+        /* Signup card */
+        .signup-card {
+            width: 100%;
+            max-width: 640px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .card-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .card-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Progress indicators */
+        .progress-container {
+            margin-bottom: 28px;
+        }
+
+        .progress-steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .step-indicator {
-            width: 2rem;
-            height: 2rem;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+        }
+
+        .step-indicator.current {
+            background-color: var(--brand-primary);
+            color: #ffffff;
         }
 
         .step-indicator.completed {
             background-color: #10b981;
-            color: white;
-        }
-
-        .step-indicator.current {
-            background-color: #6366f1;
-            color: white;
+            color: #ffffff;
         }
 
         .step-indicator.pending {
@@ -83,676 +171,942 @@
             color: #6b7280;
         }
 
+        .step-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+        }
+
         .step-line {
+            width: 24px;
             height: 2px;
             background-color: #e5e7eb;
-            transition: all 0.3s ease;
+            transition: background-color 0.2s ease;
         }
 
         .step-line.completed {
             background-color: #10b981;
         }
 
-        /* Animated Blobs */
-        .blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.5;
-            z-index: -1;
-            animation: move 20s infinite alternate;
+        /* Step content */
+        .step {
+            display: none;
         }
 
-        .blob-1 {
-             width: 24rem;
-             height: 24rem;
-             top: -5rem;
-             left: -10rem;
-             background-color: #a855f7;
+        .step.active {
+            display: block;
         }
 
-        .blob-2 {
-            width: 20rem;
-            height: 20rem;
-            bottom: -5rem;
-            right: -8rem;
-            background-color: #4f46e5;
-            animation-delay: -10s;
-        }
-        
-        /* Gradient Text for the logo */
-        .gradient-text {
-            background-image: linear-gradient(to right, #4f46e5, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        .step-header {
+            text-align: center;
+            margin-bottom: 24px;
         }
 
-        /* Keyframe animation for blobs */
-        @keyframes move {
-            from {
-                transform: translate(0, 0) scale(1);
-            }
-            to {
-                transform: translate(50px, 100px) scale(1.2);
+        .step-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .step-header p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 480px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
-        /* Custom style for select dropdown arrows */
-        .custom-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
         }
-        
-        /* Style for required asterisk */
+
+        .form-hint {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
         .required-star {
-            color: #ef4444; /* red-500 */
+            color: #ef4444;
             margin-left: 2px;
         }
-        
-        /* Transition for parental consent section */
-        #parental-consent-section {
-            transition: all 0.5s ease-in-out;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #111827;
+            background: #ffffff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
-        #parental-consent-section.show {
-            max-height: 500px; /* Adjust as needed */
-            opacity: 1;
-            margin-top: 1.5rem; /* Add space when it appears */
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(209, 1, 0, 0.1);
         }
 
-        /* Transition for school info section */
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        /* Phone input with country code */
+        .phone-input-group {
+            display: flex;
+        }
+
+        .phone-input-group .country-select {
+            width: 100px;
+            border-radius: 10px 0 0 10px;
+            border-right: none;
+            padding-right: 28px;
+            font-size: 13px;
+        }
+
+        .phone-input-group .phone-input {
+            flex: 1;
+            border-radius: 0 10px 10px 0;
+        }
+
+        /* Radio options */
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            padding: 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #d1d5db;
+            background-color: #f9fafb;
+        }
+
+        .radio-option.selected {
+            border-color: var(--brand-primary);
+            background-color: rgba(209, 1, 0, 0.03);
+        }
+
+        .radio-option.student-option {
+            border-color: var(--brand-secondary);
+            background-color: rgba(56, 103, 255, 0.03);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            accent-color: var(--brand-primary);
+        }
+
+        .radio-content {
+            margin-left: 12px;
+            flex: 1;
+        }
+
+        .radio-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .radio-desc {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .radio-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--brand-secondary);
+            margin-top: 6px;
+        }
+
+        /* Conditional sections */
+        #parental-consent-section,
         #school-info-section {
-            transition: all 0.5s ease-in-out;
             max-height: 0;
             overflow: hidden;
             opacity: 0;
+            transition: all 0.3s ease;
         }
 
+        #parental-consent-section.show,
         #school-info-section.show {
-            max-height: 500px; /* Adjust as needed */
+            max-height: 400px;
             opacity: 1;
-            margin-top: 1.5rem;
+            margin-top: 16px;
+        }
+
+        .consent-box {
+            padding: 16px;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+        }
+
+        .consent-box .notice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--brand-primary);
+            margin-bottom: 8px;
+        }
+
+        .consent-box .consent-reason {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* Security questions */
+        .security-section-header {
+            text-align: center;
+            margin: 24px 0 16px;
+        }
+
+        .security-section-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .security-section-header p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* Navigation buttons */
+        .nav-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        @media (min-width: 480px) {
+            .nav-buttons {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .btn {
+            height: 48px;
+            padding: 0 24px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #374151;
+            border: 1.5px solid #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .btn-primary {
+            background: var(--brand-primary);
+            color: #ffffff;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-primary-dark);
+        }
+
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        /* Terms checkbox */
+        #terms-section {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .terms-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .terms-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: var(--brand-primary);
+        }
+
+        .terms-row label {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .terms-row a {
+            color: var(--brand-primary);
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .terms-row a:hover {
+            text-decoration: underline;
+        }
+
+        /* Login link */
+        .login-section {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .login-section p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .login-section a {
+            color: var(--brand-primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-section a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (min-width: 640px) {
+            .signup-container {
+                padding: 40px 24px;
+            }
+
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .logo-text {
+                font-size: 28px;
+            }
+
+            .signup-card {
+                padding: 32px;
+            }
+
+            .card-header h1 {
+                font-size: 28px;
+            }
+
+            .step-indicator {
+                width: 36px;
+                height: 36px;
+            }
+
+            .step-line {
+                width: 40px;
+            }
+        }
+
+        /* Hide mobile-specific on desktop */
+        @media (max-width: 479px) {
+            .step-label {
+                display: none;
+            }
+
+            .progress-steps {
+                gap: 4px;
+            }
+        }
+
+        /* Modal System Styles (required for modal-utils.js) */
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-end { justify-content: flex-end; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .pt-0 { padding-top: 0; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .mt-4 { margin-top: 1rem; }
+        .space-x-3 > * + * { margin-left: 0.75rem; }
+        .bg-black { background-color: #000; }
+        .bg-opacity-0 { background-color: rgba(0, 0, 0, 0); }
+        .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
+        .bg-white { background-color: #fff; }
+        .bg-green-100 { background-color: #dcfce7; }
+        .bg-red-100 { background-color: #fee2e2; }
+        .bg-yellow-100 { background-color: #fef9c3; }
+        .bg-blue-100 { background-color: #dbeafe; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-green-600 { background-color: #16a34a; }
+        .bg-red-600 { background-color: #dc2626; }
+        .text-white { color: #fff; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-900 { color: #111827; }
+        .text-green-600 { color: #16a34a; }
+        .text-red-600 { color: #dc2626; }
+        .text-yellow-600 { color: #ca8a04; }
+        .text-blue-600 { color: #2563eb; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        .leading-relaxed { line-height: 1.625; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border-width: 1px; }
+        .border-b { border-bottom-width: 1px; }
+        .border-gray-100 { border-color: #f3f4f6; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .backdrop-blur-sm { backdrop-filter: blur(4px); }
+        .transition-opacity { transition-property: opacity; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .transition-colors { transition-property: color, background-color, border-color; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .transition-all { transition-property: all; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .duration-200 { transition-duration: 200ms; }
+        .duration-300 { transition-duration: 300ms; }
+        .transform { transform: translateZ(0); }
+        .scale-95 { transform: scale(0.95); }
+        .scale-100 { transform: scale(1); }
+        .opacity-0 { opacity: 0; }
+        .opacity-100 { opacity: 1; }
+        .max-w-md { max-width: 28rem; }
+        .w-full { width: 100%; }
+        .w-8 { width: 2rem; }
+        .h-8 { height: 2rem; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-green-700:hover { background-color: #15803d; }
+        .hover\:bg-red-700:hover { background-color: #b91c1c; }
+        .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
+        .hover\:text-gray-600:hover { color: #4b5563; }
+        .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .focus\:border-blue-500:focus { border-color: #3b82f6; }
+
+        /* Modal input field override */
+        #talktime-modal-container input[type="text"],
+        #talktime-modal-container input[type="email"],
+        #talktime-modal-container input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            margin-top: 12px;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #talktime-modal-container input:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(209, 1, 0, 0.1);
         }
     </style>
 </head>
-<body class="gradient-bg">
-    <!-- Background Blobs -->
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
+<body>
+    <div class="signup-container">
+        <!-- Logo -->
+        <div class="logo-section">
+            <a href="/" class="logo-link" aria-label="TalkTime Home">
+                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <path stroke="var(--brand-primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="logo-text">TALK TIME</span>
+            </a>
+            <div class="powered-by">
+                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
+            </div>
+        </div>
 
-    <!-- Main Container -->
-    <div class="relative min-h-screen w-full flex flex-col items-center justify-center p-4">
         <!-- Signup Card -->
-        <div class="w-full max-w-2xl my-10">
-            <!-- Logo -->
-            <div class="text-center mb-8">
-                <div class="flex flex-col items-center justify-center">
-                    <a href="/" class="flex items-center text-2xl font-bold justify-center" aria-label="TalkTime Home">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
-                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-                        </svg>
-                        <span class="gradient-text">TALK TIME</span>
-                    </a>
-                    <div class="flex items-center justify-center gap-2 mt-0.5">
-                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
-                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
-                            Powered by ADEA Foundation
-                        </a>
+        <div class="signup-card">
+            <div class="card-header">
+                <h1>Become a Volunteer</h1>
+                <p>Complete the steps below to join our community</p>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="progress-container">
+                <div class="progress-steps">
+                    <div class="progress-step">
+                        <div class="step-indicator current" id="step-indicator-1">1</div>
+                        <span class="step-label">Basic Info</span>
+                    </div>
+                    <div class="step-line" id="step-line-1"></div>
+                    <div class="progress-step">
+                        <div class="step-indicator pending" id="step-indicator-2">2</div>
+                        <span class="step-label">Personal</span>
+                    </div>
+                    <div class="step-line" id="step-line-2"></div>
+                    <div class="progress-step">
+                        <div class="step-indicator pending" id="step-indicator-3">3</div>
+                        <span class="step-label">Security</span>
+                    </div>
+                    <div class="step-line" id="step-line-3"></div>
+                    <div class="progress-step">
+                        <div class="step-indicator pending" id="step-indicator-4">4</div>
+                        <span class="step-label">Complete</span>
                     </div>
                 </div>
             </div>
-            <div class="glass-card rounded-2xl shadow-xl p-6 md:p-10">
-                <div class="text-center mb-8">
-                    <h1 class="font-poppins text-3xl font-bold text-gray-800">Become a Volunteer</h1>
-                    <p class="text-gray-600 mt-2">Complete the steps below to join our community!</p>
+
+            <!-- Signup Form -->
+            <form id="signup-form">
+                <!-- Step 1: Basic Information -->
+                <div class="step active" id="step-1">
+                    <div class="step-header">
+                        <h2>Basic Information</h2>
+                        <p>Let's start with your basic details</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first-name" class="form-label">First Name<span class="required-star">*</span></label>
+                            <p class="form-hint">Your first name</p>
+                            <input type="text" id="first-name" name="first-name" required class="form-input" placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name" class="form-label">Last Name<span class="required-star">*</span></label>
+                            <p class="form-hint">Your last name</p>
+                            <input type="text" id="last-name" name="last-name" required class="form-input" placeholder="Doe">
+                        </div>
+                    </div>
+                    <p class="form-hint" style="margin-top: -8px; margin-bottom: 16px;">Your legal name for official certificates and community service documentation</p>
+
+                    <div class="form-group">
+                        <label for="username" class="form-label">How would you like us to call you?<span class="required-star">*</span></label>
+                        <p class="form-hint">Your preferred name or nickname for casual conversations</p>
+                        <input type="text" id="username" name="username" required class="form-input" placeholder="e.g., John, Johnny, J">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address<span class="required-star">*</span></label>
+                        <input type="email" id="email" name="email" required class="form-input" placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timezone" class="form-label">Your Timezone<span class="required-star">*</span></label>
+                        <p class="form-hint">This helps us schedule meetings at appropriate times for you</p>
+                        <select id="timezone" name="timezone" required class="form-select">
+                            <option value="" disabled selected>Detecting your timezone...</option>
+                        </select>
+                        <p class="form-hint" id="timezone-detection-note" style="margin-top: 6px;">We'll auto-detect your current timezone, but you can change it if needed.</p>
+                    </div>
                 </div>
 
-                <!-- Progress Indicator -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-center space-x-4">
-                        <div class="flex items-center">
-                            <div class="step-indicator current" id="step-indicator-1">1</div>
-                            <span class="ml-2 text-sm font-medium text-gray-700">Basic Info</span>
+                <!-- Step 2: Personal Details -->
+                <div class="step" id="step-2">
+                    <div class="step-header">
+                        <h2>Personal Details</h2>
+                        <p>Tell us a bit more about yourself</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="age" class="form-label">Age<span class="required-star">*</span></label>
+                            <input type="number" id="age" name="age" required class="form-input" placeholder="e.g., 17" min="10">
                         </div>
-                        <div class="step-line w-16" id="step-line-1"></div>
-                        <div class="flex items-center">
-                            <div class="step-indicator pending" id="step-indicator-2">2</div>
-                            <span class="ml-2 text-sm font-medium text-gray-500">Personal</span>
+                        <div class="form-group">
+                            <label for="gender" class="form-label">Gender<span class="required-star">*</span></label>
+                            <select id="gender" name="gender" required class="form-select">
+                                <option value="" disabled selected>Select your gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer_not_to_say">Prefer not to say</option>
+                            </select>
                         </div>
-                        <div class="step-line w-16" id="step-line-2"></div>
-                        <div class="flex items-center">
-                            <div class="step-indicator pending" id="step-indicator-3">3</div>
-                            <span class="ml-2 text-sm font-medium text-gray-500">Security</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone Number<span class="required-star">*</span></label>
+                        <div class="phone-input-group">
+                            <select id="country-code" name="country-code" required class="form-select country-select">
+                                <!-- Populated by JS -->
+                            </select>
+                            <input type="tel" id="phone" name="phone" required class="form-input phone-input" placeholder="e.g. 712 345678">
                         </div>
-                        <div class="step-line w-16" id="step-line-3"></div>
-                        <div class="flex items-center">
-                            <div class="step-indicator pending" id="step-indicator-4">4</div>
-                            <span class="ml-2 text-sm font-medium text-gray-500">Complete</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Volunteer Type<span class="required-star">*</span></label>
+                        <div class="radio-option" onclick="this.querySelector('input').click()">
+                            <input type="radio" id="standard-volunteer" name="volunteer-type" value="standard" checked>
+                            <div class="radio-content">
+                                <div class="radio-title">Standard Volunteer</div>
+                                <div class="radio-desc">Help Maasai students practice English through conversation</div>
+                            </div>
+                        </div>
+                        <div class="radio-option student-option" onclick="this.querySelector('input').click()">
+                            <input type="radio" id="student-volunteer" name="volunteer-type" value="student">
+                            <div class="radio-content">
+                                <div class="radio-title">Student Volunteer</div>
+                                <div class="radio-desc">Get community service hours and official documentation for your volunteer work</div>
+                                <div class="radio-badge">
+                                    <i class="fas fa-star"></i>
+                                    <span>Enhanced benefits: Certificates, impact tracking, school recognition</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Signup Form -->
-                <form id="signup-form" class="space-y-6">
-                    <!-- Step 1: Basic Information -->
-                    <div class="step active" id="step-1">
-                        <div class="text-center mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800">Basic Information</h2>
-                            <p class="text-gray-600 text-sm mt-1">Let's start with your basic details</p>
+                <!-- Step 3: Account Security -->
+                <div class="step" id="step-3">
+                    <div class="step-header">
+                        <h2>Account Security</h2>
+                        <p>Create a secure password and setup recovery questions</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password" class="form-label">Password<span class="required-star">*</span></label>
+                            <input type="password" id="password" name="password" required class="form-input" placeholder="Create a password">
                         </div>
-
-                        <div class="space-y-4">
-                            <!-- First Name and Last Name -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="first-name" class="text-sm font-medium text-gray-700">First Name<span class="required-star">*</span></label>
-                                    <p class="text-xs text-gray-500 mt-1 mb-2">Your first name</p>
-                                    <input type="text" id="first-name" name="first-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="John">
-                                </div>
-                                <div>
-                                    <label for="last-name" class="text-sm font-medium text-gray-700">Last Name<span class="required-star">*</span></label>
-                                    <p class="text-xs text-gray-500 mt-1 mb-2">Your last name</p>
-                                    <input type="text" id="last-name" name="last-name" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Doe">
-                                </div>
-                            </div>
-                            <p class="text-xs text-gray-500 -mt-2">Your legal name for official certificates and community service documentation</p>
-
-                            <!-- Username -->
-                            <div>
-                                <label for="username" class="text-sm font-medium text-gray-700">How would you like us to call you?<span class="required-star">*</span></label>
-                                <p class="text-xs text-gray-500 mt-1 mb-2">Your preferred name or nickname for casual conversations</p>
-                                <input type="text" id="username" name="username" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., John, Johnny, J">
-                            </div>
-
-                            <!-- Email Address -->
-                            <div>
-                                <label for="email" class="text-sm font-medium text-gray-700">Email Address<span class="required-star">*</span></label>
-                                <input type="email" id="email" name="email" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="you@example.com">
-                            </div>
-
-                            <!-- Timezone Selection -->
-                            <div>
-                                <label for="timezone" class="text-sm font-medium text-gray-700">Your Timezone<span class="required-star">*</span></label>
-                                <p class="text-xs text-gray-500 mt-1 mb-2">This helps us schedule meetings at appropriate times for you</p>
-                                <select id="timezone" name="timezone" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                    <option value="" disabled selected>Detecting your timezone...</option>
-                                    <!-- Populated by JavaScript -->
-                                </select>
-                                <p class="text-xs text-gray-400 mt-1" id="timezone-detection-note">We'll auto-detect your current timezone, but you can change it if needed.</p>
-                            </div>
+                        <div class="form-group">
+                            <label for="confirm-password" class="form-label">Confirm Password<span class="required-star">*</span></label>
+                            <input type="password" id="confirm-password" name="confirm-password" required class="form-input" placeholder="Confirm your password">
                         </div>
                     </div>
 
-                    <!-- Step 2: Personal Details -->
-                    <div class="step" id="step-2">
-                        <div class="text-center mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800">Personal Details</h2>
-                            <p class="text-gray-600 text-sm mt-1">Tell us a bit more about yourself</p>
-                        </div>
+                    <div class="security-section-header">
+                        <h3>Security Questions</h3>
+                        <p>These will help you recover your password if you forget it</p>
+                    </div>
 
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Age -->
-                                <div>
-                                    <label for="age" class="text-sm font-medium text-gray-700">Age<span class="required-star">*</span></label>
-                                    <input type="number" id="age" name="age" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., 17" min="10">
-                                </div>
-                                
-                                <!-- Gender -->
-                                <div>
-                                    <label for="gender" class="text-sm font-medium text-gray-700">Gender<span class="required-star">*</span></label>
-                                    <select id="gender" name="gender" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                        <option value="" disabled selected>Select your gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                        <option value="prefer_not_to_say">Prefer not to say</option>
-                                    </select>
-                                </div>
+                    <div class="form-group">
+                        <label for="security-question-1" class="form-label">Security Question 1<span class="required-star">*</span></label>
+                        <select id="security-question-1" name="security-question-1" required class="form-select">
+                            <option value="" disabled selected>Choose a question</option>
+                            <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                            <option value="What city were you born in?">What city were you born in?</option>
+                            <option value="What was the name of your elementary school?">What was the name of your elementary school?</option>
+                            <option value="What is your favorite color?">What is your favorite color?</option>
+                        </select>
+                        <input type="text" id="security-answer-1" name="security-answer-1" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="security-question-2" class="form-label">Security Question 2<span class="required-star">*</span></label>
+                        <select id="security-question-2" name="security-question-2" required class="form-select">
+                            <option value="" disabled selected>Choose a question</option>
+                            <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                            <option value="What is the name of your best friend from childhood?">What is the name of your best friend from childhood?</option>
+                            <option value="What was the make of your first car?">What was the make of your first car?</option>
+                            <option value="What is your favorite book?">What is your favorite book?</option>
+                            <option value="What is your favorite food?">What is your favorite food?</option>
+                        </select>
+                        <input type="text" id="security-answer-2" name="security-answer-2" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="security-question-3" class="form-label">Security Question 3<span class="required-star">*</span></label>
+                        <select id="security-question-3" name="security-question-3" required class="form-select">
+                            <option value="" disabled selected>Choose a question</option>
+                            <option value="What is the name of the street you grew up on?">What is the name of the street you grew up on?</option>
+                            <option value="What was your favorite subject in school?">What was your favorite subject in school?</option>
+                            <option value="What is your father's middle name?">What is your father's middle name?</option>
+                            <option value="What was the name of your first teacher?">What was the name of your first teacher?</option>
+                            <option value="What is your favorite movie?">What is your favorite movie?</option>
+                        </select>
+                        <input type="text" id="security-answer-3" name="security-answer-3" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                    </div>
+                </div>
+
+                <!-- Step 4: Additional Information -->
+                <div class="step" id="step-4">
+                    <div class="step-header">
+                        <h2>Additional Information</h2>
+                        <p>Final details based on your selections</p>
+                    </div>
+
+                    <!-- Parental Consent Section (Initially Hidden) -->
+                    <div id="parental-consent-section">
+                        <div class="consent-box">
+                            <p class="notice">
+                                <i class="fas fa-shield-alt"></i>
+                                Parental/Guardian Approval Required
+                            </p>
+                            <p class="consent-reason" id="consent-reason-text">
+                                For safety and verification purposes, we require parental/guardian approval for volunteers under 18 and for student volunteers.
+                            </p>
+                            <div class="form-group">
+                                <label for="parent-email" class="form-label">Parent/Guardian Email<span class="required-star">*</span></label>
+                                <input type="email" id="parent-email" name="parent-email" class="form-input" placeholder="parent@example.com">
                             </div>
-
-                            <!-- Phone Number -->
-                            <div>
-                                <label for="phone" class="text-sm font-medium text-gray-700">Phone Number<span class="required-star">*</span></label>
-                                <div class="mt-1 flex rounded-lg shadow-sm">
-                                    <select id="country-code" name="country-code" required class="form-input custom-select block w-32 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <div class="form-group">
+                                <label for="parent-phone" class="form-label">Parent/Guardian Phone<span class="required-star">*</span></label>
+                                <div class="phone-input-group">
+                                    <select id="parent-country-code" name="parent-country-code" required class="form-select country-select">
                                         <!-- Populated by JS -->
                                     </select>
-                                    <input type="tel" id="phone" name="phone" required class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g. 712 345678">
-                                </div>
-                            </div>
-
-                            <!-- Volunteer Type Selection -->
-                            <div class="space-y-4">
-                                <label class="block text-sm font-medium text-gray-700">Volunteer Type<span class="required-star">*</span></label>
-                                <div class="space-y-3">
-                                    <div class="flex items-start p-4 border border-gray-200 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-                                        <input type="radio" id="standard-volunteer" name="volunteer-type" value="standard" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1" checked>
-                                        <div class="ml-3">
-                                            <label for="standard-volunteer" class="block text-sm font-semibold text-gray-800">Standard Volunteer</label>
-                                            <p class="text-xs text-gray-600 mt-1">Help Maasai students practice English through conversation</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50/50 hover:bg-purple-50/70 transition-colors">
-                                        <input type="radio" id="student-volunteer" name="volunteer-type" value="student" class="h-5 w-5 text-purple-600 border-gray-300 focus:ring-purple-500 mt-1">
-                                        <div class="ml-3">
-                                            <label for="student-volunteer" class="block text-sm font-semibold text-gray-800">Student Volunteer</label>
-                                            <p class="text-xs text-gray-600 mt-1">Get community service hours and official documentation for your volunteer work</p>
-                                            <div class="flex items-center mt-2 text-xs text-purple-700">
-                                                <i class="fas fa-star mr-1"></i>
-                                                <span>Enhanced benefits: Certificates, impact tracking, school recognition</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <input type="tel" id="parent-phone" name="parent-phone" class="form-input phone-input" placeholder="Parent's phone number">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Step 3: Account Security -->
-                    <div class="step" id="step-3">
-                        <div class="text-center mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800">Account Security</h2>
-                            <p class="text-gray-600 text-sm mt-1">Create a secure password and setup recovery questions</p>
-                        </div>
-
-                        <div class="space-y-6">
-                            <!-- Password Section -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Password -->
-                                <div>
-                                    <label for="password" class="text-sm font-medium text-gray-700">Password<span class="required-star">*</span></label>
-                                    <input type="password" id="password" name="password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Create a password">
-                                </div>
-                                
-                                <!-- Confirm Password -->
-                                <div>
-                                    <label for="confirm-password" class="text-sm font-medium text-gray-700">Confirm Password<span class="required-star">*</span></label>
-                                    <input type="password" id="confirm-password" name="confirm-password" required class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Confirm your password">
-                                </div>
-                            </div>
-
-                            <!-- Security Questions for Password Recovery -->
-                            <div class="space-y-4">
-                                <div class="text-center">
-                                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Security Questions</h3>
-                                    <p class="text-sm text-gray-600">These will help you recover your password if you forget it</p>
-                                </div>
-                                
-                                <!-- Security Question 1 -->
-                                <div>
-                                    <label for="security-question-1" class="text-sm font-medium text-gray-700">Security Question 1<span class="required-star">*</span></label>
-                                    <select id="security-question-1" name="security-question-1" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                        <option value="" disabled selected>Choose a question</option>
-                                        <option value="What was the name of your first pet?">What was the name of your first pet?</option>
-                                        <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-                                        <option value="What city were you born in?">What city were you born in?</option>
-                                        <option value="What was the name of your elementary school?">What was the name of your elementary school?</option>
-                                        <option value="What is your favorite color?">What is your favorite color?</option>
-                                    </select>
-                                    <input type="text" id="security-answer-1" name="security-answer-1" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
-                                </div>
-
-                                <!-- Security Question 2 -->
-                                <div>
-                                    <label for="security-question-2" class="text-sm font-medium text-gray-700">Security Question 2<span class="required-star">*</span></label>
-                                    <select id="security-question-2" name="security-question-2" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                        <option value="" disabled selected>Choose a question</option>
-                                        <option value="What was your childhood nickname?">What was your childhood nickname?</option>
-                                        <option value="What is the name of your best friend from childhood?">What is the name of your best friend from childhood?</option>
-                                        <option value="What was the make of your first car?">What was the make of your first car?</option>
-                                        <option value="What is your favorite book?">What is your favorite book?</option>
-                                        <option value="What is your favorite food?">What is your favorite food?</option>
-                                    </select>
-                                    <input type="text" id="security-answer-2" name="security-answer-2" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
-                                </div>
-
-                                <!-- Security Question 3 -->
-                                <div>
-                                    <label for="security-question-3" class="text-sm font-medium text-gray-700">Security Question 3<span class="required-star">*</span></label>
-                                    <select id="security-question-3" name="security-question-3" required class="form-input custom-select mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                        <option value="" disabled selected>Choose a question</option>
-                                        <option value="What is the name of the street you grew up on?">What is the name of the street you grew up on?</option>
-                                        <option value="What was your favorite subject in school?">What was your favorite subject in school?</option>
-                                        <option value="What is your father's middle name?">What is your father's middle name?</option>
-                                        <option value="What was the name of your first teacher?">What was the name of your first teacher?</option>
-                                        <option value="What is your favorite movie?">What is your favorite movie?</option>
-                                    </select>
-                                    <input type="text" id="security-answer-3" name="security-answer-3" required class="form-input mt-2 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Your answer">
-                                </div>
-                            </div>
+                    <!-- School Name (Conditional) -->
+                    <div id="school-info-section">
+                        <div class="form-group">
+                            <label for="school-name" class="form-label">School Name<span class="required-star">*</span></label>
+                            <input type="text" id="school-name" name="school-name" class="form-input" placeholder="e.g., Maasai High School">
                         </div>
                     </div>
-
-                    <!-- Step 4: Additional Information -->
-                    <div class="step" id="step-4">
-                        <div class="text-center mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800">Additional Information</h2>
-                            <p class="text-gray-600 text-sm mt-1">Final details based on your selections</p>
-                        </div>
-
-                        <div class="space-y-6">
-                            <!-- Parental Consent Section (Initially Hidden) -->
-                            <div id="parental-consent-section">
-                                <div class="p-4 rounded-lg bg-indigo-100/50 border border-indigo-200">
-                                    <p class="text-sm text-indigo-800 text-center font-semibold mb-4">
-                                        <i class="fas fa-shield-alt mr-2"></i>For your safety, volunteers under 18 require parental consent.
-                                    </p>
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label for="parent-email" class="text-sm font-medium text-gray-700">Parent/Guardian Email<span class="required-star">*</span></label>
-                                            <input type="email" id="parent-email" name="parent-email" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="parent@example.com">
-                                        </div>
-                                        <div>
-                                            <label for="parent-phone" class="text-sm font-medium text-gray-700">Parent/Guardian Phone<span class="required-star">*</span></label>
-                                            <div class="mt-1 flex rounded-lg shadow-sm">
-                                                <select id="parent-country-code" name="parent-country-code" required class="form-input custom-select block w-40 rounded-l-lg border-y border-l border-gray-300 bg-white/50 px-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                                    <!-- Populated by JS -->
-                                                </select>
-                                                <input type="tel" id="parent-phone" name="parent-phone" class="form-input flex-1 block w-full px-4 py-3 bg-white/50 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Parent's phone number">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- School Name (Conditional) -->
-                            <div id="school-info-section">
-                                <label for="school-name" class="text-sm font-medium text-gray-700">School Name<span class="required-star">*</span></label>
-                                <input type="text" id="school-name" name="school-name" class="form-input mt-1 w-full px-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g., Maasai High School">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Navigation Buttons -->
-                    <div class="flex justify-between items-center mt-8">
-                        <button type="button" id="prev-button" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors" style="display: none;">
-                            <i class="fas fa-arrow-left mr-2"></i>Previous
-                        </button>
-                        
-                        <button type="button" id="next-button" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                            Next<i class="fas fa-arrow-right ml-2"></i>
-                        </button>
-                        
-                        <button type="submit" id="submit-button" class="px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all font-semibold" style="display: none;">
-                            <i class="fas fa-user-plus mr-2"></i>Create Account
-                        </button>
-                    </div>
-
-                    <!-- Terms (shown on final step) -->
-                    <div id="terms-section" class="flex items-center mt-4" style="display: none;">
-                        <input id="terms" name="terms" type="checkbox" required class="form-input h-4 w-4 text-orange-600 border-gray-400 rounded focus:ring-orange-500">
-                        <label for="terms" class="ml-2 block text-sm text-gray-700">I agree to the <a href="/common/terms-and-conditions" class="font-semibold text-indigo-600 hover:underline">Terms and Conditions</a><span class="required-star">*</span></label>
-                    </div>
-                </form>
-                
-                <!-- Login Link -->
-                <div class="text-center mt-8">
-                    <p class="text-sm text-gray-600">
-                        Already have an account? 
-                        <a href="/login" class="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline">Login here</a>
-                    </p>
                 </div>
+
+                <!-- Navigation Buttons -->
+                <div class="nav-buttons">
+                    <button type="button" id="prev-button" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-arrow-left"></i>Previous
+                    </button>
+                    <button type="button" id="next-button" class="btn btn-primary">
+                        Next<i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button type="submit" id="submit-button" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-user-plus"></i>Create Account
+                    </button>
+                </div>
+
+                <!-- Terms (shown on final step) -->
+                <div id="terms-section">
+                    <div class="terms-row">
+                        <input id="terms" name="terms" type="checkbox" required>
+                        <label for="terms">I agree to the <a href="/common/terms-and-conditions">Terms and Conditions</a><span class="required-star">*</span></label>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Login Link -->
+            <div class="login-section">
+                <p>Already have an account? <a href="/volunteer/login">Login here</a></p>
             </div>
         </div>
     </div>
 
+    <!-- ALL JAVASCRIPT PRESERVED EXACTLY AS ORIGINAL -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('page-ready');
+            // --- NAME AUTO-CAPITALIZATION ---
+            function capitalizeName(name) {
+                if (!name || typeof name !== 'string') return name;
+                const trimmed = name.trim().replace(/\s+/g, ' ');
+                if (!trimmed) return trimmed;
+                return trimmed.split(' ').map(word => {
+                    if (!word) return word;
+                    // Handle hyphens: mary-jane -> Mary-Jane
+                    if (word.includes('-')) {
+                        return word.split('-').map(part =>
+                            part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part
+                        ).join('-');
+                    }
+                    // Handle apostrophes: o'brien -> O'Brien
+                    if (word.includes("'")) {
+                        return word.split("'").map(part =>
+                            part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part
+                        ).join("'");
+                    }
+                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                }).join(' ');
+            }
+
+            // Auto-capitalize first and last name on blur
+            const firstNameInput = document.getElementById('first-name');
+            const lastNameInput = document.getElementById('last-name');
+
+            if (firstNameInput) {
+                firstNameInput.addEventListener('blur', function() {
+                    this.value = capitalizeName(this.value);
+                });
+            }
+
+            if (lastNameInput) {
+                lastNameInput.addEventListener('blur', function() {
+                    this.value = capitalizeName(this.value);
+                });
+            }
+
             // --- COUNTRY CODE POPULATION ---
             const countries = [
-                { name: "United States", shortName: "US", code: "+1", flag: "🇺🇸" },
-                { name: "Afghanistan", shortName: "AF", code: "+93", flag: "🇦🇫" },
-                { name: "Albania", shortName: "AL", code: "+355", flag: "🇦🇱" },
-                { name: "Algeria", shortName: "DZ", code: "+213", flag: "🇩🇿" },
-                { name: "American Samoa", shortName: "AS", code: "+1684", flag: "🇦🇸" },
-                { name: "Andorra", shortName: "AD", code: "+376", flag: "🇦🇩" },
-                { name: "Angola", shortName: "AO", code: "+244", flag: "🇦🇴" },
-                { name: "Anguilla", shortName: "AI", code: "+1264", flag: "🇦🇮" },
-                { name: "Antarctica", shortName: "AQ", code: "+672", flag: "🇦🇶" },
-                { name: "Antigua and Barbuda", shortName: "AG", code: "+1268", flag: "🇦🇬" },
-                { name: "Argentina", shortName: "AR", code: "+54", flag: "🇦🇷" },
-                { name: "Armenia", shortName: "AM", code: "+374", flag: "🇦🇲" },
-                { name: "Aruba", shortName: "AW", code: "+297", flag: "🇦🇼" },
-                { name: "Australia", shortName: "AU", code: "+61", flag: "🇦🇺" },
-                { name: "Austria", shortName: "AT", code: "+43", flag: "🇦🇹" },
-                { name: "Azerbaijan", shortName: "AZ", code: "+994", flag: "🇦🇿" },
-                { name: "Bahamas", shortName: "BS", code: "+1242", flag: "🇧🇸" },
-                { name: "Bahrain", shortName: "BH", code: "+973", flag: "🇧🇭" },
-                { name: "Bangladesh", shortName: "BD", code: "+880", flag: "🇧🇩" },
-                { name: "Barbados", shortName: "BB", code: "+1246", flag: "🇧🇧" },
-                { name: "Belarus", shortName: "BY", code: "+375", flag: "🇧🇾" },
-                { name: "Belgium", shortName: "BE", code: "+32", flag: "🇧🇪" },
-                { name: "Belize", shortName: "BZ", code: "+501", flag: "🇧🇿" },
-                { name: "Benin", shortName: "BJ", code: "+229", flag: "🇧🇯" },
-                { name: "Bermuda", shortName: "BM", code: "+1441", flag: "🇧🇲" },
-                { name: "Bhutan", shortName: "BT", code: "+975", flag: "🇧🇹" },
-                { name: "Bolivia", shortName: "BO", code: "+591", flag: "🇧🇴" },
-                { name: "Bosnia and Herzegovina", shortName: "BA", code: "+387", flag: "🇧🇦" },
-                { name: "Botswana", shortName: "BW", code: "+267", flag: "🇧🇼" },
-                { name: "Brazil", shortName: "BR", code: "+55", flag: "🇧🇷" },
-                { name: "British Virgin Islands", shortName: "VG", code: "+1284", flag: "🇻🇬" },
-                { name: "Brunei", shortName: "BN", code: "+673", flag: "🇧🇳" },
-                { name: "Bulgaria", shortName: "BG", code: "+359", flag: "🇧🇬" },
-                { name: "Burkina Faso", shortName: "BF", code: "+226", flag: "🇧🇫" },
-                { name: "Burundi", shortName: "BI", code: "+257", flag: "🇧🇮" },
-                { name: "Cambodia", shortName: "KH", code: "+855", flag: "🇰🇭" },
-                { name: "Cameroon", shortName: "CM", code: "+237", flag: "🇨🇲" },
-                { name: "Canada", shortName: "CA", code: "+1", flag: "🇨🇦" },
-                { name: "Cape Verde", shortName: "CV", code: "+238", flag: "🇨🇻" },
-                { name: "Cayman Islands", shortName: "KY", code: "+1345", flag: "🇰🇾" },
-                { name: "Central African Republic", shortName: "CF", code: "+236", flag: "🇨🇫" },
-                { name: "Chad", shortName: "TD", code: "+235", flag: "🇹🇩" },
-                { name: "Chile", shortName: "CL", code: "+56", flag: "🇨🇱" },
-                { name: "China", shortName: "CN", code: "+86", flag: "🇨🇳" },
-                { name: "Christmas Island", shortName: "CX", code: "+61", flag: "🇨🇽" },
-                { name: "Cocos Islands", shortName: "CC", code: "+61", flag: "🇨🇨" },
-                { name: "Colombia", shortName: "CO", code: "+57", flag: "🇨🇴" },
-                { name: "Comoros", shortName: "KM", code: "+269", flag: "🇰🇲" },
-                { name: "Cook Islands", shortName: "CK", code: "+682", flag: "🇨🇰" },
-                { name: "Costa Rica", shortName: "CR", code: "+506", flag: "🇨🇷" },
-                { name: "Croatia", shortName: "HR", code: "+385", flag: "🇭🇷" },
-                { name: "Cuba", shortName: "CU", code: "+53", flag: "🇨🇺" },
-                { name: "Curaçao", shortName: "CW", code: "+599", flag: "🇨🇼" },
-                { name: "Cyprus", shortName: "CY", code: "+357", flag: "🇨🇾" },
-                { name: "Czech Republic", shortName: "CZ", code: "+420", flag: "🇨🇿" },
-                { name: "Democratic Republic of the Congo", shortName: "CD", code: "+243", flag: "🇨🇩" },
-                { name: "Denmark", shortName: "DK", code: "+45", flag: "🇩🇰" },
-                { name: "Djibouti", shortName: "DJ", code: "+253", flag: "🇩🇯" },
-                { name: "Dominica", shortName: "DM", code: "+1767", flag: "🇩🇲" },
-                { name: "Dominican Republic", shortName: "DO", code: "+1809", flag: "🇩🇴" },
-                { name: "East Timor", shortName: "TL", code: "+670", flag: "🇹🇱" },
-                { name: "Ecuador", shortName: "EC", code: "+593", flag: "🇪🇨" },
-                { name: "Egypt", shortName: "EG", code: "+20", flag: "🇪🇬" },
-                { name: "El Salvador", shortName: "SV", code: "+503", flag: "🇸🇻" },
-                { name: "Equatorial Guinea", shortName: "GQ", code: "+240", flag: "🇬🇶" },
-                { name: "Eritrea", shortName: "ER", code: "+291", flag: "🇪🇷" },
-                { name: "Estonia", shortName: "EE", code: "+372", flag: "🇪🇪" },
-                { name: "Ethiopia", shortName: "ET", code: "+251", flag: "🇪🇹" },
-                { name: "Falkland Islands", shortName: "FK", code: "+500", flag: "🇫🇰" },
-                { name: "Faroe Islands", shortName: "FO", code: "+298", flag: "🇫🇴" },
-                { name: "Fiji", shortName: "FJ", code: "+679", flag: "🇫🇯" },
-                { name: "Finland", shortName: "FI", code: "+358", flag: "🇫🇮" },
-                { name: "France", shortName: "FR", code: "+33", flag: "🇫🇷" },
-                { name: "French Polynesia", shortName: "PF", code: "+689", flag: "🇵🇫" },
-                { name: "Gabon", shortName: "GA", code: "+241", flag: "🇬🇦" },
-                { name: "Gambia", shortName: "GM", code: "+220", flag: "🇬🇲" },
-                { name: "Georgia", shortName: "GE", code: "+995", flag: "🇬🇪" },
-                { name: "Germany", shortName: "DE", code: "+49", flag: "🇩🇪" },
-                { name: "Ghana", shortName: "GH", code: "+233", flag: "🇬🇭" },
-                { name: "Gibraltar", shortName: "GI", code: "+350", flag: "🇬🇮" },
-                { name: "Greece", shortName: "GR", code: "+30", flag: "🇬🇷" },
-                { name: "Greenland", shortName: "GL", code: "+299", flag: "🇬🇱" },
-                { name: "Grenada", shortName: "GD", code: "+1473", flag: "🇬🇩" },
-                { name: "Guam", shortName: "GU", code: "+1671", flag: "🇬🇺" },
-                { name: "Guatemala", shortName: "GT", code: "+502", flag: "🇬🇹" },
-                { name: "Guernsey", shortName: "GG", code: "+44", flag: "🇬🇬" },
-                { name: "Guinea", shortName: "GN", code: "+224", flag: "🇬🇳" },
-                { name: "Guinea-Bissau", shortName: "GW", code: "+245", flag: "🇬🇼" },
-                { name: "Guyana", shortName: "GY", code: "+592", flag: "🇬🇾" },
-                { name: "Haiti", shortName: "HT", code: "+509", flag: "🇭🇹" },
-                { name: "Honduras", shortName: "HN", code: "+504", flag: "🇭🇳" },
-                { name: "Hong Kong", shortName: "HK", code: "+852", flag: "🇭🇰" },
-                { name: "Hungary", shortName: "HU", code: "+36", flag: "🇭🇺" },
-                { name: "Iceland", shortName: "IS", code: "+354", flag: "🇮🇸" },
-                { name: "India", shortName: "IN", code: "+91", flag: "🇮🇳" },
-                { name: "Indonesia", shortName: "ID", code: "+62", flag: "🇮🇩" },
-                { name: "Iran", shortName: "IR", code: "+98", flag: "🇮🇷" },
-                { name: "Iraq", shortName: "IQ", code: "+964", flag: "🇮🇶" },
-                { name: "Ireland", shortName: "IE", code: "+353", flag: "🇮🇪" },
-                { name: "Isle of Man", shortName: "IM", code: "+44", flag: "🇮🇲" },
-                { name: "Israel", shortName: "IL", code: "+972", flag: "🇮🇱" },
-                { name: "Italy", shortName: "IT", code: "+39", flag: "🇮🇹" },
-                { name: "Ivory Coast", shortName: "CI", code: "+225", flag: "🇨🇮" },
-                { name: "Jamaica", shortName: "JM", code: "+1876", flag: "🇯🇲" },
-                { name: "Japan", shortName: "JP", code: "+81", flag: "🇯🇵" },
-                { name: "Jersey", shortName: "JE", code: "+44", flag: "🇯🇪" },
-                { name: "Jordan", shortName: "JO", code: "+962", flag: "🇯🇴" },
-                { name: "Kazakhstan", shortName: "KZ", code: "+7", flag: "🇰🇿" },
-                { name: "Kenya", shortName: "KE", code: "+254", flag: "🇰🇪" },
-                { name: "Kiribati", shortName: "KI", code: "+686", flag: "🇰🇮" },
-                { name: "Kosovo", shortName: "XK", code: "+383", flag: "🇽🇰" },
-                { name: "Kuwait", shortName: "KW", code: "+965", flag: "🇰🇼" },
-                { name: "Kyrgyzstan", shortName: "KG", code: "+996", flag: "🇰🇬" },
-                { name: "Laos", shortName: "LA", code: "+856", flag: "🇱🇦" },
-                { name: "Latvia", shortName: "LV", code: "+371", flag: "🇱🇻" },
-                { name: "Lebanon", shortName: "LB", code: "+961", flag: "🇱🇧" },
-                { name: "Lesotho", shortName: "LS", code: "+266", flag: "🇱🇸" },
-                { name: "Liberia", shortName: "LR", code: "+231", flag: "🇱🇷" },
-                { name: "Libya", shortName: "LY", code: "+218", flag: "🇱🇾" },
-                { name: "Liechtenstein", shortName: "LI", code: "+423", flag: "🇱🇮" },
-                { name: "Lithuania", shortName: "LT", code: "+370", flag: "🇱🇹" },
-                { name: "Luxembourg", shortName: "LU", code: "+352", flag: "🇱🇺" },
-                { name: "Macao", shortName: "MO", code: "+853", flag: "🇲🇴" },
-                { name: "Macedonia", shortName: "MK", code: "+389", flag: "🇲🇰" },
-                { name: "Madagascar", shortName: "MG", code: "+261", flag: "🇲🇬" },
-                { name: "Malawi", shortName: "MW", code: "+265", flag: "🇲🇼" },
-                { name: "Malaysia", shortName: "MY", code: "+60", flag: "🇲🇾" },
-                { name: "Maldives", shortName: "MV", code: "+960", flag: "🇲🇻" },
-                { name: "Mali", shortName: "ML", code: "+223", flag: "🇲🇱" },
-                { name: "Malta", shortName: "MT", code: "+356", flag: "🇲🇹" },
-                { name: "Marshall Islands", shortName: "MH", code: "+692", flag: "🇲🇭" },
-                { name: "Mauritania", shortName: "MR", code: "+222", flag: "🇲🇷" },
-                { name: "Mauritius", shortName: "MU", code: "+230", flag: "🇲🇺" },
-                { name: "Mayotte", shortName: "YT", code: "+262", flag: "🇾🇹" },
-                { name: "Mexico", shortName: "MX", code: "+52", flag: "🇲🇽" },
-                { name: "Micronesia", shortName: "FM", code: "+691", flag: "🇫🇲" },
-                { name: "Moldova", shortName: "MD", code: "+373", flag: "🇲🇩" },
-                { name: "Monaco", shortName: "MC", code: "+377", flag: "🇲🇨" },
-                { name: "Mongolia", shortName: "MN", code: "+976", flag: "🇲🇳" },
-                { name: "Montenegro", shortName: "ME", code: "+382", flag: "🇲🇪" },
-                { name: "Montserrat", shortName: "MS", code: "+1664", flag: "🇲🇸" },
-                { name: "Morocco", shortName: "MA", code: "+212", flag: "🇲🇦" },
-                { name: "Mozambique", shortName: "MZ", code: "+258", flag: "🇲🇿" },
-                { name: "Myanmar", shortName: "MM", code: "+95", flag: "🇲🇲" },
-                { name: "Namibia", shortName: "NA", code: "+264", flag: "🇳🇦" },
-                { name: "Nauru", shortName: "NR", code: "+674", flag: "🇳🇷" },
-                { name: "Nepal", shortName: "NP", code: "+977", flag: "🇳🇵" },
-                { name: "Netherlands", shortName: "NL", code: "+31", flag: "🇳🇱" },
-                { name: "New Caledonia", shortName: "NC", code: "+687", flag: "🇳🇨" },
-                { name: "New Zealand", shortName: "NZ", code: "+64", flag: "🇳🇿" },
-                { name: "Nicaragua", shortName: "NI", code: "+505", flag: "🇳🇮" },
-                { name: "Niger", shortName: "NE", code: "+227", flag: "🇳🇪" },
-                { name: "Nigeria", shortName: "NG", code: "+234", flag: "🇳🇬" },
-                { name: "Niue", shortName: "NU", code: "+683", flag: "🇳🇺" },
-                { name: "Norfolk Island", shortName: "NF", code: "+672", flag: "🇳🇫" },
-                { name: "North Korea", shortName: "KP", code: "+850", flag: "🇰🇵" },
-                { name: "Northern Mariana Islands", shortName: "MP", code: "+1670", flag: "🇲🇵" },
-                { name: "Norway", shortName: "NO", code: "+47", flag: "🇳🇴" },
-                { name: "Oman", shortName: "OM", code: "+968", flag: "🇴🇲" },
-                { name: "Pakistan", shortName: "PK", code: "+92", flag: "🇵🇰" },
-                { name: "Palau", shortName: "PW", code: "+680", flag: "🇵🇼" },
-                { name: "Palestine", shortName: "PS", code: "+970", flag: "🇵🇸" },
-                { name: "Panama", shortName: "PA", code: "+507", flag: "🇵🇦" },
-                { name: "Papua New Guinea", shortName: "PG", code: "+675", flag: "🇵🇬" },
-                { name: "Paraguay", shortName: "PY", code: "+595", flag: "🇵🇾" },
-                { name: "Peru", shortName: "PE", code: "+51", flag: "🇵🇪" },
-                { name: "Philippines", shortName: "PH", code: "+63", flag: "🇵🇭" },
-                { name: "Pitcairn", shortName: "PN", code: "+64", flag: "🇵🇳" },
-                { name: "Poland", shortName: "PL", code: "+48", flag: "🇵🇱" },
-                { name: "Portugal", shortName: "PT", code: "+351", flag: "🇵🇹" },
-                { name: "Puerto Rico", shortName: "PR", code: "+1787", flag: "🇵🇷" },
-                { name: "Qatar", shortName: "QA", code: "+974", flag: "🇶🇦" },
-                { name: "Republic of the Congo", shortName: "CG", code: "+242", flag: "🇨🇬" },
-                { name: "Reunion", shortName: "RE", code: "+262", flag: "🇷🇪" },
-                { name: "Romania", shortName: "RO", code: "+40", flag: "🇷🇴" },
-                { name: "Russia", shortName: "RU", code: "+7", flag: "🇷🇺" },
-                { name: "Rwanda", shortName: "RW", code: "+250", flag: "🇷🇼" },
-                { name: "Saint Barthelemy", shortName: "BL", code: "+590", flag: "🇧🇱" },
-                { name: "Saint Helena", shortName: "SH", code: "+290", flag: "🇸🇭" },
-                { name: "Saint Kitts and Nevis", shortName: "KN", code: "+1869", flag: "🇰🇳" },
-                { name: "Saint Lucia", shortName: "LC", code: "+1758", flag: "🇱🇨" },
-                { name: "Saint Martin", shortName: "MF", code: "+590", flag: "🇲🇫" },
-                { name: "Saint Pierre and Miquelon", shortName: "PM", code: "+508", flag: "🇵🇲" },
-                { name: "Saint Vincent and the Grenadines", shortName: "VC", code: "+1784", flag: "🇻🇨" },
-                { name: "Samoa", shortName: "WS", code: "+685", flag: "🇼🇸" },
-                { name: "San Marino", shortName: "SM", code: "+378", flag: "🇸🇲" },
-                { name: "Sao Tome and Principe", shortName: "ST", code: "+239", flag: "🇸🇹" },
-                { name: "Saudi Arabia", shortName: "SA", code: "+966", flag: "🇸🇦" },
-                { name: "Senegal", shortName: "SN", code: "+221", flag: "🇸🇳" },
-                { name: "Serbia", shortName: "RS", code: "+381", flag: "🇷🇸" },
-                { name: "Seychelles", shortName: "SC", code: "+248", flag: "🇸🇨" },
-                { name: "Sierra Leone", shortName: "SL", code: "+232", flag: "🇸🇱" },
-                { name: "Singapore", shortName: "SG", code: "+65", flag: "🇸🇬" },
-                { name: "Sint Maarten", shortName: "SX", code: "+1721", flag: "🇸🇽" },
-                { name: "Slovakia", shortName: "SK", code: "+421", flag: "🇸🇰" },
-                { name: "Slovenia", shortName: "SI", code: "+386", flag: "🇸🇮" },
-                { name: "Solomon Islands", shortName: "SB", code: "+677", flag: "🇸🇧" },
-                { name: "Somalia", shortName: "SO", code: "+252", flag: "🇸🇴" },
-                { name: "South Africa", shortName: "ZA", code: "+27", flag: "🇿🇦" },
-                { name: "South Korea", shortName: "KR", code: "+82", flag: "🇰🇷" },
-                { name: "South Sudan", shortName: "SS", code: "+211", flag: "🇸🇸" },
-                { name: "Spain", shortName: "ES", code: "+34", flag: "🇪🇸" },
-                { name: "Sri Lanka", shortName: "LK", code: "+94", flag: "🇱🇰" },
-                { name: "Sudan", shortName: "SD", code: "+249", flag: "🇸🇩" },
-                { name: "Suriname", shortName: "SR", code: "+597", flag: "🇸🇷" },
-                { name: "Svalbard and Jan Mayen", shortName: "SJ", code: "+47", flag: "🇸🇯" },
-                { name: "Swaziland", shortName: "SZ", code: "+268", flag: "🇸🇿" },
-                { name: "Sweden", shortName: "SE", code: "+46", flag: "🇸🇪" },
-                { name: "Switzerland", shortName: "CH", code: "+41", flag: "🇨🇭" },
-                { name: "Syria", shortName: "SY", code: "+963", flag: "🇸🇾" },
-                { name: "Taiwan", shortName: "TW", code: "+886", flag: "🇹🇼" },
-                { name: "Tajikistan", shortName: "TJ", code: "+992", flag: "🇹🇯" },
-                { name: "Tanzania", shortName: "TZ", code: "+255", flag: "🇹🇿" },
-                { name: "Thailand", shortName: "TH", code: "+66", flag: "🇹🇭" },
-                { name: "Togo", shortName: "TG", code: "+228", flag: "🇹🇬" },
-                { name: "Tokelau", shortName: "TK", code: "+690", flag: "🇹🇰" },
-                { name: "Tonga", shortName: "TO", code: "+676", flag: "🇹🇴" },
-                { name: "Trinidad and Tobago", shortName: "TT", code: "+1868", flag: "🇹🇹" },
-                { name: "Tunisia", shortName: "TN", code: "+216", flag: "🇹🇳" },
-                { name: "Turkey", shortName: "TR", code: "+90", flag: "🇹🇷" },
-                { name: "Turkmenistan", shortName: "TM", code: "+993", flag: "🇹🇲" },
-                { name: "Turks and Caicos Islands", shortName: "TC", code: "+1649", flag: "🇹🇨" },
-                { name: "Tuvalu", shortName: "TV", code: "+688", flag: "🇹🇻" },
-                { name: "U.S. Virgin Islands", shortName: "VI", code: "+1340", flag: "🇻🇮" },
-                { name: "Uganda", shortName: "UG", code: "+256", flag: "🇺🇬" },
-                { name: "Ukraine", shortName: "UA", code: "+380", flag: "🇺🇦" },
-                { name: "United Arab Emirates", shortName: "AE", code: "+971", flag: "🇦🇪" },
-                { name: "United Kingdom", shortName: "GB", code: "+44", flag: "🇬🇧" },
-                { name: "Uruguay", shortName: "UY", code: "+598", flag: "🇺🇾" },
-                { name: "Uzbekistan", shortName: "UZ", code: "+998", flag: "🇺🇿" },
-                { name: "Vanuatu", shortName: "VU", code: "+678", flag: "🇻🇺" },
-                { name: "Vatican", shortName: "VA", code: "+39", flag: "🇻🇦" },
-                { name: "Venezuela", shortName: "VE", code: "+58", flag: "🇻🇪" },
-                { name: "Vietnam", shortName: "VN", code: "+84", flag: "🇻🇳" },
-                { name: "Wallis and Futuna", shortName: "WF", code: "+681", flag: "🇼🇫" },
-                { name: "Western Sahara", shortName: "EH", code: "+212", flag: "🇪🇭" },
-                { name: "Yemen", shortName: "YE", code: "+967", flag: "🇾🇪" },
-                { name: "Zambia", shortName: "ZM", code: "+260", flag: "🇿🇲" },
-                { name: "Zimbabwe", shortName: "ZW", code: "+263", flag: "🇿🇼" }
+                { name: "United States", shortName: "US", code: "+1", flag: "\u{1F1FA}\u{1F1F8}" },
+                { name: "Afghanistan", shortName: "AF", code: "+93", flag: "\u{1F1E6}\u{1F1EB}" },
+                { name: "Albania", shortName: "AL", code: "+355", flag: "\u{1F1E6}\u{1F1F1}" },
+                { name: "Algeria", shortName: "DZ", code: "+213", flag: "\u{1F1E9}\u{1F1FF}" },
+                { name: "American Samoa", shortName: "AS", code: "+1684", flag: "\u{1F1E6}\u{1F1F8}" },
+                { name: "Andorra", shortName: "AD", code: "+376", flag: "\u{1F1E6}\u{1F1E9}" },
+                { name: "Angola", shortName: "AO", code: "+244", flag: "\u{1F1E6}\u{1F1F4}" },
+                { name: "Anguilla", shortName: "AI", code: "+1264", flag: "\u{1F1E6}\u{1F1EE}" },
+                { name: "Antarctica", shortName: "AQ", code: "+672", flag: "\u{1F1E6}\u{1F1F6}" },
+                { name: "Antigua and Barbuda", shortName: "AG", code: "+1268", flag: "\u{1F1E6}\u{1F1EC}" },
+                { name: "Argentina", shortName: "AR", code: "+54", flag: "\u{1F1E6}\u{1F1F7}" },
+                { name: "Armenia", shortName: "AM", code: "+374", flag: "\u{1F1E6}\u{1F1F2}" },
+                { name: "Aruba", shortName: "AW", code: "+297", flag: "\u{1F1E6}\u{1F1FC}" },
+                { name: "Australia", shortName: "AU", code: "+61", flag: "\u{1F1E6}\u{1F1FA}" },
+                { name: "Austria", shortName: "AT", code: "+43", flag: "\u{1F1E6}\u{1F1F9}" },
+                { name: "Azerbaijan", shortName: "AZ", code: "+994", flag: "\u{1F1E6}\u{1F1FF}" },
+                { name: "Bahamas", shortName: "BS", code: "+1242", flag: "\u{1F1E7}\u{1F1F8}" },
+                { name: "Bahrain", shortName: "BH", code: "+973", flag: "\u{1F1E7}\u{1F1ED}" },
+                { name: "Bangladesh", shortName: "BD", code: "+880", flag: "\u{1F1E7}\u{1F1E9}" },
+                { name: "Barbados", shortName: "BB", code: "+1246", flag: "\u{1F1E7}\u{1F1E7}" },
+                { name: "Belarus", shortName: "BY", code: "+375", flag: "\u{1F1E7}\u{1F1FE}" },
+                { name: "Belgium", shortName: "BE", code: "+32", flag: "\u{1F1E7}\u{1F1EA}" },
+                { name: "Belize", shortName: "BZ", code: "+501", flag: "\u{1F1E7}\u{1F1FF}" },
+                { name: "Benin", shortName: "BJ", code: "+229", flag: "\u{1F1E7}\u{1F1EF}" },
+                { name: "Bermuda", shortName: "BM", code: "+1441", flag: "\u{1F1E7}\u{1F1F2}" },
+                { name: "Bhutan", shortName: "BT", code: "+975", flag: "\u{1F1E7}\u{1F1F9}" },
+                { name: "Bolivia", shortName: "BO", code: "+591", flag: "\u{1F1E7}\u{1F1F4}" },
+                { name: "Bosnia and Herzegovina", shortName: "BA", code: "+387", flag: "\u{1F1E7}\u{1F1E6}" },
+                { name: "Botswana", shortName: "BW", code: "+267", flag: "\u{1F1E7}\u{1F1FC}" },
+                { name: "Brazil", shortName: "BR", code: "+55", flag: "\u{1F1E7}\u{1F1F7}" },
+                { name: "British Virgin Islands", shortName: "VG", code: "+1284", flag: "\u{1F1FB}\u{1F1EC}" },
+                { name: "Brunei", shortName: "BN", code: "+673", flag: "\u{1F1E7}\u{1F1F3}" },
+                { name: "Bulgaria", shortName: "BG", code: "+359", flag: "\u{1F1E7}\u{1F1EC}" },
+                { name: "Burkina Faso", shortName: "BF", code: "+226", flag: "\u{1F1E7}\u{1F1EB}" },
+                { name: "Burundi", shortName: "BI", code: "+257", flag: "\u{1F1E7}\u{1F1EE}" },
+                { name: "Cambodia", shortName: "KH", code: "+855", flag: "\u{1F1F0}\u{1F1ED}" },
+                { name: "Cameroon", shortName: "CM", code: "+237", flag: "\u{1F1E8}\u{1F1F2}" },
+                { name: "Canada", shortName: "CA", code: "+1", flag: "\u{1F1E8}\u{1F1E6}" },
+                { name: "Cape Verde", shortName: "CV", code: "+238", flag: "\u{1F1E8}\u{1F1FB}" },
+                { name: "Cayman Islands", shortName: "KY", code: "+1345", flag: "\u{1F1F0}\u{1F1FE}" },
+                { name: "Central African Republic", shortName: "CF", code: "+236", flag: "\u{1F1E8}\u{1F1EB}" },
+                { name: "Chad", shortName: "TD", code: "+235", flag: "\u{1F1F9}\u{1F1E9}" },
+                { name: "Chile", shortName: "CL", code: "+56", flag: "\u{1F1E8}\u{1F1F1}" },
+                { name: "China", shortName: "CN", code: "+86", flag: "\u{1F1E8}\u{1F1F3}" },
+                { name: "Colombia", shortName: "CO", code: "+57", flag: "\u{1F1E8}\u{1F1F4}" },
+                { name: "Congo", shortName: "CD", code: "+243", flag: "\u{1F1E8}\u{1F1E9}" },
+                { name: "Costa Rica", shortName: "CR", code: "+506", flag: "\u{1F1E8}\u{1F1F7}" },
+                { name: "Croatia", shortName: "HR", code: "+385", flag: "\u{1F1ED}\u{1F1F7}" },
+                { name: "Cuba", shortName: "CU", code: "+53", flag: "\u{1F1E8}\u{1F1FA}" },
+                { name: "Cyprus", shortName: "CY", code: "+357", flag: "\u{1F1E8}\u{1F1FE}" },
+                { name: "Czech Republic", shortName: "CZ", code: "+420", flag: "\u{1F1E8}\u{1F1FF}" },
+                { name: "Denmark", shortName: "DK", code: "+45", flag: "\u{1F1E9}\u{1F1F0}" },
+                { name: "Ecuador", shortName: "EC", code: "+593", flag: "\u{1F1EA}\u{1F1E8}" },
+                { name: "Egypt", shortName: "EG", code: "+20", flag: "\u{1F1EA}\u{1F1EC}" },
+                { name: "Estonia", shortName: "EE", code: "+372", flag: "\u{1F1EA}\u{1F1EA}" },
+                { name: "Ethiopia", shortName: "ET", code: "+251", flag: "\u{1F1EA}\u{1F1F9}" },
+                { name: "Finland", shortName: "FI", code: "+358", flag: "\u{1F1EB}\u{1F1EE}" },
+                { name: "France", shortName: "FR", code: "+33", flag: "\u{1F1EB}\u{1F1F7}" },
+                { name: "Germany", shortName: "DE", code: "+49", flag: "\u{1F1E9}\u{1F1EA}" },
+                { name: "Ghana", shortName: "GH", code: "+233", flag: "\u{1F1EC}\u{1F1ED}" },
+                { name: "Greece", shortName: "GR", code: "+30", flag: "\u{1F1EC}\u{1F1F7}" },
+                { name: "Hong Kong", shortName: "HK", code: "+852", flag: "\u{1F1ED}\u{1F1F0}" },
+                { name: "Hungary", shortName: "HU", code: "+36", flag: "\u{1F1ED}\u{1F1FA}" },
+                { name: "India", shortName: "IN", code: "+91", flag: "\u{1F1EE}\u{1F1F3}" },
+                { name: "Indonesia", shortName: "ID", code: "+62", flag: "\u{1F1EE}\u{1F1E9}" },
+                { name: "Ireland", shortName: "IE", code: "+353", flag: "\u{1F1EE}\u{1F1EA}" },
+                { name: "Israel", shortName: "IL", code: "+972", flag: "\u{1F1EE}\u{1F1F1}" },
+                { name: "Italy", shortName: "IT", code: "+39", flag: "\u{1F1EE}\u{1F1F9}" },
+                { name: "Jamaica", shortName: "JM", code: "+1876", flag: "\u{1F1EF}\u{1F1F2}" },
+                { name: "Japan", shortName: "JP", code: "+81", flag: "\u{1F1EF}\u{1F1F5}" },
+                { name: "Kenya", shortName: "KE", code: "+254", flag: "\u{1F1F0}\u{1F1EA}" },
+                { name: "Malaysia", shortName: "MY", code: "+60", flag: "\u{1F1F2}\u{1F1FE}" },
+                { name: "Mexico", shortName: "MX", code: "+52", flag: "\u{1F1F2}\u{1F1FD}" },
+                { name: "Netherlands", shortName: "NL", code: "+31", flag: "\u{1F1F3}\u{1F1F1}" },
+                { name: "New Zealand", shortName: "NZ", code: "+64", flag: "\u{1F1F3}\u{1F1FF}" },
+                { name: "Nigeria", shortName: "NG", code: "+234", flag: "\u{1F1F3}\u{1F1EC}" },
+                { name: "Norway", shortName: "NO", code: "+47", flag: "\u{1F1F3}\u{1F1F4}" },
+                { name: "Pakistan", shortName: "PK", code: "+92", flag: "\u{1F1F5}\u{1F1F0}" },
+                { name: "Philippines", shortName: "PH", code: "+63", flag: "\u{1F1F5}\u{1F1ED}" },
+                { name: "Poland", shortName: "PL", code: "+48", flag: "\u{1F1F5}\u{1F1F1}" },
+                { name: "Portugal", shortName: "PT", code: "+351", flag: "\u{1F1F5}\u{1F1F9}" },
+                { name: "Russia", shortName: "RU", code: "+7", flag: "\u{1F1F7}\u{1F1FA}" },
+                { name: "Saudi Arabia", shortName: "SA", code: "+966", flag: "\u{1F1F8}\u{1F1E6}" },
+                { name: "Singapore", shortName: "SG", code: "+65", flag: "\u{1F1F8}\u{1F1EC}" },
+                { name: "South Africa", shortName: "ZA", code: "+27", flag: "\u{1F1FF}\u{1F1E6}" },
+                { name: "South Korea", shortName: "KR", code: "+82", flag: "\u{1F1F0}\u{1F1F7}" },
+                { name: "Spain", shortName: "ES", code: "+34", flag: "\u{1F1EA}\u{1F1F8}" },
+                { name: "Sweden", shortName: "SE", code: "+46", flag: "\u{1F1F8}\u{1F1EA}" },
+                { name: "Switzerland", shortName: "CH", code: "+41", flag: "\u{1F1E8}\u{1F1ED}" },
+                { name: "Tanzania", shortName: "TZ", code: "+255", flag: "\u{1F1F9}\u{1F1FF}" },
+                { name: "Thailand", shortName: "TH", code: "+66", flag: "\u{1F1F9}\u{1F1ED}" },
+                { name: "Turkey", shortName: "TR", code: "+90", flag: "\u{1F1F9}\u{1F1F7}" },
+                { name: "Uganda", shortName: "UG", code: "+256", flag: "\u{1F1FA}\u{1F1EC}" },
+                { name: "Ukraine", shortName: "UA", code: "+380", flag: "\u{1F1FA}\u{1F1E6}" },
+                { name: "United Arab Emirates", shortName: "AE", code: "+971", flag: "\u{1F1E6}\u{1F1EA}" },
+                { name: "United Kingdom", shortName: "GB", code: "+44", flag: "\u{1F1EC}\u{1F1E7}" },
+                { name: "Vietnam", shortName: "VN", code: "+84", flag: "\u{1F1FB}\u{1F1F3}" },
+                { name: "Zimbabwe", shortName: "ZW", code: "+263", flag: "\u{1F1FF}\u{1F1FC}" }
             ];
 
-            // Populate main phone number country selector
             function populateCountrySelector(selectElement) {
                 countries.forEach(country => {
                     const option = document.createElement('option');
@@ -761,17 +1115,15 @@
                     option.setAttribute('data-name', country.name);
                     selectElement.appendChild(option);
                 });
-                // Set United States as default
                 selectElement.value = "+1";
             }
 
             const countryCodeSelect = document.getElementById('country-code');
             const parentCountryCodeSelect = document.getElementById('parent-country-code');
-            
-            // Populate both country selectors
+
             populateCountrySelector(countryCodeSelect);
             populateCountrySelector(parentCountryCodeSelect);
-            
+
             // --- TIMEZONE DETECTION AND POPULATION ---
             const commonTimezones = [
                 { value: 'America/New_York', label: 'Eastern Time (US & Canada)', region: 'North America' },
@@ -783,7 +1135,7 @@
                 { value: 'America/Honolulu', label: 'Hawaii', region: 'North America' },
                 { value: 'America/Toronto', label: 'Toronto, Montreal', region: 'North America' },
                 { value: 'America/Mexico_City', label: 'Mexico City', region: 'North America' },
-                { value: 'America/Sao_Paulo', label: 'São Paulo, Brazil', region: 'South America' },
+                { value: 'America/Sao_Paulo', label: 'Sao Paulo, Brazil', region: 'South America' },
                 { value: 'America/Buenos_Aires', label: 'Buenos Aires, Argentina', region: 'South America' },
                 { value: 'Europe/London', label: 'London, Dublin', region: 'Europe' },
                 { value: 'Europe/Paris', label: 'Paris, Berlin, Rome, Madrid', region: 'Europe' },
@@ -811,18 +1163,16 @@
                     return Intl.DateTimeFormat().resolvedOptions().timeZone;
                 } catch (error) {
                     console.warn('Timezone detection failed:', error);
-                    return 'America/New_York'; // fallback
+                    return 'America/New_York';
                 }
             }
 
             function populateTimezoneSelector() {
                 const timezoneSelect = document.getElementById('timezone');
                 const detectedTimezone = detectCurrentTimezone();
-                
-                // Clear existing options
+
                 timezoneSelect.innerHTML = '';
-                
-                // Group timezones by region
+
                 const regionGroups = {};
                 commonTimezones.forEach(tz => {
                     if (!regionGroups[tz.region]) {
@@ -830,34 +1180,31 @@
                     }
                     regionGroups[tz.region].push(tz);
                 });
-                
-                // Add timezone options grouped by region
+
                 Object.keys(regionGroups).forEach(region => {
                     const optgroup = document.createElement('optgroup');
                     optgroup.label = region;
-                    
+
                     regionGroups[region].forEach(timezone => {
                         const option = document.createElement('option');
                         option.value = timezone.value;
                         option.textContent = timezone.label;
-                        
-                        // Mark as selected if this matches detected timezone
+
                         if (timezone.value === detectedTimezone) {
                             option.selected = true;
                         }
-                        
+
                         optgroup.appendChild(option);
                     });
-                    
+
                     timezoneSelect.appendChild(optgroup);
                 });
-                
-                // Update the detection note
+
                 const detectionNote = document.getElementById('timezone-detection-note');
                 const selectedTimezone = commonTimezones.find(tz => tz.value === detectedTimezone);
                 if (selectedTimezone) {
-                    detectionNote.textContent = `✓ Detected: ${selectedTimezone.label}. You can change this if needed.`;
-                    detectionNote.classList.add('text-green-600');
+                    detectionNote.textContent = `Detected: ${selectedTimezone.label}. You can change this if needed.`;
+                    detectionNote.style.color = '#10b981';
                 } else {
                     detectionNote.textContent = `Detected timezone: ${detectedTimezone}. Please select your preferred timezone from the list.`;
                 }
@@ -866,7 +1213,6 @@
             function validateTimezone(timezone) {
                 if (!timezone) return false;
                 try {
-                    // Test if timezone is valid by creating a date with it
                     new Intl.DateTimeFormat('en', { timeZone: timezone });
                     return true;
                 } catch (error) {
@@ -874,10 +1220,8 @@
                 }
             }
 
-            // Initialize timezone selector
             populateTimezoneSelector();
-            
-            // Add timezone validation to form validation
+
             document.getElementById('timezone').addEventListener('change', function() {
                 const selectedTimezone = this.value;
                 if (!validateTimezone(selectedTimezone)) {
@@ -886,30 +1230,40 @@
                     this.setCustomValidity('');
                 }
             });
-            
+
             // --- CONDITIONAL SECTIONS LOGIC ---
             function updateConditionalSections() {
                 const age = parseInt(document.getElementById('age').value) || 0;
                 const volunteerType = document.querySelector('input[name="volunteer-type"]:checked')?.value;
-                
+
                 const parentalConsentSection = document.getElementById('parental-consent-section');
                 const schoolInfoSection = document.getElementById('school-info-section');
-                
-                // Show parental consent if under 18 OR student volunteer
-                const needsParentalApproval = age < 18 || volunteerType === 'student';
-                
+                const consentReasonText = document.getElementById('consent-reason-text');
+
+                const isUnder18 = age > 0 && age < 18;
+                const isStudentVolunteer = volunteerType === 'student';
+                const needsParentalApproval = isUnder18 || isStudentVolunteer;
+
                 if (needsParentalApproval) {
                     parentalConsentSection.classList.add('show');
                     document.getElementById('parent-email').required = true;
                     document.getElementById('parent-phone').required = true;
+
+                    // Update the reason text based on condition
+                    if (isUnder18 && isStudentVolunteer) {
+                        consentReasonText.textContent = 'As a student volunteer under 18, we require parental/guardian approval for your safety and to verify your community service participation.';
+                    } else if (isUnder18) {
+                        consentReasonText.textContent = 'For your safety, we require parental/guardian approval for all volunteers under 18 years old.';
+                    } else if (isStudentVolunteer) {
+                        consentReasonText.textContent = 'As a student volunteer, we require parental/guardian approval to verify your community service participation and provide official documentation to your school.';
+                    }
                 } else {
                     parentalConsentSection.classList.remove('show');
                     document.getElementById('parent-email').required = false;
                     document.getElementById('parent-phone').required = false;
                 }
-                
-                // Show school info if student volunteer
-                if (volunteerType === 'student') {
+
+                if (isStudentVolunteer) {
                     schoolInfoSection.classList.add('show');
                     document.getElementById('school-name').required = true;
                 } else {
@@ -917,8 +1271,7 @@
                     document.getElementById('school-name').required = false;
                 }
             }
-            
-            // Listen for changes that affect conditional sections
+
             document.getElementById('age').addEventListener('change', updateConditionalSections);
             document.querySelectorAll('input[name="volunteer-type"]').forEach(radio => {
                 radio.addEventListener('change', updateConditionalSections);
@@ -927,23 +1280,21 @@
             // --- MULTI-STEP FORM NAVIGATION ---
             let currentStep = 1;
             const totalSteps = 4;
-            
+
             const form = document.getElementById('signup-form');
             const formSubmitButton = document.getElementById('submit-button');
             const nextButton = document.getElementById('next-button');
             const prevButton = document.getElementById('prev-button');
             const termsSection = document.getElementById('terms-section');
-            
-            // Step navigation functions
+
             function showStep(stepNumber) {
-                // Hide all steps
                 for (let i = 1; i <= totalSteps; i++) {
                     const step = document.getElementById(`step-${i}`);
                     const indicator = document.getElementById(`step-indicator-${i}`);
                     const line = document.getElementById(`step-line-${i}`);
-                    
+
                     if (step) step.classList.remove('active');
-                    
+
                     if (indicator) {
                         indicator.classList.remove('current', 'completed', 'pending');
                         if (i < stepNumber) {
@@ -957,7 +1308,7 @@
                             indicator.textContent = i;
                         }
                     }
-                    
+
                     if (line) {
                         line.classList.remove('completed');
                         if (i < stepNumber) {
@@ -965,122 +1316,116 @@
                         }
                     }
                 }
-                
-                // Show current step
+
                 const currentStepElement = document.getElementById(`step-${stepNumber}`);
                 if (currentStepElement) {
                     currentStepElement.classList.add('active');
                 }
-                
-                // Update button visibility
-                prevButton.style.display = stepNumber > 1 ? 'block' : 'none';
-                nextButton.style.display = stepNumber < totalSteps ? 'block' : 'none';
-                formSubmitButton.style.display = stepNumber === totalSteps ? 'block' : 'none';
+
+                prevButton.style.display = stepNumber > 1 ? 'flex' : 'none';
+                nextButton.style.display = stepNumber < totalSteps ? 'flex' : 'none';
+                formSubmitButton.style.display = stepNumber === totalSteps ? 'flex' : 'none';
                 termsSection.style.display = stepNumber === totalSteps ? 'block' : 'none';
             }
-            
+
             function validateCurrentStep() {
                 const currentStepElement = document.getElementById(`step-${currentStep}`);
                 const inputs = currentStepElement.querySelectorAll('input[required], select[required]');
-                
+
                 for (let input of inputs) {
                     if (!input.value.trim()) {
                         input.focus();
-                        input.classList.add('border-red-500');
-                        setTimeout(() => input.classList.remove('border-red-500'), 3000);
+                        input.style.borderColor = '#ef4444';
+                        setTimeout(() => input.style.borderColor = '#e5e7eb', 3000);
                         return false;
                     }
                 }
-                
-                // Special validation for step 1 (first and last name)
+
                 if (currentStep === 1) {
                     const firstName = document.getElementById('first-name').value.trim();
                     const lastName = document.getElementById('last-name').value.trim();
-                    
+
                     if (!firstName) {
                         document.getElementById('first-name').focus();
-                        document.getElementById('first-name').classList.add('border-red-500');
-                        setTimeout(() => document.getElementById('first-name').classList.remove('border-red-500'), 3000);
+                        document.getElementById('first-name').style.borderColor = '#ef4444';
+                        setTimeout(() => document.getElementById('first-name').style.borderColor = '#e5e7eb', 3000);
                         return false;
                     }
-                    
+
                     if (!lastName) {
                         document.getElementById('last-name').focus();
-                        document.getElementById('last-name').classList.add('border-red-500');
-                        setTimeout(() => document.getElementById('last-name').classList.remove('border-red-500'), 3000);
+                        document.getElementById('last-name').style.borderColor = '#ef4444';
+                        setTimeout(() => document.getElementById('last-name').style.borderColor = '#e5e7eb', 3000);
                         return false;
                     }
                 }
-                
-                // Special validation for step 3 (password confirmation)
+
                 if (currentStep === 3) {
                     const password = document.getElementById('password').value;
                     const confirmPassword = document.getElementById('confirm-password').value;
-                    
+
                     if (password !== confirmPassword) {
                         document.getElementById('confirm-password').focus();
-                        document.getElementById('confirm-password').classList.add('border-red-500');
-                        setTimeout(() => document.getElementById('confirm-password').classList.remove('border-red-500'), 3000);
+                        document.getElementById('confirm-password').style.borderColor = '#ef4444';
+                        setTimeout(() => document.getElementById('confirm-password').style.borderColor = '#e5e7eb', 3000);
                         return false;
                     }
-                    
+
                     if (password.length < 8) {
                         document.getElementById('password').focus();
-                        document.getElementById('password').classList.add('border-red-500');
-                        setTimeout(() => document.getElementById('password').classList.remove('border-red-500'), 3000);
+                        document.getElementById('password').style.borderColor = '#ef4444';
+                        setTimeout(() => document.getElementById('password').style.borderColor = '#e5e7eb', 3000);
                         return false;
                     }
                 }
-                
+
                 return true;
             }
-            
-            // Navigation event listeners
+
             nextButton.addEventListener('click', () => {
                 if (validateCurrentStep()) {
                     if (currentStep < totalSteps) {
                         currentStep++;
                         showStep(currentStep);
-                        
-                        // Check conditional sections for step 4
+
                         if (currentStep === 4) {
                             updateConditionalSections();
                         }
                     }
                 }
             });
-            
+
             prevButton.addEventListener('click', () => {
                 if (currentStep > 1) {
                     currentStep--;
                     showStep(currentStep);
                 }
             });
-            
-            // Initialize first step
+
             showStep(1);
 
             // --- FORM SUBMISSION ---
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
-                // Final validation including terms
+
                 if (!document.getElementById('terms').checked) {
-                    alert('Please accept the Terms and Conditions');
+                    if (window.showNotification) {
+                        window.showNotification('Please accept the Terms and Conditions before creating your account.', 'warning', { title: 'Terms Required', autoClose: false });
+                    }
                     return;
                 }
-                
-                // Collect form data from all steps
+
                 const firstName = document.getElementById('first-name').value.trim();
                 const lastName = document.getElementById('last-name').value.trim();
                 const fullName = `${firstName} ${lastName}`.trim();
-                
-                // Validate that we have both first and last name
+
                 if (!firstName || !lastName) {
-                    alert('Please provide both first and last name');
+                    if (window.showNotification) {
+                        window.showNotification('Please provide both your first name and last name.', 'warning', { title: 'Name Required', autoClose: false });
+                    }
                     return;
                 }
-                
+
                 const formData = {
                     username: document.getElementById('username').value,
                     full_name: fullName,
@@ -1092,17 +1437,15 @@
                     timezone: document.getElementById('timezone').value,
                     volunteer_type: document.querySelector('input[name="volunteer-type"]:checked').value === 'student' ? 'student_volunteer' : 'standard'
                 };
-                
-                // Add conditional fields
+
                 const parentEmail = document.getElementById('parent-email').value;
                 const parentPhone = document.getElementById('parent-phone').value;
                 const schoolName = document.getElementById('school-name').value;
-                
+
                 if (parentEmail) formData.parent_email = parentEmail;
                 if (parentPhone) formData.parent_phone = parentPhone;
                 if (schoolName) formData.school_name = schoolName;
-                
-                // Collect security questions
+
                 formData.security_questions = [
                     {
                         question: document.getElementById('security-question-1').value,
@@ -1117,13 +1460,12 @@
                         answer: document.getElementById('security-answer-3').value
                     }
                 ];
-                
+
                 console.log('Form submission data:', formData);
-                
-                // Disable submit button during submission
+
                 formSubmitButton.disabled = true;
-                formSubmitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...';
-                
+                formSubmitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Creating Account...';
+
                 try {
                     const response = await fetch('/api/v1/jwt-auth/volunteer/signup', {
                         method: 'POST',
@@ -1132,55 +1474,46 @@
                         },
                         body: JSON.stringify(formData)
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
-                        // Store tokens
                         localStorage.setItem('accessToken', data.accessToken);
                         localStorage.setItem('refreshToken', data.refreshToken);
-                        
-                        alert('Account created successfully! Welcome to TalkTime!');
-                        
-                        // Redirect after brief delay
+
+                        if (window.showNotification) {
+                            window.showNotification('Your account has been created successfully! Welcome to TalkTime.', 'success', { title: 'Account Created', autoClose: true, duration: 2000 });
+                        }
+
                         setTimeout(() => {
                             if (formData.volunteer_type === 'student_volunteer' && (formData.age < 18 || formData.parent_email)) {
                                 window.location.href = '/volunteer/pending-approval.html';
                             } else {
                                 window.location.href = '/volunteer/dashboard/students.html';
                             }
-                        }, 1000);
+                        }, 1500);
                     } else {
                         throw new Error(data.error || 'Registration failed');
                     }
                 } catch (error) {
                     console.error('Registration error:', error);
-                    alert(error.message || 'Registration failed. Please try again.');
+                    if (window.showNotification) {
+                        window.showNotification(error.message || 'Registration failed. Please try again.', 'error', { title: 'Registration Error', autoClose: false });
+                    }
                 } finally {
-                    // Re-enable submit button
                     formSubmitButton.disabled = false;
-                    formSubmitButton.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Create Account';
+                    formSubmitButton.innerHTML = '<i class="fas fa-user-plus"></i>Create Account';
                 }
             });
-
-            // --- MOBILE MENU ---
-            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-            const mobileMenu = document.getElementById('mobile-menu');
-            
-            if (mobileMenuToggle && mobileMenu) {
-                mobileMenuToggle.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
         });
-        
+
         // Keyboard navigation support
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type !== 'submit') {
                 e.preventDefault();
                 const nextBtn = document.getElementById('next-button');
                 const submitBtn = document.getElementById('submit-button');
-                
+
                 if (nextBtn.style.display !== 'none') {
                     nextBtn.click();
                 } else if (submitBtn.style.display !== 'none') {

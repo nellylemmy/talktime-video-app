@@ -15,9 +15,10 @@
         enableSounds: true,
         debugMode: true,
         soundMappings: {
+            'new_message': 'new_message',
             'meeting_reminder': 'meeting_reminder',
             'meeting_reminder_5min': 'meeting_reminder',
-            'meeting_reminder_10min': 'meeting_reminder', 
+            'meeting_reminder_10min': 'meeting_reminder',
             'meeting_reminder_30min': 'meeting_reminder',
             'instant_call': 'instant_call',
             'meeting_scheduled': 'meeting_scheduled',

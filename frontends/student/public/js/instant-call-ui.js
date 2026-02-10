@@ -400,9 +400,10 @@ class InstantCallUI {
                 this.hideCall();
                 this.showToast('Joining call...', 'success');
                 
-                // Redirect to call room
+                // Redirect to call room with role parameter
                 setTimeout(() => {
-                    window.location.href = `/call.html?room=${this.currentCall.roomId}`;
+                    const volId = this.currentCall.volunteerId || this.currentCall.callData?.volunteerId || '';
+                    window.location.href = `/call/call.html?room=${this.currentCall.roomId}&role=student&volunteerId=${volId}`;
                 }, 1000);
             } else {
                 this.showToast(data.message || 'Failed to accept call', 'error');

@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const userRole = user ? user.role : (params.get('role') || 'guest');
 
     if (!room) {
-        alert('No room specified. Redirecting to home.');
+        console.error('[TalkTime] No room specified');
+        // Redirect immediately - user will see home page
         window.location.href = '/';
         return;
     }
@@ -342,7 +343,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clean up meeting-specific session data
         sessionStorage.removeItem('meetingRoomId');
         sessionStorage.removeItem('meetingToken');
-        window.location.href = '/';
+
+        // Redirect based on user role - students should NEVER go to volunteer pages
+        if (userRole === 'student') {
+            window.location.href = '/student/dashboard.html';
+        } else if (userRole === 'volunteer') {
+            window.location.href = '/volunteer/dashboard/';
+        } else {
+            // Fallback: Check localStorage tokens to determine role
+            const hasStudentToken = localStorage.getItem('student_talktime_access_token');
+            const hasVolunteerToken = localStorage.getItem('volunteer_talktime_access_token');
+
+            if (hasStudentToken) {
+                window.location.href = '/student/dashboard.html';
+            } else if (hasVolunteerToken) {
+                window.location.href = '/volunteer/dashboard/';
+            } else {
+                // Default to student dashboard for safety
+                window.location.href = '/student/dashboard.html';
+            }
+        }
     });
 
     // --- Debug Events ---

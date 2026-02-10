@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 // Import routes - JWT Authentication Only
@@ -21,16 +22,19 @@ import meetingValidationRoutes from './api/v1/routes/meetingValidationRoutes.js'
 // Legacy enhancedInstantCalls routes removed - using unified users table only
 import meetingAccessRoutes from './routes/meetingAccess.js';
 import parentalApprovalRoutes from './routes/parentalApproval.js';
+import messageRoutes from './api/v1/routes/messageRoutes.js';
 // Notification routes REMOVED - handled by notification-service microservice
 // import notificationRoutes from './routes/notifications.js';
 // Newsletter routes REMOVED - handled by newsletter-service microservice
 // import newsletterRoutes from './routes/newsletter.js';
 // import uploadRoutes from './routes/upload.js';
 import mailchimpRoutes from './api/v1/routes/mailchimpRoutes.js';
+import uploadRoutes from './api/v1/routes/uploadRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initializeSocket } from './socket.js';
 import { redisClient } from './config/cache.js';
 import { initializeScheduler, stopScheduler } from './services/schedulerService.js';
+import configService from './services/configService.js';
 // import { initializeSecurityTables } from './middleware/enhancedSecurity.js'; // Temporarily disabled
 
 // Load environment variables
@@ -113,6 +117,9 @@ app.use('/api/v1/admin', adminRoutes);
 // Then register protected admin routes with JWT middleware
 app.use('/api/v1/admin', adminJWTMiddleware, adminAuthRoutes);
 
+// Upload routes (admin only — JWT enforced inside uploadRoutes)
+app.use('/api/v1/admin/upload', uploadRoutes);
+
 // Analytics routes REMOVED - handled by analytics-service microservice
 // app.use('/api/v1/analytics', analyticsRoutes);
 
@@ -125,6 +132,7 @@ app.use('/api/v1/meeting', jwtAuthMiddleware, meetingAccessRoutes);
 // Notification routes REMOVED - handled by notification-service microservice
 // app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/mailchimp', mailchimpRoutes);
+app.use('/api/v1/messages', jwtAuthMiddleware, messageRoutes);
 // app.use('/api/v1/upload', uploadRoutes);
 
 // Health check endpoint
@@ -134,6 +142,62 @@ app.get('/api/v1/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+// Public config endpoint (no authentication required)
+// Returns only public settings that frontend needs
+app.get('/api/v1/config', async (req, res) => {
+  try {
+    const settings = await configService.getAllSettings(true); // Only public settings
+    res.json({
+      success: true,
+      config: settings
+    });
+  } catch (error) {
+    console.error('Error fetching public config:', error);
+    // Return defaults on error to not break frontend
+    res.json({
+      success: true,
+      config: configService.DEFAULT_SETTINGS
+    });
+  }
+});
+
+// WebRTC ICE config endpoint (authenticated — any role)
+// Returns STUN-first (free P2P) + self-hosted coturn TURN as fallback
+
+app.get('/api/v1/webrtc/config', jwtAuthMiddleware, async (req, res) => {
+  const secret = process.env.COTURN_SECRET;
+  const turnHost = process.env.TURN_HOST || '62.72.3.138';
+  const turnPort = process.env.TURN_PORT || '3478';
+
+  // STUN servers FIRST — browsers try direct P2P before relay
+  const iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ];
+
+  if (secret) {
+    // TURN REST API: credential = HMAC-SHA1(secret, "expiry:userId")
+    const ttl = 24 * 3600; // 24h credential lifetime
+    const expiry = Math.floor(Date.now() / 1000) + ttl;
+    const username = `${expiry}:${req.user.id}`;
+    const credential = crypto
+      .createHmac('sha1', secret)
+      .update(username)
+      .digest('base64');
+
+    iceServers.push({
+      urls: [
+        `turn:${turnHost}:${turnPort}?transport=udp`,
+        `turn:${turnHost}:${turnPort}?transport=tcp`
+      ],
+      username,
+      credential
+    });
+  }
+
+  res.json({ iceServers });
 });
 
 // Test route to verify mounting

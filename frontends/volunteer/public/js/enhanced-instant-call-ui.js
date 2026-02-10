@@ -95,55 +95,58 @@ class EnhancedInstantCallUI {
     
     async joinUserRooms() {
         try {
-            // Try student endpoint first (for student dashboard)
-            let response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/volunteers/me', {
-                method: 'GET'
+            // Get JWT token for authentication
+            const token = window.TalkTimeAuth ? window.TalkTimeAuth.getAccessToken() : null;
+            if (!token) {
+                console.log('⚠️ User not authenticated, skipping room join');
+                return;
+            }
+
+            // CRITICAL: Use regular fetch instead of makeAuthenticatedRequest()
+            // makeAuthenticatedRequest() triggers full logout on 401, which is too aggressive
+            // for this non-critical operation. If token is expired, we should just skip
+            // room join, NOT log the user out entirely.
+            let response = await fetch('/api/v1/volunteers/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
-            
+
             let userData = null;
             let userId = null;
             let userRole = null;
-            
+
             if (response.ok) {
-                // Student authentication
+                // Volunteer authentication
                 userData = await response.json();
-                console.log('🎓 Student authenticated:', userData);
-                console.log('🔍 Student data structure:', JSON.stringify(userData, null, 2));
-                
-                // Try different possible paths for student ID
-                userId = userData.student?.studentId || userData.student?.id || userData.id || userData.student_id;
-                userRole = 'student';
-                
-                console.log('🆔 Student ID extracted:', userId);
-                
+                console.log('👥 Volunteer authenticated:', userData);
+
+                // Extract volunteer ID
+                userId = userData.volunteer?.id || userData.id || userData.user?.id;
+                userRole = 'volunteer';
+
+                console.log('🆔 Volunteer ID extracted:', userId);
+
                 if (!userId) {
-                    console.error('❌ Could not extract student ID from:', userData);
+                    console.error('❌ Could not extract volunteer ID from:', userData);
                 }
-            } else {
-                // Try general auth endpoint (for volunteers/admins)
-                response = await fetch('/api/v1/auth/check', {
-                    headers: {
-                        'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    userData = await response.json();
-                    userId = userData.user.id;
-                    userRole = userData.user.role;
-                    console.log('👥 Volunteer/Admin authenticated:', userData);
-                }
+            } else if (response.status === 401) {
+                // Token expired - gracefully skip room join, do NOT trigger logout
+                console.log('⚠️ Token expired for volunteer endpoint - skipping room join');
+                console.log('   NOT triggering logout from here - let main page handle auth');
+                return;
             }
-            
+
             if (userId && userRole) {
                 // Join user-specific rooms for cross-tab notifications
                 this.socket.emit('join-room', `user_${userId}`);
                 this.socket.emit('join-room', `${userRole}_${userId}`);
-                
+
                 console.log(`🏠 Joined rooms: user_${userId}, ${userRole}_${userId}`);
             } else {
-                console.log('⚠️ User not authenticated, skipping room join');
+                console.log('⚠️ Could not determine user identity, skipping room join');
             }
         } catch (error) {
             console.error('❌ Error joining user rooms:', error);
@@ -617,9 +620,9 @@ class EnhancedInstantCallUI {
                 const data = await response.json();
                 console.log('✅ Call accepted successfully:', data);
                 
-                // Hide call UI and redirect to call room with student role
+                // Hide call UI and redirect to call room with volunteer role
                 this.hideIncomingCallUI();
-                window.location.href = `/call.html?room=${data.roomId}&role=student`;
+                window.location.href = `/call/call.html?room=${data.roomId}&role=volunteer`;
             } else {
                 console.error('❌ Error accepting call:', response.statusText);
                 this.showErrorMessage('Failed to accept call');
@@ -759,9 +762,13 @@ class EnhancedInstantCallUI {
     
     handleInstantMessageReceived(data) {
         console.log('💬 Instant message received:', data);
-        
-        this.showMessageNotification(data);
-        
+
+        // Play notification sound
+        this.playNotificationSound();
+
+        // Show prominent message modal
+        this.showMessageModal(data);
+
         // Add to call history
         this.addToCallHistory({
             type: 'message_received',
@@ -769,7 +776,13 @@ class EnhancedInstantCallUI {
             timestamp: new Date()
         });
     }
-    
+
+    playNotificationSound() {
+        // Sound files not available - using browser notification sound or silent
+        // To add sounds, place audio files in /shared/sounds/ directory
+        console.log('🔔 Notification sound triggered (no audio file configured)');
+    }
+
     showMinDurationNotification(data) {
         const notification = document.createElement('div');
         notification.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg max-w-sm';
@@ -784,47 +797,142 @@ class EnhancedInstantCallUI {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 5000);
     }
-    
-    showMessageNotification(data) {
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 z-50 bg-blue-500 text-white p-4 rounded-lg shadow-lg max-w-sm';
-        notification.innerHTML = `
-            <div class="flex items-center">
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
-                <div>
-                    <div class="font-semibold">Message from ${data.sender.name}</div>
-                    <div class="text-sm">${data.message}</div>
+
+    showMessageModal(data) {
+        // Remove any existing modal
+        const existingModal = document.getElementById('instant-message-modal');
+        if (existingModal) existingModal.remove();
+
+        const senderName = data.sender?.name || 'Student';
+        const senderId = data.sender?.id || data.senderId;
+        const messageContent = data.message || data.content || '';
+        const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+        // Escape HTML to prevent XSS
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        const modalHtml = `
+            <div id="instant-message-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6);">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all animate-bounce-in">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-5 text-center">
+                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                            <i class="fas fa-comment-dots text-2xl text-blue-500"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">New Message</h2>
+                        <p class="text-blue-100 text-sm mt-1">from ${escapeHtml(senderName)}</p>
+                    </div>
+
+                    <!-- Message Content -->
+                    <div class="p-6">
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-blue-600 font-semibold">${escapeHtml(senderName.charAt(0).toUpperCase())}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-semibold text-gray-800">${escapeHtml(senderName)}</span>
+                                        <span class="text-xs text-gray-400">${timestamp}</span>
+                                    </div>
+                                    <p class="text-gray-700 break-words">${escapeHtml(messageContent)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center text-sm text-gray-500 mb-4">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            The student has responded to your call
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col gap-3">
+                            <a href="/volunteer/dashboard/messages.html?openConversation=${senderId}"
+                               class="w-full py-3 px-4 bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold rounded-xl transition-colors text-center flex items-center justify-center gap-2">
+                                <i class="fas fa-comments"></i>
+                                Open Full Chat
+                            </a>
+                            <button id="dismiss-message-modal"
+                                    class="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-times"></i>
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <style>
+                @keyframes bounce-in {
+                    0% { transform: scale(0.9); opacity: 0; }
+                    50% { transform: scale(1.02); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                .animate-bounce-in {
+                    animation: bounce-in 0.3s ease-out;
+                }
+            </style>
         `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 5000);
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Add event listeners
+        const modal = document.getElementById('instant-message-modal');
+        const dismissBtn = document.getElementById('dismiss-message-modal');
+
+        dismissBtn?.addEventListener('click', () => {
+            modal?.remove();
+        });
+
+        // Close on backdrop click
+        modal?.addEventListener('click', (e) => {
+            if (e.target.id === 'instant-message-modal') {
+                modal.remove();
+            }
+        });
+
+        // Close on Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal?.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // Also vibrate if supported
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]);
+        }
+    }
+
+    // Keep old function for backwards compatibility
+    showMessageNotification(data) {
+        this.showMessageModal(data);
     }
     
     showRetryOption(cooldownSeconds) {
         setTimeout(() => {
             const retryNotification = document.createElement('div');
-            retryNotification.className = 'fixed bottom-4 right-4 z-50 bg-yellow-500 text-white p-4 rounded-lg shadow-lg';
+            retryNotification.className = 'fixed bottom-4 right-4 z-50 bg-amber-100 border border-amber-400 text-gray-900 p-4 rounded-lg shadow-lg';
             retryNotification.innerHTML = `
                 <div class="flex items-center">
                     <div class="mr-3">
                         <div class="font-semibold">Retry Call?</div>
-                        <div class="text-sm">You can try calling again</div>
+                        <div class="text-sm text-gray-700">You can try calling again</div>
                     </div>
-                    <button id="retry-call-btn" class="bg-white text-yellow-500 px-3 py-1 rounded font-semibold hover:bg-gray-100">
+                    <button id="retry-call-btn" class="bg-amber-500 text-white px-3 py-1 rounded font-semibold hover:bg-amber-600">
                         Retry
                     </button>
                 </div>

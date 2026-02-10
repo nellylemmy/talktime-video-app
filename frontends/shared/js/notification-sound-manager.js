@@ -20,77 +20,97 @@ class TalkTimeNotificationSoundManager {
         this.userPreferences = {};
         
         // Default sound configurations
+        // "frequencies" array = multi-note chime (one freq per repeat)
         this.soundConfigs = {
             'default': {
-                frequency: 800,
-                duration: 200,
-                volume: 0.5,
-                type: 'sine',
-                envelope: 'fade'
+                frequencies: [587, 784],
+                duration: 110,
+                volume: 0.4,
+                type: 'triangle',
+                envelope: 'gentle',
+                repeat: 2,
+                gap: 70
+            },
+            'new_message': {
+                frequencies: [523, 659],
+                duration: 120,
+                volume: 0.45,
+                type: 'triangle',
+                envelope: 'gentle',
+                repeat: 2,
+                gap: 60
             },
             'meeting_reminder': {
-                frequency: 600,
-                duration: 300,
-                volume: 0.6,
-                type: 'sine',
-                envelope: 'pulse',
-                repeat: 2,
-                gap: 100
+                frequencies: [587, 784, 880],
+                duration: 150,
+                volume: 0.55,
+                type: 'triangle',
+                envelope: 'gentle',
+                repeat: 3,
+                gap: 80
             },
             'instant_call': {
-                frequency: 1000,
-                duration: 500,
-                volume: 0.8,
-                type: 'square',
-                envelope: 'urgent',
+                frequencies: [880, 1047],
+                duration: 250,
+                volume: 0.7,
+                type: 'triangle',
+                envelope: 'pulse',
                 repeat: 3,
                 gap: 200
             },
             'meeting_scheduled': {
-                frequency: 500,
-                duration: 250,
-                volume: 0.5,
+                frequencies: [523, 659, 784],
+                duration: 130,
+                volume: 0.45,
                 type: 'triangle',
-                envelope: 'gentle'
+                envelope: 'gentle',
+                repeat: 3,
+                gap: 70
             },
             'meeting_rescheduled': {
-                frequency: 700,
-                duration: 200,
-                volume: 0.6,
-                type: 'sine',
-                envelope: 'double',
+                frequencies: [659, 523],
+                duration: 130,
+                volume: 0.5,
+                type: 'triangle',
+                envelope: 'gentle',
                 repeat: 2,
-                gap: 150
+                gap: 90
             },
             'system_notification': {
-                frequency: 650,
-                duration: 180,
+                frequencies: [659, 784],
+                duration: 110,
                 volume: 0.4,
-                type: 'sine',
-                envelope: 'soft'
+                type: 'triangle',
+                envelope: 'gentle',
+                repeat: 2,
+                gap: 70
             },
             'urgent': {
-                frequency: 1200,
-                duration: 400,
-                volume: 0.9,
-                type: 'sawtooth',
-                envelope: 'urgent',
+                frequencies: [880, 1047, 880, 1047],
+                duration: 180,
+                volume: 0.75,
+                type: 'triangle',
+                envelope: 'pulse',
                 repeat: 4,
                 gap: 100
             },
             'success': {
-                frequency: 880,
-                duration: 150,
-                volume: 0.5,
-                type: 'sine',
-                envelope: 'rise'
+                frequencies: [523, 659, 784],
+                duration: 120,
+                volume: 0.45,
+                type: 'triangle',
+                envelope: 'gentle',
+                repeat: 3,
+                gap: 60
             },
             'error': {
-                frequency: 400,
-                duration: 300,
-                volume: 0.6,
-                type: 'square',
-                envelope: 'decay'
+                frequencies: [440, 349],
+                duration: 200,
+                volume: 0.5,
+                type: 'triangle',
+                envelope: 'decay',
+                repeat: 2,
+                gap: 100
             }
         };
 
@@ -286,6 +306,15 @@ class TalkTimeNotificationSoundManager {
             return;
         }
 
+        // De-duplicate: skip if the same sound type played within 500ms
+        const now = Date.now();
+        const lastPlay = this._lastPlayTime || {};
+        if (lastPlay[type] && now - lastPlay[type] < 500) {
+            return;
+        }
+        if (!this._lastPlayTime) this._lastPlayTime = {};
+        this._lastPlayTime[type] = now;
+
         // Check user preferences for this sound type
         if (this.userPreferences.soundTypes && this.userPreferences.soundTypes[type] === false) {
             console.log(`🔇 Sound type '${type}' disabled by user preference`);
@@ -325,6 +354,7 @@ class TalkTimeNotificationSoundManager {
     async playWebAudioSound(config) {
         const {
             frequency,
+            frequencies,
             duration,
             volume,
             type,
@@ -338,6 +368,11 @@ class TalkTimeNotificationSoundManager {
                 await this.delay(gap);
             }
 
+            // Multi-note: pick frequency from array, cycling if repeat > array length
+            const noteFreq = frequencies
+                ? frequencies[i % frequencies.length]
+                : frequency;
+
             const oscillator = this.audioContext.createOscillator();
             const gainNode = this.audioContext.createGain();
 
@@ -347,7 +382,7 @@ class TalkTimeNotificationSoundManager {
 
             // Configure oscillator
             oscillator.type = type;
-            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(noteFreq, this.audioContext.currentTime);
 
             // Configure envelope
             const startTime = this.audioContext.currentTime;
@@ -452,6 +487,9 @@ class TalkTimeNotificationSoundManager {
         let soundType = 'default';
         
         switch (type) {
+            case 'new_message':
+                soundType = 'new_message';
+                break;
             case 'meeting_reminder':
             case 'meeting_reminder_5min':
             case 'meeting_reminder_10min':

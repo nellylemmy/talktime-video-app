@@ -2,24 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Certificate Verification - ADEA Foundation TalkTime</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
 
-        body {
+    <!-- Main Styles (includes responsive framework) -->
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+
+    <style>
+        /* Page-specific styles only - framework styles in main.css */
+        .verify-body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f5f5;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
         }
 
         .verification-container {
@@ -27,9 +29,25 @@
             border: 2px solid #d3d3d3;
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
+            padding: 24px;
             max-width: 600px;
             width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .verification-container {
+                padding: 40px;
+            }
+        }
+
+        /* Mobile responsive search form */
+        @media (max-width: 640px) {
+            .search-form {
+                flex-direction: column;
+            }
+            .search-btn {
+                width: 100%;
+            }
         }
 
         .header {
@@ -236,7 +254,8 @@
         }
     </style>
 </head>
-<body>
+<body class="verify-body" style="opacity:0">
+    <script>document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('page-ready')})</script>
     <div class="verification-container">
         <div class="header">
             <div class="logo">TT</div>

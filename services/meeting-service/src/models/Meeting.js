@@ -4,13 +4,13 @@ class Meeting {
     /**
      * Create a new meeting
      */
-    static async create({ volunteerId, studentId, scheduledTime, roomId, duration = 40, status = 'scheduled' }) {
+    static async create({ volunteerId, studentId, scheduledTime, roomId, status = 'scheduled' }) {
         const query = `
-            INSERT INTO meetings (volunteer_id, student_id, scheduled_time, room_id, duration, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+            INSERT INTO meetings (volunteer_id, student_id, scheduled_time, room_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
             RETURNING *;
         `;
-        const result = await pool.query(query, [volunteerId, studentId, scheduledTime, roomId, duration, status]);
+        const result = await pool.query(query, [volunteerId, studentId, scheduledTime, roomId, status]);
         return result.rows[0];
     }
 
@@ -50,7 +50,6 @@ class Meeting {
         const fieldMapping = {
             status: 'status',
             scheduledTime: 'scheduled_time',
-            duration: 'duration',
             roomId: 'room_id',
             original_scheduled_time: 'original_scheduled_time',
             is_rescheduled: 'is_rescheduled',

@@ -1,1107 +1,1436 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>TalkTime - Student Profile | Volunteer Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <meta name="description" content="View detailed profile of a Maasai student and schedule an English practice session on TalkTime.">
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <meta name="description"
+        content="View detailed profile of a Maasai student and schedule an English practice session on TalkTime.">
     <link rel="canonical" id="canonical-link" href="">
     <meta name="robots" content="index, follow">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Socket.IO Client -->
-    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-framework.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-forms.css">
+    <link rel="stylesheet" href="/volunteer/css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
 
-    <!-- Google Fonts: Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
-    <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
-    
-    <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
-    
-    <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
-    
-    <!-- Real-time Notifications -->
-    <script src="/shared/js/realtime-notifications.js"></script>
-    
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/volunteer/partials/nav-loader.js"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js"></script>
+    <script defer src="/volunteer/js/modal-utils.js"></script>
+    <script defer src="/shared/js/realtime-notifications.js"></script>
+
     <style>
-        /* Base styles matching the landing page */
+        /* Student detail page styles - Clean, minimal design */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f4ff;
-            overflow-x: hidden;
+            opacity: 0;
         }
-        .font-poppins {
-            font-family: 'Poppins', sans-serif;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
-        }
-        .glass-bg {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .modal-glass-bg {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .gradient-text {
-            background-image: linear-gradient(to right, #4f46e5, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .section-heading {
-             background-image: linear-gradient(to right, #ec4899, #8b5cf6);
-             -webkit-background-clip: text;
-             background-clip: text;
-             color: transparent;
-        }
-        .blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.3;
-            z-index: -1;
+        body.page-ready {
+            opacity: 1;
+            transition: opacity 0.12s ease;
         }
 
-        /* Page Transition */
-        .page, .tab-pane {
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-        }
-        .page-hidden, .tab-pane-hidden {
-            opacity: 0;
-            pointer-events: none;
-            position: absolute;
-            transform: translateY(10px);
-            top: 0;
-            left: 0;
-            width: 100%;
-        }
-        
-        /* Live Pulse Animation */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
-        }
-        .live-indicator {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        /* Calendar Styles */
-        .calendar {
+        /* Gallery grid */
+        .gallery-container {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
-        .calendar-day {
+        .gallery-img {
+            width: 100%;
             aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .gallery-img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Profile photo / initials circle */
+        .profile-photo-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background-color: rgba(22, 163, 74, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
         }
-        .calendar-day:hover:not(.day-disabled):not(.day-selected) {
-            background-color: rgba(255, 255, 255, 0.7);
-        }
-        .day-disabled {
-            color: #d1d5db;
-            cursor: not-allowed;
-        }
-        .day-selected {
-            background-color: #4f46e5;
-            color: white;
-        }
-        .day-today {
-            border: 2px solid #4f46e5;
-        }
-        
-        /* Time Input Styles */
-        .time-input {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-        .time-slot {
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: rgba(255, 255, 255, 0.5);
-        }
-        .time-slot:hover:not(.time-disabled) {
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-        .time-slot.time-selected {
-            background-color: #4f46e5;
-            color: white;
-        }
-        .time-disabled {
-            color: #d1d5db;
-            cursor: not-allowed;
-        }
-        
-        /* Modal Styles */
-        .modal {
-            transition: opacity 300ms ease-in-out;
-        }
-        .modal .modal-content {
-            transition: transform 300ms ease-in-out;
-        }
-        .profile-dropdown, .options-menu {
-            transition: all 0.3s ease-in-out;
-        }
-        
-        /* Image Gallery */
-        .gallery-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        .gallery-img {
-            aspect-ratio: 1;
+        .profile-photo-wrapper img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border-radius: 0.5rem;
+        }
+        .profile-initials {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgba(22, 163, 74, 0.1);
+            color: #16a34a;
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Meeting card item */
+        .meeting-card-item {
+            border-radius: 8px;
+            transition: background-color 0.15s ease;
+        }
+        .meeting-card-item:hover {
+            background-color: #f9fafb;
+        }
+        .meeting-card-item .meeting-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+            transition: color 0.15s ease;
+        }
+        .back-link:hover {
+            color: #374151;
+        }
+
+        /* Section title */
+        .section-title {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        @media (max-width: 480px) {
+            .profile-photo-wrapper { width: 64px; height: 64px; }
+            .profile-initials { width: 64px; height: 64px; font-size: 22px; }
+        }
+
+        /* Conversation modal */
+        .conversation-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .conversation-modal.active { display: flex; }
+        .conversation-panel {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            height: 85vh;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            flex-direction: column;
+            animation: convSlideUp 0.25s ease;
+        }
+        @keyframes convSlideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .conv-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .conv-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f9fafb;
+        }
+        .msg-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .msg-bubble.sent {
+            background: var(--brand-primary, #D10100);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-bubble.received {
+            background: white;
+            color: #111827;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+        .msg-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        .msg-bubble.sent .msg-time { color: rgba(255,255,255,0.7); text-align: right; }
+        .msg-bubble.sending { opacity: 0.6; }
+        .msg-bubble.failed { border: 2px solid #dc2626; }
+        .msg-input-area {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+        .msg-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            border-radius: 24px;
+            padding: 4px 4px 4px 16px;
+        }
+        .msg-input-wrap input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            padding: 10px 0;
+            outline: none;
+            color: #111827;
+        }
+        .msg-input-wrap input::placeholder { color: #9ca3af; }
+        .msg-send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--brand-primary, #D10100);
+            color: white;
             cursor: pointer;
-            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
         }
-        .gallery-img:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Meeting Tab Styles */
-        .meeting-tab-btn {
-            transition: all 0.2s ease;
-        }
-        
-        .meeting-tab-btn:hover {
-            background-color: #f8fafc;
-        }
-        
-        .tab-content {
-            min-height: 200px;
+        .msg-send-btn:hover:not(:disabled) { background: var(--brand-primary-dark, #b00000); transform: scale(1.05); }
+        .msg-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+        @media (min-width: 768px) {
+            .conversation-panel { height: 75vh; border-radius: 16px; margin: auto; }
+            .conversation-modal { align-items: center; }
         }
     </style>
 </head>
-<body>
-    <!-- Background Blobs -->
-    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
-    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
-    
-    <!-- Navigation Container -->
-    <div id="nav-container">
-        <!-- Navigation will be loaded dynamically -->
-    </div>
 
-    <main class="container mx-auto px-4 py-20">
-        <!-- Dashboard Navigation -->
-        <div class="mb-8 flex items-center">
-            <a href="/volunteer/dashboard/students.html" class="text-blue-600 hover:text-blue-800 flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back to Students
+<body class="dashboard-page">
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <!-- Back Navigation -->
+        <div class="mb-4">
+            <a href="/volunteer/dashboard/students" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Students</span>
             </a>
         </div>
-        
+
         <!-- Student Profile Page -->
-        <div id="page-student-profile" class="page w-full">
-            <div class="max-w-3xl mx-auto">
-                                <div id="student-profile" class="glass-bg rounded-xl p-6 mb-6">
-                    <!-- Modern card layout with better visual hierarchy -->
-                    <div class="flex flex-col lg:flex-row gap-8">
-                        <!-- Profile Image Section -->
-                        <div class="flex-shrink-0 mx-auto lg:mx-0">
-                            <div class="relative">
-                                <img id="student-profile-image" 
-                                     src="/volunteer/images/default-profile.svg" 
-                                     alt="Student" 
-                                     class="w-32 h-32 lg:w-40 lg:h-40 object-cover rounded-2xl shadow-lg ring-4 ring-white ring-opacity-50">
-                                <!-- Online status indicator (optional) -->
-                                <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white shadow-lg"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Student Info Section -->
-                        <div class="flex-grow text-center lg:text-left">
-                            <!-- Name with better typography -->
-                            <h2 id="student-name" class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3 leading-tight">
-                                Student Name
-                            </h2>
-                            
-                            <!-- Enhanced badges with better styling -->
-                            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6">
-                                <span id="student-age" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md">
-                                    <i class="fas fa-birthday-cake mr-2"></i>
-                                    Age: 14
-                                </span>
-                                <span id="student-gender" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md">
-                                    <i class="fas fa-user mr-2"></i>
-                                    Female
-                                </span>
-                            </div>
-                            
-                            <!-- Quick stats or additional info (optional enhancement) -->
-                            <div class="hidden lg:block">
-                                <div class="flex items-center gap-6 text-gray-600 text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-clock text-blue-500"></i>
-                                        <span>Available for sessions</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-globe text-green-500"></i>
-                                        <span>English learner</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <div id="page-student-profile" class="page w-full space-y-4">
+            <!-- Main Profile Section -->
+            <div id="student-profile" class="bg-white rounded-xl p-5">
+                <!-- Profile Header - Horizontal layout -->
+                <div class="flex items-center gap-4 mb-4">
+                    <!-- Profile Photo / Initials -->
+                    <div id="student-photo-wrapper" class="profile-photo-wrapper">
+                        <div id="student-initials" class="profile-initials">--</div>
                     </div>
-                    
-                    <!-- Schedule button container with enhanced styling -->
-                    <div id="schedule-button-container" class="mt-8 pt-6 border-t border-gray-200 border-opacity-50 w-full">
-                        <!-- Schedule or Reschedule button will be inserted here -->
+                    <!-- Name and details -->
+                    <div class="flex-1 min-w-0">
+                        <span id="student-name" class="block text-xl font-bold text-gray-900 truncate" style="line-height:1.2;"></span>
+                        <p id="student-meta-age-gender" class="text-sm text-gray-500" style="margin-top:2px;line-height:1.4;"></p>
+                        <p id="student-meta-admission" class="text-xs text-gray-400" style="margin-top:2px;line-height:1.3;"></p>
                     </div>
                 </div>
-                
-                <!-- Student Gallery -->
-                <div class="glass-bg rounded-xl p-6 mb-6">
-                    <h3 class="font-semibold mb-4">Gallery</h3>
-                    <div id="student-gallery" class="gallery-container">
-                        <!-- Gallery images will be inserted here -->
+
+                <!-- Bio (inline, hidden until data loads) -->
+                <div id="bio-section" style="display:none;margin-bottom:12px;">
+                    <p id="student-bio" class="text-gray-600 text-sm leading-relaxed"></p>
+                </div>
+
+                <!-- Schedule button container -->
+                <div id="schedule-button-container">
+                    <div class="text-center py-4 text-gray-400 text-sm">
+                        <i class="fas fa-spinner fa-spin mr-1"></i> Loading...
                     </div>
                 </div>
-                
-                <!-- Student Story -->
-                <div class="glass-bg rounded-xl p-6">
-                    <h3 class="font-semibold mb-4">Student's Story</h3>
-                    <p id="student-story" class="text-gray-700">Loading student story...</p>
+            </div>
+
+            <!-- Gallery + Story Section -->
+            <div class="bg-white rounded-xl p-5">
+                <p id="student-story" class="text-gray-600 text-sm leading-relaxed mb-4"></p>
+                <div id="student-gallery" class="gallery-container">
+                    <div class="col-span-2 text-center py-6 text-gray-400 text-sm">
+                        <i class="fas fa-spinner fa-spin mr-1"></i> Loading...
+                    </div>
                 </div>
             </div>
         </div>
     </main>
-    
+
     <!-- Notification Toast -->
-    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+    <div id="notification" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-lg shadow-lg z-50 text-sm">
+    </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Conversation Modal -->
+    <div id="conv-modal" class="conversation-modal">
+        <div class="conversation-panel">
+            <div class="conv-header">
+                <button id="conv-close-btn" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-arrow-left text-gray-600"></i>
+                </button>
+                <div class="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+                    <span id="conv-avatar" class="text-green-700 font-bold text-sm">S</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-gray-900 text-sm" id="conv-name">Student</h3>
+                    <span class="text-xs text-gray-400">Student</span>
+                </div>
+            </div>
+            <div class="conv-messages" id="conv-messages"></div>
+            <div class="msg-input-area">
+                <div class="msg-input-wrap">
+                    <input type="text" id="conv-input" placeholder="Type a message..." maxlength="2000" autocomplete="off">
+                    <button id="conv-send-btn" class="msg-send-btn" disabled>
+                        <i class="fas fa-paper-plane" style="font-size:14px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO loaded from CDN in head section -->
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- DOM Elements ---
-        const studentNameEl = document.getElementById('student-name');
-        const studentAgeEl = document.getElementById('student-age');
-        const studentGenderEl = document.getElementById('student-gender');
-        const studentStoryEl = document.getElementById('student-story');
-        const studentProfileImageEl = document.getElementById('student-profile-image');
-        const studentGalleryEl = document.getElementById('student-gallery');
-        const scheduleButtonContainer = document.getElementById('schedule-button-container');
-        const notificationEl = document.getElementById('notification');
-        const profileBtn = document.getElementById('profile-btn');
-        const profileDropdown = document.getElementById('profile-dropdown');
+        document.addEventListener('DOMContentLoaded', () => {
+            // Reveal page now that sync CSS is loaded (prevents FOUC)
+            document.body.classList.add('page-ready');
 
-        // --- Utility Functions ---
-        function showNotification(message, type = 'success') {
-            notificationEl.textContent = message;
-            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
-            notificationEl.classList.remove('hidden');
-            
-            setTimeout(() => {
-                notificationEl.classList.add('hidden');
-            }, 5000);
-        }
+            // --- DOM Elements ---
+            const studentNameEl = document.getElementById('student-name');
+            const studentMetaAgeGenderEl = document.getElementById('student-meta-age-gender');
+            const studentMetaAdmissionEl = document.getElementById('student-meta-admission');
+            const studentBioEl = document.getElementById('student-bio');
+            const studentStoryEl = document.getElementById('student-story');
+            const studentGalleryEl = document.getElementById('student-gallery');
+            const scheduleButtonContainer = document.getElementById('schedule-button-container');
+            const notificationEl = document.getElementById('notification');
 
-        // Function to get URL parameters
-        function getUrlParams() {
-            // Parse query parameters from the new URL structure
-            // Format: /volunteer/dashboard/student-detail.html?id=1&admission=ADM0001&name=Test%20Student
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            const id = urlParams.get('id');
-            const admission = urlParams.get('admission');
-            const name = urlParams.get('name');
-            
-            // Validate that we have the required parameters
-            if (id && admission && name) {
-                return {
-                    studentId: id,
-                    studentAdmission: admission,
-                    studentName: decodeURIComponent(name)
-                };
-            }
-            
-            // If query parameters are missing, return null
-            console.error('Missing required URL parameters:', { id, admission, name });
-            return null;
-        }
+            // --- Utility Functions ---
+            function showNotification(message, type = 'success') {
+                notificationEl.textContent = message;
+                notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-success text-white' : 'bg-error text-white'}`;
+                notificationEl.classList.remove('hidden');
 
-        // --- Data Loading ---
-        function loadStudentData() {
-            const params = getUrlParams();
-            
-            if (!params) {
-                showNotification('Invalid student URL', 'error');
-                return;
+                setTimeout(() => {
+                    notificationEl.classList.add('hidden');
+                }, 5000);
             }
-            
-            // Update page title with student name
-            document.title = `TalkTime - ${params.studentName} | Student Profile`;
-            
-            // Update canonical link
-            const canonicalLink = document.getElementById('canonical-link');
-            canonicalLink.href = window.location.href;
-            
-            // Use the full student ID for the API call - some students have the name in their admission number
-            // This handles both formats: ADM1234 and ADM1234-name-name
-            
-            // Fetch student data from the backend API
-            TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/${params.studentId}/profile`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Student data received:', data);
-                    
-                    // Update student profile data - API returns student data wrapped in 'student' property
-                    renderStudentProfile(data.student);
-                    
-                    // Check if there's an existing meeting and render the appropriate button
-                    checkExistingMeeting(params.studentId);
-                })
-                .catch(error => {
-                    console.error('Error loading student data:', error);
-                    showNotification('Failed to load student data. Please try again.', 'error');
-                });
-        }
 
-        // Function to render student profile
-        function renderStudentProfile(student) {
-            console.log('Rendering student profile:', student);
-            console.log('Student data properties:', Object.keys(student));
-            console.log('Student name value:', student.name);
-            console.log('Student admission value:', student.admissionNumber);
-            
-            // Check if DOM elements exist
-            console.log('DOM elements check:', {
-                studentNameEl: !!studentNameEl,
-                studentAgeEl: !!studentAgeEl
-            });
-            
-            // Store the numeric student ID in a data attribute for later use
-            document.getElementById('student-profile').dataset.numericId = student.id;
-            
-            // Update basic info - using correct property names from API response
-            if (studentNameEl) {
-                studentNameEl.textContent = student.name || 'Student Name';
-                console.log('Updated student name to:', studentNameEl.textContent);
-            }
-            if (studentAgeEl) {
-                studentAgeEl.textContent = `Age: ${student.age || 'Unknown'}`;
-                console.log('Updated student age to:', studentAgeEl.textContent);
-            }
-            if (studentGenderEl) {
-                studentGenderEl.textContent = student.gender || 'Unknown';
-            }
-            if (studentStoryEl) {
-                studentStoryEl.textContent = student.story || 'No story available.';
-            }
-            
-            // Update profile image with fallback
-            const profileImageSrc = student.profileImage || '/images/placeholder-student.jpg';
-            studentProfileImageEl.src = profileImageSrc;
-            studentProfileImageEl.alt = student.name || 'Student';
-            
-            // Add error handler for broken images
-            studentProfileImageEl.onerror = function() {
-                this.src = '/images/placeholder-student.jpg';
-            };
-            
-            // Render gallery if available
-            if (student.gallery && Array.isArray(student.gallery) && student.gallery.length > 0) {
-                const galleryHtml = student.gallery.map(image => `
-                    <img src="${image}" alt="${student.name}" class="gallery-img">
-                `).join('');
-                
-                studentGalleryEl.innerHTML = galleryHtml;
-            } else if (student.profileImage) {
-                // If no gallery but we have a profile image, use it as a gallery item
-                studentGalleryEl.innerHTML = `<img src="${student.profileImage}" alt="${student.name}" class="gallery-img">`;
-            } else {
-                studentGalleryEl.innerHTML = '<p class="text-gray-500 col-span-3 text-center py-4">No gallery images available.</p>';
-            }
-        }
+            // Function to get URL parameters
+            function getUrlParams() {
+                // Parse query parameters from the new URL structure
+                // Format: /volunteer/dashboard/student-detail.html?id=1&admission=ADM0001&name=Test%20Student
+                const urlParams = new URLSearchParams(window.location.search);
 
-        // Function to check meetings with this student and render appropriate interface
-        function checkExistingMeeting(studentId) {
-            // Use the full student ID for the API call - some students have the name in their admission number
-            
-            TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/student/${studentId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Enhanced meeting data received:', data);
-                    
-                    // Get meeting statistics and new data structure
-                    const meetingStats = data.meetingStats || {};
-                    const volunteerStudentMeetings = data.volunteerStudentMeetings || [];
-                    const allVolunteerMeetings = data.allVolunteerMeetings || [];
-                    const currentVolunteerId = data.currentVolunteerId;
-                    const activeMeeting = data.activeMeeting || data.meeting; // Try new field first, fall back to old
-                    
-                    console.log('Processing meeting data:', {
-                        activeMeeting: activeMeeting ? 'Found' : 'None',
-                        volunteerStudentMeetings: volunteerStudentMeetings.length,
-                        allVolunteerMeetings: allVolunteerMeetings.length,
-                        meetingStats
+                const id = urlParams.get('id');
+                const admission = urlParams.get('admission');
+                const name = urlParams.get('name');
+
+                // Validate that we have the required parameters
+                if (id && admission && name) {
+                    return {
+                        studentId: id,
+                        studentAdmission: admission,
+                        studentName: decodeURIComponent(name)
+                    };
+                }
+
+                // If query parameters are missing, return null
+                console.error('Missing required URL parameters:', { id, admission, name });
+                return null;
+            }
+
+            // --- Data Loading ---
+            function loadStudentData() {
+                const params = getUrlParams();
+
+                if (!params) {
+                    showNotification('Invalid student URL', 'error');
+                    return;
+                }
+
+                // Update page title with student name
+                document.title = `TalkTime - ${params.studentName} | Student Profile`;
+
+                // Update canonical link
+                const canonicalLink = document.getElementById('canonical-link');
+                canonicalLink.href = window.location.href;
+
+                // Use the full student ID for the API call - some students have the name in their admission number
+                // This handles both formats: ADM1234 and ADM1234-name-name
+
+                // Fetch student data from the backend API
+                TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/${params.studentId}/profile`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Student data received:', data);
+
+                        // Update student profile data - API returns student data wrapped in 'student' property
+                        renderStudentProfile(data.student);
+
+                        // Check if there's an existing meeting and render the appropriate button
+                        checkExistingMeeting(params.studentId);
+                    })
+                    .catch(error => {
+                        console.error('Error loading student data:', error);
+                        showNotification('Failed to load student data. Please try again.', 'error');
                     });
-                    
-                    // Render the comprehensive meeting interface with correct data structure
-                    renderMeetingInterface(studentId, {
-                        activeMeeting,
-                        volunteerStudentMeetings,
-                        allVolunteerMeetings,
-                        meetingStats,
-                        currentVolunteerId
-                    });
-                })
-                .catch(error => {
-                    console.error('Error checking existing meeting:', error);
-                    // Default to showing schedule button on error
-                    renderScheduleButton(studentId);
-                });
-        }
+            }
 
-        // Function to render schedule button
-        function renderScheduleButton(studentId) {
-            const params = getUrlParams();
-            if (!params) return;
-            
-            // Get the numeric ID from the data attribute
-            const numericId = document.getElementById('student-profile').dataset.numericId;
-            
-            scheduleButtonContainer.innerHTML = `
-                <div class="flex gap-3">
-                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
-                       class="inline-block bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
+            // Function to render student profile
+            function renderStudentProfile(student) {
+                // Store the numeric student ID in a data attribute for later use
+                document.getElementById('student-profile').dataset.numericId = student.id;
+                // Store the users-table ID for messaging (message API requires users.id, not students.id)
+                document.getElementById('student-profile').dataset.userId = student.userId || student.id;
+
+                // Name
+                if (studentNameEl) {
+                    studentNameEl.textContent = student.name || 'Student';
+                }
+
+                // Profile photo — real image or initials fallback
+                const photoWrapper = document.getElementById('student-photo-wrapper');
+                const initialsEl = document.getElementById('student-initials');
+                if (student.profileImage && !student.profileImage.includes('placeholder')) {
+                    photoWrapper.innerHTML = '<img src="' + student.profileImage + '" alt="' + (student.name || 'Student') + '">';
+                } else if (initialsEl && student.name) {
+                    const nameParts = student.name.trim().split(' ').filter(p => p);
+                    const initials = nameParts.length >= 2
+                        ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                        : student.name.charAt(0).toUpperCase();
+                    initialsEl.textContent = initials;
+                }
+
+                // Line 1: "24 years · Girl" — right under the name
+                const ageGenderParts = [];
+                if (student.age && student.age !== 'Age not specified') {
+                    ageGenderParts.push(student.age + ' years');
+                }
+                if (student.gender && student.gender !== 'Not specified') {
+                    const g = student.gender.toLowerCase();
+                    const genderDisplay = (g === 'f' || g === 'female') ? 'Girl' :
+                                         (g === 'm' || g === 'male') ? 'Boy' : student.gender;
+                    ageGenderParts.push(genderDisplay);
+                }
+                if (studentMetaAgeGenderEl) {
+                    if (ageGenderParts.length > 0) {
+                        studentMetaAgeGenderEl.innerHTML = ageGenderParts.join(' <span style="color:#d1d5db;margin:0 3px;">&middot;</span> ');
+                    } else {
+                        studentMetaAgeGenderEl.style.display = 'none';
+                    }
+                }
+
+                // Line 2: "ADM0001" (strip the -firstname-lastname suffix)
+                if (studentMetaAdmissionEl) {
+                    if (student.admissionNumber && student.admissionNumber !== 'Not available') {
+                        // Extract just "ADM0001" from "ADM0001-firstname-lastname"
+                        const admClean = student.admissionNumber.replace(/-.*$/, '');
+                        studentMetaAdmissionEl.innerHTML = '<i class="fas fa-id-card" style="font-size:10px;margin-right:3px;"></i>' + admClean;
+                    } else {
+                        studentMetaAdmissionEl.style.display = 'none';
+                    }
+                }
+
+                // Bio
+                const bioSection = document.getElementById('bio-section');
+                if (studentBioEl && student.bio && student.bio !== 'No biography available for this student.') {
+                    studentBioEl.textContent = student.bio;
+                    bioSection.style.display = '';
+                }
+
+                // Story
+                if (studentStoryEl) {
+                    studentStoryEl.textContent = student.story || 'No story available.';
+                }
+
+                // Gallery
+                if (student.gallery && Array.isArray(student.gallery) && student.gallery.length > 0) {
+                    const realImages = student.gallery.filter(img => img && !img.includes('placeholder'));
+                    if (realImages.length > 0) {
+                        studentGalleryEl.innerHTML = realImages.map(function(image, idx) {
+                            return '<img src="' + image + '" alt="' + (student.name || 'Student') + '" class="gallery-img" loading="lazy" data-index="' + idx + '">';
+                        }).join('');
+                        // Attach lightbox click handlers
+                        studentGalleryEl.querySelectorAll('.gallery-img').forEach(function(img) {
+                            img.addEventListener('click', function() {
+                                openLightbox(realImages, parseInt(this.dataset.index, 10));
+                            });
+                        });
+                    } else {
+                        studentGalleryEl.innerHTML = '<p class="col-span-2 text-center py-4 text-gray-400 text-sm">No photos available</p>';
+                    }
+                } else {
+                    studentGalleryEl.innerHTML = '<p class="col-span-2 text-center py-4 text-gray-400 text-sm">No photos available</p>';
+                }
+            }
+
+            // ── Gallery Lightbox ──
+            let lightboxImages = [];
+            let lightboxIndex = 0;
+
+            function openLightbox(images, startIndex) {
+                lightboxImages = images;
+                lightboxIndex = startIndex || 0;
+
+                // Remove existing lightbox if any
+                const existing = document.getElementById('gallery-lightbox');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.id = 'gallery-lightbox';
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;';
+
+                overlay.innerHTML =
+                    '<button id="lb-close" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;" aria-label="Close"><i class="fas fa-times"></i></button>' +
+                    (images.length > 1 ? '<button id="lb-prev" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>' : '') +
+                    '<img id="lb-img" src="" alt="Gallery" style="max-width:92vw;max-height:88vh;object-fit:contain;border-radius:8px;user-select:none;">' +
+                    (images.length > 1 ? '<button id="lb-next" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;" aria-label="Next"><i class="fas fa-chevron-right"></i></button>' : '') +
+                    (images.length > 1 ? '<div id="lb-counter" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:13px;"></div>' : '');
+
+                document.body.appendChild(overlay);
+                updateLightbox();
+
+                // Event listeners
+                document.getElementById('lb-close').addEventListener('click', closeLightbox);
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) closeLightbox(); });
+
+                var prevBtn = document.getElementById('lb-prev');
+                var nextBtn = document.getElementById('lb-next');
+                if (prevBtn) prevBtn.addEventListener('click', function(e) { e.stopPropagation(); lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length; updateLightbox(); });
+                if (nextBtn) nextBtn.addEventListener('click', function(e) { e.stopPropagation(); lightboxIndex = (lightboxIndex + 1) % lightboxImages.length; updateLightbox(); });
+
+                document.addEventListener('keydown', lightboxKeyHandler);
+
+                // Swipe support for mobile
+                let touchStartX = 0;
+                overlay.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+                overlay.addEventListener('touchend', function(e) {
+                    const dx = e.changedTouches[0].clientX - touchStartX;
+                    if (Math.abs(dx) > 50 && lightboxImages.length > 1) {
+                        if (dx < 0) { lightboxIndex = (lightboxIndex + 1) % lightboxImages.length; }
+                        else { lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length; }
+                        updateLightbox();
+                    }
+                }, { passive: true });
+            }
+
+            function updateLightbox() {
+                var img = document.getElementById('lb-img');
+                var counter = document.getElementById('lb-counter');
+                if (img) img.src = lightboxImages[lightboxIndex];
+                if (counter) counter.textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length;
+            }
+
+            function closeLightbox() {
+                var el = document.getElementById('gallery-lightbox');
+                if (el) el.remove();
+                document.removeEventListener('keydown', lightboxKeyHandler);
+            }
+
+            function lightboxKeyHandler(e) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft' && lightboxImages.length > 1) { lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length; updateLightbox(); }
+                if (e.key === 'ArrowRight' && lightboxImages.length > 1) { lightboxIndex = (lightboxIndex + 1) % lightboxImages.length; updateLightbox(); }
+            }
+
+            // Function to check meetings with this student and render appropriate interface
+            function checkExistingMeeting(studentId) {
+                // Use the full student ID for the API call - some students have the name in their admission number
+
+                TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/student/${studentId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Enhanced meeting data received:', data);
+
+                        // Get meeting statistics and new data structure
+                        const meetingStats = data.meetingStats || {};
+                        const volunteerStudentMeetings = data.volunteerStudentMeetings || [];
+                        const allVolunteerMeetings = data.allVolunteerMeetings || [];
+                        const currentVolunteerId = data.currentVolunteerId;
+                        const activeMeeting = data.activeMeeting || data.meeting; // Try new field first, fall back to old
+
+                        console.log('Processing meeting data:', {
+                            activeMeeting: activeMeeting ? 'Found' : 'None',
+                            volunteerStudentMeetings: volunteerStudentMeetings.length,
+                            allVolunteerMeetings: allVolunteerMeetings.length,
+                            meetingStats
+                        });
+
+                        // Render the comprehensive meeting interface with correct data structure
+                        renderMeetingInterface(studentId, {
+                            activeMeeting,
+                            volunteerStudentMeetings,
+                            allVolunteerMeetings,
+                            meetingStats,
+                            currentVolunteerId
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error checking existing meeting:', error);
+                        // Default to showing schedule button on error
+                        renderScheduleButton(studentId);
+                    });
+            }
+
+            // Function to render schedule button
+            function renderScheduleButton(studentId) {
+                const params = getUrlParams();
+                if (!params) return;
+
+                const numericId = document.getElementById('student-profile').dataset.numericId;
+                const msgUserId = document.getElementById('student-profile').dataset.userId || numericId;
+
+                scheduleButtonContainer.innerHTML = `
+                <div class="flex gap-2">
+                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}"
+                       class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                        data-numeric-id="${numericId}">
-                        <i class="far fa-calendar-plus mr-2"></i>Schedule a Meeting
+                        <i class="far fa-calendar-plus"></i>
+                        <span>Schedule</span>
                     </a>
-                    <button id="instant-call-btn" 
-                    class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
-                    data-student-id="${numericId}"
-                    data-student-name="${document.getElementById('student-name').textContent.trim()}">
-                <i class="fas fa-phone-alt mr-2"></i>Instant Call
-            </button>
+                    <button id="instant-call-btn"
+                            class="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                            data-student-id="${numericId}"
+                            data-student-name="${document.getElementById('student-name').textContent.trim()}">
+                        <i class="fas fa-video"></i>
+                        <span>Instant Call</span>
+                    </button>
+                    <button onclick="openMessageModal('${msgUserId}', '${document.getElementById('student-name').textContent.trim().replace(/'/g, "\\'")}')"
+                            class="flex items-center justify-center bg-white border border-gray-300 text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                            title="Message">
+                        <i class="far fa-comment-dots text-sm"></i>
+                    </button>
                 </div>
             `;
-            
-            // Add event listener for instant call button
-            document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
-        }
 
-        // Function to render reschedule button
-        function renderRescheduleButton(studentId, meeting) {
-            const params = getUrlParams();
-            if (!params) return;
-            
-            // Get the numeric ID from the data attribute
-            const numericId = document.getElementById('student-profile').dataset.numericId;
-            
-            const meetingDate = new Date(meeting.scheduled_time);
-            
-            // Check if the current volunteer is the owner of this meeting
-            const isOwner = meeting.isOwner === true || meeting.is_owner === true;
-            
-            if (isOwner) {
-                // If current volunteer is the owner, show existing meeting management AND new scheduling options
-                scheduleButtonContainer.innerHTML = `
+                document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+            }
+
+            // Function to render reschedule button
+            function renderRescheduleButton(studentId, meeting) {
+                const params = getUrlParams();
+                if (!params) return;
+
+                // Get the numeric ID from the data attribute
+                const numericId = document.getElementById('student-profile').dataset.numericId;
+                const msgUserId = document.getElementById('student-profile').dataset.userId || numericId;
+
+                const meetingDate = new Date(meeting.scheduled_time);
+
+                // Check if the current volunteer is the owner of this meeting
+                const isOwner = meeting.isOwner === true || meeting.is_owner === true;
+
+                if (isOwner) {
+                    // If current volunteer is the owner, show existing meeting management AND new scheduling options
+                    scheduleButtonContainer.innerHTML = `
                     <div class="space-y-4">
                         <!-- Existing Meeting Info -->
-                        <div class="p-3 bg-blue-50 rounded-lg">
-                            <p class="text-sm text-gray-700">You have a scheduled meeting on:</p>
-                            <p class="font-semibold">${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-xs text-gray-600">Scheduled meeting:</p>
+                            <p class="font-semibold text-sm text-gray-900">${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                        
+
                         <!-- Existing Meeting Management -->
-                        <div class="flex gap-3">
-                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" class="inline-block bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                        <div class="flex flex-col gap-2">
+                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}"
+                               class="w-full text-center bg-brand-primary text-white py-2.5 px-4 rounded-lg hover:bg-brand-primary-dark transition-colors font-medium text-sm">
                                 <i class="far fa-calendar-alt mr-2"></i>Reschedule
                             </a>
-                            <button id="cancel-meeting-btn" data-meeting-id="${meeting.id}" data-student-name="${studentName}" class="bg-white border border-red-500 text-red-500 py-2 px-4 rounded-lg hover:bg-red-50 transition-colors">
+                            <button id="cancel-meeting-btn" data-meeting-id="${meeting.id}" data-student-name="${studentName}"
+                                    class="w-full bg-white border border-red-500 text-red-500 py-2.5 px-4 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm">
                                 <i class="far fa-calendar-times mr-2"></i>Cancel Meeting
                             </button>
                         </div>
-                        
+
                         <!-- Divider -->
                         <div class="border-t border-gray-200 pt-3">
-                            <p class="text-sm text-gray-600 mb-3">Schedule additional meetings on other dates:</p>
+                            <p class="text-xs text-gray-500 mb-3">Or schedule additional meetings:</p>
                         </div>
-                        
+
                         <!-- New Meeting Options -->
-                        <div class="flex gap-3">
-                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
-                               class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                        <div class="flex flex-col gap-2">
+                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}"
+                               class="w-full text-center bg-success-dark text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
                                data-numeric-id="${numericId}">
                                 <i class="far fa-calendar-plus mr-2"></i>Schedule Another Meeting
                             </a>
-                            <button id="instant-call-btn" 
-                            class="inline-block bg-orange-600 text-white py-2 px-6 rounded-lg hover:bg-orange-700 transition-colors"
-                            data-student-id="${numericId}"
-                            data-student-name="${document.getElementById('student-name').textContent.trim()}">
-                        <i class="fas fa-phone-alt mr-2"></i>Instant Call
-                    </button>
+                            <div class="flex gap-2">
+                                <button id="instant-call-btn"
+                                        class="flex-1 bg-brand-primary-dark text-white py-2.5 px-4 rounded-lg hover:bg-brand-primary transition-colors font-medium text-sm"
+                                        data-student-id="${numericId}"
+                                        data-student-name="${document.getElementById('student-name').textContent.trim()}">
+                                    <i class="fas fa-phone-alt mr-2"></i>Instant Call
+                                </button>
+                                <button onclick="openMessageModal('${msgUserId}', '${document.getElementById('student-name').textContent.trim().replace(/'/g, "\\'")}')"
+                                        class="flex items-center justify-center bg-white border border-gray-300 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                                        title="Message">
+                                    <i class="far fa-comment-dots"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
-                
-                // Add event listeners
-                const cancelBtn = document.getElementById('cancel-meeting-btn');
-                if (cancelBtn) {
-                    cancelBtn.addEventListener('click', () => {
-                        const meetingId = cancelBtn.dataset.meetingId;
-                        const studentName = cancelBtn.dataset.studentName;
-                        window.cancelMeeting(meetingId, studentName);
-                    });
-                }
-                document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
-            } else {
-                // If another volunteer owns this meeting, show normal schedule button (no warning)
-                scheduleButtonContainer.innerHTML = `
-                    <div class="flex gap-3">
-                        <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
-                           class="inline-block bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
-                           data-numeric-id="${numericId}">
-                            <i class="far fa-calendar-plus mr-2"></i>Schedule a Meeting
-                        </a>
-                        <button id="instant-call-btn" 
-                        class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
-                        data-student-id="${numericId}"
-                        data-student-name="${document.getElementById('student-name').textContent.trim()}">
-                    <i class="fas fa-phone-alt mr-2"></i>Instant Call
-                </button>
-                    </div>
-                `;
-                
-                // Add event listener for instant call button
-                document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
-            }
-        }
 
-        // NEW: Function to render comprehensive meeting interface with tabs
-        function renderMeetingInterface(studentId, data) {
-            const { activeMeeting, volunteerStudentMeetings, allVolunteerMeetings, meetingStats, currentVolunteerId } = data;
-            const params = getUrlParams();
-            if (!params) return;
-            
-            const numericId = document.getElementById('student-profile').dataset.numericId;
-            const studentName = document.getElementById('student-name').textContent.trim();
-            
-            // Check if we can schedule more meetings
-            const canScheduleMore = meetingStats.canScheduleMore;
-            const meetingCount = meetingStats.volunteerStudentMeetingCount;
-            const limit = meetingStats.meetingLimit;
-            
-            let interfaceHtml = `<div class="space-y-6">`;
-            
-            // Show 3-meeting limit status
-            interfaceHtml += `
-                <div class="p-4 rounded-lg ${canScheduleMore ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border">
-                    <div class="flex items-center gap-3">
-                        <i class="fas ${canScheduleMore ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}"></i>
-                        <div>
-                            <h4 class="font-semibold ${canScheduleMore ? 'text-green-800' : 'text-red-800'}">
-                                Meeting Limit Status: ${meetingCount}/${limit} meetings with this student
-                            </h4>
-                            <p class="text-sm ${canScheduleMore ? 'text-green-700' : 'text-red-700'}">
-                                ${canScheduleMore 
-                                    ? `You can schedule ${limit - meetingCount} more meeting${limit - meetingCount === 1 ? '' : 's'} with this student.`
-                                    : 'You have reached the 3-meeting limit with this student. This ensures all students get equal opportunities.'}
-                            </p>
+                    // Add event listeners
+                    const cancelBtn = document.getElementById('cancel-meeting-btn');
+                    if (cancelBtn) {
+                        cancelBtn.addEventListener('click', () => {
+                            const meetingId = cancelBtn.dataset.meetingId;
+                            const studentName = cancelBtn.dataset.studentName;
+                            window.cancelMeeting(meetingId, studentName);
+                        });
+                    }
+                    document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+                } else {
+                    // If another volunteer owns this meeting, show normal schedule button (no warning)
+                    scheduleButtonContainer.innerHTML = `
+                    <div class="flex flex-col gap-3">
+                        <div class="flex gap-2">
+                            <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}"
+                               class="flex-1 text-center bg-brand-primary text-white py-3 px-4 rounded-lg hover:bg-brand-primary-dark transition-colors font-medium"
+                               data-numeric-id="${numericId}">
+                                <i class="far fa-calendar-plus mr-2"></i>Schedule
+                            </a>
+                            <button onclick="openMessageModal('${msgUserId}', '${document.getElementById('student-name').textContent.trim().replace(/'/g, "\\'")}')"
+                                    class="flex items-center justify-center bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                                    title="Message">
+                                <i class="far fa-comment-dots"></i>
+                            </button>
                         </div>
-                    </div>
-                </div>
-            `;
-            
-            // Create single tab interface (only meetings with this student)
-            interfaceHtml += `
-                <div class="bg-white rounded-lg border border-gray-200">
-                    <!-- Meeting Content -->
-                    <div class="p-6">
-            `;
-            
-            // Show ALL meetings with this specific student
-            if (volunteerStudentMeetings && volunteerStudentMeetings.length > 0) {
-                // Sort meetings by date - upcoming meetings first, then past meetings
-                const sortedMeetings = [...volunteerStudentMeetings].sort((a, b) => {
-                    const dateA = new Date(a.scheduled_time);
-                    const dateB = new Date(b.scheduled_time);
-                    const now = new Date();
-                    
-                    // Separate upcoming and past meetings
-                    const aIsUpcoming = dateA >= now;
-                    const bIsUpcoming = dateB >= now;
-                    
-                    // If both are upcoming, sort by earliest first
-                    if (aIsUpcoming && bIsUpcoming) {
-                        return dateA - dateB;
-                    }
-                    
-                    // If both are past, sort by most recent first
-                    if (!aIsUpcoming && !bIsUpcoming) {
-                        return dateB - dateA;
-                    }
-                    
-                    // Upcoming meetings come before past meetings
-                    return aIsUpcoming ? -1 : 1;
-                });
-                
-                interfaceHtml += `
-                    <div class="mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                            <i class="fas fa-user-graduate text-blue-600"></i>
-                            All Meetings with ${studentName} (${sortedMeetings.length})
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Complete meeting history between you and this student
-                        </p>
-                    </div>
-                    
-                    <div class="space-y-3 max-h-96 overflow-y-auto">
-                `;
-                
-                sortedMeetings.forEach(meeting => {
-                    const meetingDate = new Date(meeting.scheduled_time);
-                    const now = new Date();
-                    const meetingEnd = new Date(meetingDate.getTime() + (60 * 60 * 1000)); // Assume 1 hour duration
-                    const minutesLate = Math.floor((now - meetingDate) / (1000 * 60));
-                    
-                    // Use real-time status from backend, which handles auto-timeout logic
-                    const realTimeStatus = meeting.realTimeStatus || meeting.status;
-                    const isToday = meetingDate.toDateString() === now.toDateString();
-                    
-                    let statusColor = '';
-                    let statusBadge = '';
-                    let cardBorder = '';
-                    let statusIcon = '';
-                    
-                    // Determine status colors and badges based on real-time status
-                    switch (realTimeStatus) {
-                        case 'upcoming':
-                            statusColor = 'text-blue-600 bg-blue-100';
-                            statusBadge = isToday ? 'Today - Upcoming' : 'Upcoming';
-                            cardBorder = isToday ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50';
-                            statusIcon = 'fas fa-clock';
-                            break;
-                        case 'in_progress':
-                            statusColor = 'text-green-600 bg-green-100 animate-pulse';
-                            statusBadge = '🔴 LIVE NOW';
-                            cardBorder = 'border-green-400 bg-green-100';
-                            statusIcon = 'fas fa-video';
-                            break;
-                        case 'missed_start':
-                            statusColor = 'text-orange-600 bg-orange-100';
-                            if (minutesLate >= 35) {
-                                statusBadge = `${minutesLate} min late - Auto-timeout in ${40 - minutesLate} min`;
-                            } else {
-                                statusBadge = `${minutesLate} min late - Should be Live`;
-                            }
-                            cardBorder = 'border-orange-200 bg-orange-50';
-                            statusIcon = 'fas fa-exclamation-triangle';
-                            break;
-                        case 'completed':
-                            statusColor = 'text-green-600 bg-green-100';
-                            statusBadge = 'Successfully Completed';
-                            cardBorder = 'border-gray-200 bg-gray-50';
-                            statusIcon = 'fas fa-check-circle';
-                            break;
-                        case 'missed':
-                            statusColor = 'text-red-600 bg-red-100';
-                            if (meeting.auto_missed) {
-                                statusBadge = 'Auto-Missed (40+ min timeout)';
-                            } else {
-                                statusBadge = 'Missed - No Show';
-                            }
-                            cardBorder = 'border-red-200 bg-red-50';
-                            statusIcon = 'fas fa-times-circle';
-                            break;
-                        case 'ended':
-                            statusColor = 'text-purple-600 bg-purple-100';
-                            statusBadge = 'Session Ended';
-                            cardBorder = 'border-gray-200 bg-gray-50';
-                            statusIcon = 'fas fa-stop-circle';
-                            break;
-                        case 'canceled':
-                            statusColor = 'text-gray-600 bg-gray-100';
-                            statusBadge = 'Canceled';
-                            cardBorder = 'border-gray-200 bg-gray-50';
-                            statusIcon = 'fas fa-ban';
-                            break;
-                        default:
-                            statusColor = 'text-gray-600 bg-gray-100';
-                            statusBadge = meeting.status || 'Unknown';
-                            cardBorder = 'border-gray-200 bg-gray-50';
-                            statusIcon = 'fas fa-question-circle';
-                    }
-                    
-                    // Calculate time info with timeout awareness
-                    const timeInfo = (() => {
-                        if (realTimeStatus === 'in_progress') {
-                            const minutesLive = Math.floor((now - meetingDate) / (1000 * 60));
-                            return `Started ${minutesLive} min ago`;
-                        } else if (realTimeStatus === 'missed_start') {
-                            if (minutesLate >= 35) {
-                                return `Auto-timeout in ${40 - minutesLate} min`;
-                            } else if (minutesLate >= 20) {
-                                return `${minutesLate} min late - Join now!`;
-                            } else {
-                                return `${minutesLate} min late`;
-                            }
-                        } else if (realTimeStatus === 'upcoming' && isToday) {
-                            const minutesUntil = Math.floor((meetingDate - now) / (1000 * 60));
-                            if (minutesUntil < 60) {
-                                return `Starts in ${minutesUntil} min`;
-                            }
-                        } else if (realTimeStatus === 'missed') {
-                            if (meeting.auto_missed) {
-                                return 'Timed out - Can reschedule';
-                            } else {
-                                const hoursAgo = Math.floor((now - meetingEnd) / (1000 * 60 * 60));
-                                if (hoursAgo < 24) {
-                                    return `Missed ${hoursAgo}h ago`;
-                                }
-                            }
-                        }
-                        return '';
-                    })();
-                    
-                    interfaceHtml += `
-                        <div class="flex items-center justify-between p-4 rounded-lg border ${cardBorder}">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="font-medium text-gray-900">
-                                        ${meetingDate.toLocaleDateString('en-US', { 
-                                            weekday: 'short', 
-                                            year: 'numeric', 
-                                            month: 'short', 
-                                            day: 'numeric' 
-                                        })}
-                                    </span>
-                                    <span class="text-gray-500">
-                                        ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </span>
-                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor} flex items-center gap-1">
-                                        <i class="${statusIcon}"></i>
-                                        ${statusBadge}
-                                    </span>
-                                    ${timeInfo ? `<span class="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded font-medium">${timeInfo}</span>` : ''}
-                                </div>
-                                <div class="text-gray-600 text-sm">
-                                    Meeting with ${studentName} • ID: ${meeting.id}
-                                    ${realTimeStatus === 'missed' && meeting.auto_missed ? ' • Auto-timed out (no attendance)' : ''}
-                                    ${realTimeStatus === 'missed' && !meeting.auto_missed ? ' • No attendance recorded' : ''}
-                                    ${realTimeStatus === 'missed_start' && minutesLate >= 35 ? ' • Will auto-timeout soon' : ''}
-                                </div>
-                            </div>
-                            <div class="flex gap-2 ml-4">
-                                ${realTimeStatus === 'upcoming' ? `
-                                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" 
-                                       class="text-xs bg-indigo-600 text-white py-1 px-3 rounded hover:bg-indigo-700 transition-colors">
-                                        <i class="far fa-edit mr-1"></i>Edit
-                                    </a>
-                                    <button class="cancel-meeting-btn text-xs bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 transition-colors" 
-                                            data-meeting-id="${meeting.id}" data-student-name="${studentName}">
-                                        <i class="far fa-trash mr-1"></i>Cancel
-                                    </button>
-                                ` : realTimeStatus === 'in_progress' || realTimeStatus === 'missed_start' ? `
-                                    <a href="/call/call.html?room=${meeting.roomId || meeting.id}" 
-                                       class="text-xs bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors font-bold">
-                                        <i class="fas fa-video mr-1"></i>JOIN NOW
-                                    </a>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                interfaceHtml += `
-                    </div>
-                `;
-            } else {
-                interfaceHtml += `
-                    <div class="text-center py-12 text-gray-500">
-                        <i class="fas fa-calendar-alt text-6xl mb-4 opacity-30"></i>
-                        <p class="text-xl font-medium mb-2">No Meetings Yet</p>
-                        <p class="text-sm">You haven't had any meetings with ${studentName} yet.</p>
-                        <p class="text-sm text-gray-400 mt-2">Schedule your first meeting using the button below!</p>
-                    </div>
-                `;
-            }
-            
-            interfaceHtml += `
-                    </div>
-                </div>
-            `;
-            
-            // Show schedule button based on meeting limit (simplified)
-            if (canScheduleMore) {
-                interfaceHtml += `
-                    <div class="flex gap-3 mt-6">
-                        <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" 
-                           class="inline-block bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
-                           data-numeric-id="${numericId}">
-                            <i class="far fa-calendar-plus mr-2"></i>Schedule ${meetingCount === 0 ? 'First' : 'Another'} Meeting
-                        </a>
-                        <button id="instant-call-btn" 
-                                class="inline-block bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors"
+                        <button id="instant-call-btn"
+                                class="w-full bg-success-dark text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
                                 data-student-id="${numericId}"
-                                data-student-name="${studentName}">
+                                data-student-name="${document.getElementById('student-name').textContent.trim()}">
                             <i class="fas fa-phone-alt mr-2"></i>Instant Call
                         </button>
                     </div>
                 `;
-            } else {
-                // Simple disabled state without redundant explanation
-                interfaceHtml += `
-                    <div class="flex gap-3 mt-6">
-                        <button class="bg-gray-400 text-white py-3 px-6 rounded-lg cursor-not-allowed" disabled>
-                            <i class="far fa-calendar-plus mr-2"></i>Cannot Schedule More
-                        </button>
-                        <button id="instant-call-btn" 
-                                class="inline-block bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors"
-                                data-student-id="${numericId}"
-                                data-student-name="${studentName}">
-                            <i class="fas fa-phone-alt mr-2"></i>Instant Call (Still Available)
-                        </button>
-                    </div>
-                `;
-            }
-            
-            interfaceHtml += `</div>`;
-            
-            scheduleButtonContainer.innerHTML = interfaceHtml;
-            
-            // Add event listener for instant call button
-            const instantCallBtn = document.getElementById('instant-call-btn');
-            if (instantCallBtn) {
-                instantCallBtn.addEventListener('click', initiateInstantCall);
-            }
-            
-            // Add event listeners for all cancel meeting buttons
-            const cancelButtons = scheduleButtonContainer.querySelectorAll('.cancel-meeting-btn');
-            cancelButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const meetingId = button.dataset.meetingId;
-                    const studentName = button.dataset.studentName;
-                    window.cancelMeeting(meetingId, studentName);
-                });
-            });
-        }
 
-        // Function to cancel a meeting (make it globally accessible)
-        window.cancelMeeting = async function(meetingId, studentName) {
-            const confirmed = await window.showConfirmation(
-                `Are you sure you want to cancel your meeting with ${studentName}?`,
-                {
-                    title: 'Cancel Meeting',
-                    confirmText: 'Cancel Meeting',
-                    cancelText: 'Keep Meeting',
-                    type: 'warning'
+                    // Add event listener for instant call button
+                    document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
                 }
-            );
-            
-            if (!confirmed) {
-                return;
             }
-            
-            // Send API request to cancel the meeting
-            window.TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to cancel meeting');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Show success notification
-                    showNotification('Meeting cancelled successfully');
-                    
-                    // Refresh the meeting interface to show updated data
-                    const params = getUrlParams();
-                    if (params) {
-                        checkExistingMeeting(params.studentId);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error cancelling meeting:', error);
-                    showNotification('Failed to cancel meeting. Please try again.', 'error');
-                });
-        }
 
-        // Function to initiate instant call
-        function initiateInstantCall() {
-            const studentId = this.dataset.studentId;
-            const studentName = this.dataset.studentName;
-            
-            // Get volunteer data from localStorage for sharing with student
-            let volunteerData = null;
-            try {
-                const userData = localStorage.getItem('volunteer_talktime_user');
-                if (userData) {
-                    volunteerData = JSON.parse(userData);
+            // NEW: Function to render comprehensive meeting interface with tabs
+            function renderMeetingInterface(studentId, data) {
+                const { activeMeeting, volunteerStudentMeetings, allVolunteerMeetings, meetingStats, currentVolunteerId } = data;
+                const params = getUrlParams();
+                if (!params) return;
+
+                const numericId = document.getElementById('student-profile').dataset.numericId;
+                const msgUserId = document.getElementById('student-profile').dataset.userId || numericId;
+                const studentName = document.getElementById('student-name').textContent.trim();
+
+                const canScheduleMore = meetingStats.canScheduleMore;
+                const meetingCount = meetingStats.volunteerStudentMeetingCount;
+                const limit = meetingStats.meetingLimit;
+
+                let interfaceHtml = '';
+
+                // Tiny meeting limit indicator (inline text only)
+                if (!canScheduleMore) {
+                    interfaceHtml += `<p class="text-xs text-orange-600 mb-3"><i class="fas fa-info-circle mr-1"></i>${meetingCount}/${limit} meetings - limit reached</p>`;
+                }
+
+                // Meetings list (if any)
+                if (volunteerStudentMeetings && volunteerStudentMeetings.length > 0) {
+                    const sortedMeetings = [...volunteerStudentMeetings].sort((a, b) => {
+                        const dateA = new Date(a.scheduled_time);
+                        const dateB = new Date(b.scheduled_time);
+                        const now = new Date();
+                        const aIsUpcoming = dateA >= now;
+                        const bIsUpcoming = dateB >= now;
+                        if (aIsUpcoming && bIsUpcoming) return dateA - dateB;
+                        if (!aIsUpcoming && !bIsUpcoming) return dateB - dateA;
+                        return aIsUpcoming ? -1 : 1;
+                    });
+
+                    interfaceHtml += `<div class="mb-4"><p class="text-xs text-gray-500 mb-2">Meetings (${sortedMeetings.length})</p><div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">`;
+
+                    sortedMeetings.forEach(meeting => {
+                        const meetingDate = new Date(meeting.scheduled_time);
+                        const now = new Date();
+                        const realTimeStatus = meeting.realTimeStatus || meeting.status;
+                        const isToday = meetingDate.toDateString() === now.toDateString();
+
+                        let statusText = '';
+                        let statusClass = 'text-gray-500';
+                        let showJoin = false;
+                        let showActions = false;
+
+                        switch (realTimeStatus) {
+                            case 'upcoming':
+                                statusText = isToday ? 'Today' : 'Scheduled';
+                                statusClass = 'text-blue-600';
+                                showActions = true;
+                                break;
+                            case 'in_progress':
+                            case 'missed_start':
+                                statusText = 'Join Now';
+                                statusClass = 'text-green-600 font-semibold';
+                                showJoin = true;
+                                break;
+                            case 'completed':
+                                statusText = 'Completed';
+                                statusClass = 'text-green-600';
+                                break;
+                            case 'missed':
+                                statusText = 'Missed';
+                                statusClass = 'text-orange-500';
+                                break;
+                            case 'canceled':
+                                statusText = 'Canceled';
+                                statusClass = 'text-gray-400';
+                                break;
+                            default:
+                                statusText = meeting.status || '';
+                        }
+
+                        const dateStr = meetingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const timeStr = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        // Add blue border for upcoming meetings
+                        const borderClass = showActions || showJoin ? 'border border-blue-200' : '';
+
+                        interfaceHtml += `
+                        <div class="py-2.5 px-3 bg-gray-50 rounded-lg text-sm ${borderClass}">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-gray-700 font-medium">${dateStr}, ${timeStr}</span>
+                                <span class="${statusClass} text-xs">${statusText}</span>
+                            </div>
+                            ${showJoin ? `
+                                <a href="/call/call.html?room=${meeting.roomId || meeting.id}&role=volunteer" class="block w-full text-center text-xs bg-green-600 text-white py-2 px-3 rounded-lg hover:bg-green-700 font-medium">Join Call</a>
+                            ` : ''}
+                            ${showActions ? `
+                                <div class="flex gap-2 mt-1">
+                                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" class="flex-1 flex items-center justify-center text-xs bg-blue-600 text-white py-1.5 px-3 rounded-lg hover:bg-blue-700 font-medium">Edit</a>
+                                    <button class="cancel-meeting-btn flex-1 flex items-center justify-center text-xs border-2 border-red-500 text-red-600 py-1.5 px-3 rounded-lg hover:bg-red-50 font-medium" data-meeting-id="${meeting.id}" data-student-name="${studentName}">Cancel</button>
+                                </div>
+                            ` : ''}
+                        </div>`;
+                    });
+
+                    interfaceHtml += `</div></div>`;
+                }
+
+                // Action buttons
+                interfaceHtml += `<div class="flex gap-2">`;
+                if (canScheduleMore) {
+                    interfaceHtml += `
+                    <a href="/volunteer/dashboard/schedule.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}"
+                       class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                        <i class="far fa-calendar-plus"></i><span>Schedule</span>
+                    </a>`;
                 } else {
+                    interfaceHtml += `
+                    <button disabled class="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-2.5 px-4 rounded-lg text-sm cursor-not-allowed">
+                        <i class="far fa-calendar-plus"></i><span>Limit Reached</span>
+                    </button>`;
+                }
+                interfaceHtml += `
+                    <button id="instant-call-btn" class="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                            data-student-id="${numericId}" data-student-name="${studentName}">
+                        <i class="fas fa-video"></i><span>Instant Call</span>
+                    </button>
+                    <button onclick="openMessageModal('${msgUserId}', '${studentName.replace(/'/g, "\\'")}')"
+                            class="flex items-center justify-center bg-white border border-gray-300 text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                            title="Message">
+                        <i class="far fa-comment-dots text-sm"></i>
+                    </button>
+                </div>`;
+
+                scheduleButtonContainer.innerHTML = interfaceHtml;
+
+                // Add event listener for instant call button
+                const instantCallBtn = document.getElementById('instant-call-btn');
+                if (instantCallBtn) {
+                    instantCallBtn.addEventListener('click', initiateInstantCall);
+                }
+
+                // Add event listeners for all cancel meeting buttons
+                const cancelButtons = scheduleButtonContainer.querySelectorAll('.cancel-meeting-btn');
+                cancelButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const meetingId = button.dataset.meetingId;
+                        const studentName = button.dataset.studentName;
+                        window.cancelMeeting(meetingId, studentName);
+                    });
+                });
+            }
+
+            // Function to cancel a meeting (make it globally accessible)
+            window.cancelMeeting = async function (meetingId, studentName) {
+                const confirmed = await window.showConfirmation(
+                    `Are you sure you want to cancel your meeting with ${studentName}?`,
+                    {
+                        title: 'Cancel Meeting',
+                        confirmText: 'Cancel Meeting',
+                        cancelText: 'Keep Meeting',
+                        type: 'warning'
+                    }
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                // Send API request to cancel the meeting
+                window.TalkTimeAuth.authenticatedRequest(`/api/v1/meetings/${meetingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to cancel meeting');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Show success notification
+                        showNotification('Meeting cancelled successfully');
+
+                        // Refresh the meeting interface to show updated data
+                        const params = getUrlParams();
+                        if (params) {
+                            checkExistingMeeting(params.studentId);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cancelling meeting:', error);
+                        showNotification('Failed to cancel meeting. Please try again.', 'error');
+                    });
+            }
+
+            // Function to initiate instant call
+            async function initiateInstantCall(event) {
+                console.log('🚀 initiateInstantCall called!');
+
+                // Get button element - use event.currentTarget for reliability
+                const button = event ? event.currentTarget : this;
+                console.log('Button element:', button);
+                console.log('Button dataset:', button?.dataset);
+
+                const studentId = button?.dataset?.studentId;
+                const studentName = button?.dataset?.studentName;
+
+                console.log('Student ID:', studentId);
+                console.log('Student Name:', studentName);
+
+                if (!studentId) {
+                    console.error('[TalkTime] No student ID found!');
+                    if (window.showNotification) {
+                        window.showNotification('Could not find student ID. Please refresh the page and try again.', 'error', { title: 'Error', autoClose: false });
+                    }
+                    return;
+                }
+
+                // Disable button to prevent double-clicks
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Connecting...</span>';
+                }
+
+                // Get volunteer data from localStorage or TalkTimeAuth
+                let volunteerData = null;
+                let volunteerName = 'Volunteer';
+                let volunteerImage = '';
+
+                try {
+                    // First try to get from TalkTimeAuth
+                    if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
+                        const user = window.TalkTimeAuth.getUser();
+                        if (user) {
+                            volunteerData = user;
+                            volunteerName = user.full_name || user.fullName || user.name || 'Volunteer';
+                            volunteerImage = user.profile_image || user.profileImage || '';
+                            console.log('Got volunteer from TalkTimeAuth:', volunteerName);
+                        }
+                    }
+
+                    // Fallback to localStorage
+                    if (!volunteerData) {
+                        const userData = localStorage.getItem('volunteer_talktime_user');
+                        if (userData) {
+                            volunteerData = JSON.parse(userData);
+                            volunteerName = volunteerData.full_name || volunteerData.fullName || volunteerData.name || 'Volunteer';
+                            volunteerImage = volunteerData.profile_image || volunteerData.profileImage || '';
+                            console.log('Got volunteer from localStorage:', volunteerName);
+                        }
+                    }
+
+                    // Last fallback - try to decode from JWT token
+                    if (!volunteerName || volunteerName === 'Volunteer') {
+                        const token = localStorage.getItem('volunteer_talktime_access_token');
+                        if (token) {
+                            const payload = JSON.parse(atob(token.split('.')[1]));
+                            volunteerName = payload.full_name || payload.fullName || payload.name || 'Volunteer';
+                            console.log('Got volunteer from JWT:', volunteerName);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting volunteer data:', error);
+                }
+
+                // Extract volunteer user ID from JWT
+                let volunteerId = '';
+                try {
                     const token = localStorage.getItem('volunteer_talktime_access_token');
                     if (token) {
                         const payload = JSON.parse(atob(token.split('.')[1]));
-                        volunteerData = payload;
+                        volunteerId = payload.id || payload.userId || payload.sub || '';
                     }
-                }
-            } catch (error) {
-                console.error('Error getting volunteer data:', error);
-            }
-            
-            // Generate a unique room ID for this instant call
-            const roomId = `instant-${Date.now()}-${studentId}`;
-            
-            // Prepare volunteer info for URL (encode for sharing with student)
-            const volunteerName = volunteerData?.fullName || volunteerData?.name || 'Volunteer';
-            const volunteerImage = volunteerData?.profileImage || '';
-            
-            // Generate both volunteer and student URLs with volunteer info
-            const baseParams = `room=${roomId}&instant=true&studentId=${studentId}&studentName=${encodeURIComponent(studentName)}&volunteerName=${encodeURIComponent(volunteerName)}&volunteerImage=${encodeURIComponent(volunteerImage)}`;
-            const volunteerUrl = `/call.html?${baseParams}&role=volunteer`;
-            const studentUrl = `/call.html?${baseParams}&role=student`;
-            
-            // Store student URL for sharing (could be used for notifications, etc.)
-            console.log('📋 Generated URLs with volunteer info:');
-            console.log('👨‍🏫 Volunteer URL:', window.location.origin + volunteerUrl);
-            console.log('👨‍🎓 Student URL:', window.location.origin + studentUrl);
-            
-            // Show notification and redirect volunteer to their URL
-            showNotification('Starting instant call. Redirecting to meeting room...');
-            
-            // TODO: In a real implementation, the student URL should be sent to the student
-            // via SMS, email, or push notification so they can join with role=student
-            
-            setTimeout(() => {
-                window.location.href = volunteerUrl;
-            }, 1000);
-        }
+                } catch (e) { /* ignore */ }
 
-        // --- Event Listeners ---
-        document.addEventListener('click', e => {
-            // Profile dropdown toggle
-            if (profileBtn && profileBtn.contains(e.target)) {
-                console.log('Profile button clicked');
-                e.stopPropagation();
-                
-                const isHidden = profileDropdown.classList.contains('hidden');
-                console.log('Dropdown is currently hidden:', isHidden);
-                
-                if (isHidden) {
-                    // Show dropdown
-                    profileDropdown.classList.remove('hidden');
-                    profileDropdown.classList.remove('opacity-0');
-                    profileDropdown.classList.remove('-translate-y-2');
-                    console.log('Showing dropdown');
-                } else {
-                    // Hide dropdown
-                    profileDropdown.classList.add('hidden');
-                    profileDropdown.classList.add('opacity-0');
-                    profileDropdown.classList.add('-translate-y-2');
-                    console.log('Hiding dropdown');
+                console.log('Final volunteer name for URL:', volunteerName);
+
+                // Generate a unique room ID for this instant call
+                const roomId = `instant-${Date.now()}-${studentId}`;
+
+                // Generate URLs with role-appropriate data
+                const volunteerParams = `room=${roomId}&instant=true&studentId=${studentId}&studentName=${encodeURIComponent(studentName)}&volunteerName=${encodeURIComponent(volunteerName)}&volunteerImage=${encodeURIComponent(volunteerImage)}&role=volunteer`;
+                const studentParams = `room=${roomId}&instant=true&studentId=${studentId}&role=student&volunteerId=${volunteerId}`;
+                const volunteerUrl = `/call/call.html?${volunteerParams}`;
+                const studentUrl = `/call/call.html?${studentParams}`;
+                const fullStudentUrl = window.location.origin + studentUrl;
+
+                console.log('📋 Generated URLs with volunteer info:');
+                console.log('👨‍🏫 Volunteer URL:', window.location.origin + volunteerUrl);
+                console.log('👨‍🎓 Student URL:', fullStudentUrl);
+
+                // CRITICAL: Check if student is online BEFORE redirecting
+                try {
+                    const token = window.TalkTimeAuth.getToken();
+                    if (!token) {
+                        resetInstantCallButton(button);
+                        showNotification('Authentication error. Please log in again.', 'error');
+                        return;
+                    }
+
+                    const response = await fetch('/api/v1/volunteers/instant-call/notify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            studentId: studentId,
+                            studentName: studentName,
+                            roomId: roomId,
+                            callUrl: fullStudentUrl,
+                            volunteerName: volunteerName,
+                            volunteerImage: volunteerImage
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log('📞 Instant call API response:', data);
+                    console.log('📞 Response status:', response.status);
+                    console.log('📞 Student online status:', data.studentOnline);
+                    console.log('📞 Success:', data.success);
+
+                    // Handle different response scenarios
+                    if (response.status === 400 && data.error === 'pending_call_exists') {
+                        // Volunteer already has a pending call
+                        resetInstantCallButton(button);
+                        showInstantCallModal({
+                            type: 'pending_call',
+                            title: 'Call Already in Progress',
+                            message: 'You already have a pending instant call. Please wait for the student to respond or wait for the call to expire before starting a new one.',
+                            icon: 'fa-phone-slash'
+                        });
+                        return;
+                    }
+
+                    if (!data.success && data.studentOnline === false) {
+                        // Student is NOT online - show modal and DON'T redirect
+                        resetInstantCallButton(button);
+                        // Get student photo from the already-rendered profile
+                        const photoWrapper = document.getElementById('student-photo-wrapper');
+                        const photoImg = photoWrapper ? photoWrapper.querySelector('img') : null;
+                        const studentPhoto = photoImg ? photoImg.src : null;
+                        const sName = data.studentName || studentName;
+                        showInstantCallModal({
+                            type: 'student_offline',
+                            title: (sName || 'Student') + ' is not online',
+                            message: "We've sent them a notification that you tried to call. They'll be notified when they come back online.",
+                            studentName: sName,
+                            studentPhoto: studentPhoto
+                        });
+                        return;
+                    }
+
+                    if (data.success && data.studentOnline === true) {
+                        // Student IS online - proceed to call
+                        showNotification('Student is online! Connecting to call...', 'success');
+                        setTimeout(() => {
+                            console.log('🚀 Redirecting volunteer to call page:', volunteerUrl);
+                            window.location.href = volunteerUrl;
+                        }, 1000);
+                        return;
+                    }
+
+                    // Fallback for unexpected responses
+                    resetInstantCallButton(button);
+                    showNotification('Unable to start call. Please try again.', 'error');
+
+                } catch (error) {
+                    console.error('Error initiating instant call:', error);
+                    resetInstantCallButton(button);
+                    showNotification('Connection error. Please check your internet and try again.', 'error');
                 }
-            } else if (profileDropdown && !profileDropdown.contains(e.target) && !profileDropdown.classList.contains('hidden')) {
-                console.log('Clicking outside, closing dropdown');
-                profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
             }
-        });
-        
-        // --- Initialize Authentication ---
-        window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-        
-        // --- Initialize Real-time Notifications ---
-        if (typeof RealtimeNotifications !== 'undefined') {
-            window.realtimeNotifications = new RealtimeNotifications('volunteer');
-            window.realtimeNotifications.initialize().then(() => {
-                console.log('Real-time notifications initialized');
-                
-                // Listen for meeting reschedule notifications
-                window.realtimeNotifications.on('meeting-rescheduled', (data) => {
-                    console.log('Meeting rescheduled notification received:', data);
-                    showNotification(`Meeting rescheduled: ${data.message}`, 'success');
-                    
-                    // Refresh the meeting interface to show updated data
-                    const params = getUrlParams();
-                    if (params && params.studentId) {
-                        checkExistingMeeting(params.studentId);
+
+            // Helper function to reset the instant call button
+            function resetInstantCallButton(button) {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-phone-alt mr-2"></i><span>Instant Call</span>';
+                }
+            }
+
+            // Show branded modal for instant call status
+            function showInstantCallModal(options) {
+                const { type, title, message, icon, studentName, studentPhoto } = options;
+
+                // Remove any existing modal
+                const existingModal = document.getElementById('instant-call-modal');
+                if (existingModal) existingModal.remove();
+
+                // Build avatar: photo or initials
+                let avatarHtml = '';
+                if (type === 'student_offline' && studentPhoto) {
+                    avatarHtml = '<img src="' + studentPhoto + '" alt="' + (studentName || 'Student') + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #fff;margin:0 auto 16px;display:block;">';
+                } else if (type === 'student_offline' && studentName) {
+                    const parts = studentName.trim().split(' ').filter(function(p) { return p; });
+                    const initials = parts.length >= 2
+                        ? (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+                        : studentName.charAt(0).toUpperCase();
+                    avatarHtml = '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);color:#fff;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:3px solid rgba(255,255,255,0.4);">' + initials + '</div>';
+                } else {
+                    avatarHtml = '<div style="width:80px;height:80px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><i class="fas ' + (icon || 'fa-phone-slash') + '" style="font-size:30px;color:#ef4444;"></i></div>';
+                }
+
+                const modalHtml = `
+                    <div id="instant-call-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+                        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+                            <!-- Header -->
+                            <div style="background:#D10100;padding:24px;text-align:center;">
+                                ${avatarHtml}
+                                <h2 style="font-size:18px;font-weight:700;color:#fff;margin:0;">${title}</h2>
+                            </div>
+
+                            <!-- Body -->
+                            <div class="p-6">
+                                <p class="text-gray-600 text-center mb-6">${message}</p>
+
+                                <button onclick="document.getElementById('instant-call-modal').remove()"
+                                        style="width:100%;padding:12px 16px;background:#D10100;color:#fff;font-weight:600;border:none;border-radius:12px;cursor:pointer;font-size:16px;">
+                                    Got it
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // Close on backdrop click
+                document.getElementById('instant-call-modal').addEventListener('click', (e) => {
+                    if (e.target.id === 'instant-call-modal') {
+                        e.target.remove();
                     }
                 });
-                
-                // Listen for general notifications
-                window.realtimeNotifications.on('newNotification', (notification) => {
-                    if (notification.type === 'meeting_rescheduled') {
-                        console.log('Meeting rescheduled notification:', notification);
-                        showNotification(notification.message, 'success');
-                        
-                        // Refresh the meeting interface
+
+                // Close on Escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        const modal = document.getElementById('instant-call-modal');
+                        if (modal) modal.remove();
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+            }
+
+            // ─── Conversation Modal ───────────────────────────────────
+            const convModal = document.getElementById('conv-modal');
+            const convMessages = document.getElementById('conv-messages');
+            const convName = document.getElementById('conv-name');
+            const convAvatar = document.getElementById('conv-avatar');
+            const convInput = document.getElementById('conv-input');
+            const convSendBtn = document.getElementById('conv-send-btn');
+            const convCloseBtn = document.getElementById('conv-close-btn');
+            let convRecipientId = null;
+            let convCurrentUserId = null;
+
+            function getConvUserId() {
+                if (convCurrentUserId) return convCurrentUserId;
+                try {
+                    const user = window.TalkTimeAuth && window.TalkTimeAuth.getUser();
+                    if (user) convCurrentUserId = user.id;
+                } catch (e) { /* ignore */ }
+                return convCurrentUserId;
+            }
+
+            function convEscapeHtml(text) {
+                const d = document.createElement('div');
+                d.textContent = text;
+                return d.innerHTML;
+            }
+
+            function convFormatTime(dateStr) {
+                return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            window.openMessageModal = async function(studentUserId, name) {
+                convRecipientId = parseInt(studentUserId);
+                convName.textContent = name || 'Student';
+                convAvatar.textContent = (name || 'S').charAt(0).toUpperCase();
+                convMessages.innerHTML = '<div class="text-center py-8 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-1"></i> Loading...</div>';
+                convInput.value = '';
+                updateConvSendBtn();
+
+                convModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                try {
+                    const res = await TalkTimeAuth.authenticatedRequest(`/api/v1/messages/conversation/${convRecipientId}`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const myId = getConvUserId();
+
+                    if (data.messages && data.messages.length > 0) {
+                        convMessages.innerHTML = data.messages.map(msg => {
+                            const isSent = msg.isSentByMe || msg.senderId === myId;
+                            return `<div class="msg-bubble ${isSent ? 'sent' : 'received'}">
+                                <p>${convEscapeHtml(msg.content)}</p>
+                                <div class="msg-time">${convFormatTime(msg.createdAt)}</div>
+                            </div>`;
+                        }).join('');
+                        setTimeout(() => { convMessages.scrollTop = convMessages.scrollHeight; }, 50);
+                    } else {
+                        convMessages.innerHTML = '<div class="text-center py-8 text-gray-500"><p>No messages yet. Start the conversation!</p></div>';
+                    }
+                } catch (err) {
+                    convMessages.innerHTML = '<div class="text-center py-8 text-gray-500"><p>Could not load messages</p></div>';
+                }
+
+                setTimeout(() => convInput.focus(), 300);
+            };
+
+            function closeMessageModal() {
+                convModal.classList.remove('active');
+                document.body.style.overflow = '';
+                convRecipientId = null;
+            }
+
+            async function sendConvMessage() {
+                const content = convInput.value.trim();
+                if (!content || !convRecipientId) return;
+
+                convInput.value = '';
+                updateConvSendBtn();
+
+                const emptyState = convMessages.querySelector('.text-center');
+                if (emptyState) emptyState.remove();
+
+                const msgEl = document.createElement('div');
+                msgEl.className = 'msg-bubble sent sending';
+                msgEl.innerHTML = `<p>${convEscapeHtml(content)}</p><div class="msg-time">${convFormatTime(new Date().toISOString())}</div>`;
+                convMessages.appendChild(msgEl);
+                convMessages.scrollTop = convMessages.scrollHeight;
+
+                try {
+                    const res = await TalkTimeAuth.authenticatedRequest('/api/v1/messages/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ recipientId: convRecipientId, content })
+                    });
+                    if (res.ok) {
+                        msgEl.classList.remove('sending');
+                    } else {
+                        throw new Error('Send failed');
+                    }
+                } catch (err) {
+                    msgEl.classList.remove('sending');
+                    msgEl.classList.add('failed');
+                    showNotification('Failed to send message', 'error');
+                }
+            }
+
+            function updateConvSendBtn() {
+                convSendBtn.disabled = !convInput.value.trim();
+            }
+
+            convCloseBtn.addEventListener('click', closeMessageModal);
+            convModal.addEventListener('click', (e) => { if (e.target === convModal) closeMessageModal(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && convModal.classList.contains('active')) closeMessageModal(); });
+            convInput.addEventListener('input', updateConvSendBtn);
+            convInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!convSendBtn.disabled) sendConvMessage();
+                }
+            });
+            convSendBtn.addEventListener('click', sendConvMessage);
+
+            // --- Event Listeners ---
+
+            // --- Initialize Authentication ---
+            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+
+            // --- Initialize Real-time Notifications ---
+            if (typeof RealtimeNotifications !== 'undefined') {
+                window.realtimeNotifications = new RealtimeNotifications('volunteer');
+                window.realtimeNotifications.initialize().then(() => {
+                    console.log('Real-time notifications initialized');
+
+                    // Helper to refresh meeting data
+                    const refreshMeetingData = () => {
                         const params = getUrlParams();
                         if (params && params.studentId) {
-                            setTimeout(() => {
-                                checkExistingMeeting(params.studentId);
-                            }, 1000);
+                            checkExistingMeeting(params.studentId);
                         }
-                    }
+                    };
+
+                    // Listen for meeting schedule notifications
+                    window.realtimeNotifications.on('meeting-scheduled', (data) => {
+                        console.log('Meeting scheduled notification received:', data);
+                        showNotification(data.message || 'Meeting scheduled successfully!', 'success');
+                        refreshMeetingData();
+                    });
+
+                    // Listen for meeting reschedule notifications
+                    window.realtimeNotifications.on('meeting-rescheduled', (data) => {
+                        console.log('Meeting rescheduled notification received:', data);
+                        showNotification(`Meeting rescheduled: ${data.message}`, 'success');
+                        refreshMeetingData();
+                    });
+
+                    // Listen for meeting canceled notifications
+                    window.realtimeNotifications.on('meeting-canceled', (data) => {
+                        console.log('Meeting canceled notification received:', data);
+                        showNotification(data.message || 'Meeting has been canceled', 'warning');
+                        refreshMeetingData();
+                    });
+
+                    // Listen for meeting completed notifications
+                    window.realtimeNotifications.on('meeting-completed', (data) => {
+                        console.log('Meeting completed notification received:', data);
+                        showNotification(data.message || 'Meeting completed!', 'success');
+                        refreshMeetingData();
+                    });
+
+                    // Listen for general notifications
+                    window.realtimeNotifications.on('newNotification', (notification) => {
+                        if (notification.type === 'meeting_rescheduled' ||
+                            notification.type === 'meeting_scheduled' ||
+                            notification.type === 'meeting_canceled') {
+                            console.log('Meeting notification:', notification);
+                            showNotification(notification.message, 'success');
+                            setTimeout(refreshMeetingData, 1000);
+                        }
+                    });
+                }).catch(error => {
+                    console.error('Failed to initialize real-time notifications:', error);
                 });
-            }).catch(error => {
-                console.error('Failed to initialize real-time notifications:', error);
-            });
-        }
-        
-        // --- Initial Load ---
-        loadStudentData();
-    });
-    
+            }
+
+            // --- Initial Load ---
+            loadStudentData();
+        });
+
     </script>
 
     <!-- Initialize Navigation -->
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', async function () {
             // Register notification service worker
             if ('serviceWorker' in navigator) {
                 try {
                     const registration = await navigator.serviceWorker.register('/notification-sw.js');
                     console.log('Notification service worker registered:', registration);
-                    
+
                     // Request notification permission if not already granted
                     if (Notification.permission === 'default') {
                         const permission = await Notification.requestPermission();
@@ -1111,10 +1440,11 @@
                     console.error('Failed to register notification service worker:', error);
                 }
             }
-            
+
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
         });
     </script>
 </body>
+
 </html>

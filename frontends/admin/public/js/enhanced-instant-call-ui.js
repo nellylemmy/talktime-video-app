@@ -614,9 +614,9 @@ class EnhancedInstantCallUI {
                 const data = await response.json();
                 console.log('✅ Call accepted successfully:', data);
                 
-                // Hide call UI and redirect to call room with student role
+                // Hide call UI and redirect to call room with admin role
                 this.hideIncomingCallUI();
-                window.location.href = `/call.html?room=${data.roomId}&role=student`;
+                window.location.href = `/call/call.html?room=${data.roomId}&role=admin`;
             } else {
                 console.error('❌ Error accepting call:', response.statusText);
                 this.showErrorMessage('Failed to accept call');
@@ -814,14 +814,14 @@ class EnhancedInstantCallUI {
     showRetryOption(cooldownSeconds) {
         setTimeout(() => {
             const retryNotification = document.createElement('div');
-            retryNotification.className = 'fixed bottom-4 right-4 z-50 bg-yellow-500 text-white p-4 rounded-lg shadow-lg';
+            retryNotification.className = 'fixed bottom-4 right-4 z-50 bg-amber-100 border border-amber-400 text-gray-900 p-4 rounded-lg shadow-lg';
             retryNotification.innerHTML = `
                 <div class="flex items-center">
                     <div class="mr-3">
                         <div class="font-semibold">Retry Call?</div>
-                        <div class="text-sm">You can try calling again</div>
+                        <div class="text-sm text-gray-700">You can try calling again</div>
                     </div>
-                    <button id="retry-call-btn" class="bg-white text-yellow-500 px-3 py-1 rounded font-semibold hover:bg-gray-100">
+                    <button id="retry-call-btn" class="bg-amber-500 text-white px-3 py-1 rounded font-semibold hover:bg-amber-600">
                         Retry
                     </button>
                 </div>

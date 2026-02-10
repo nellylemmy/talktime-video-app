@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
+import { capitalizeName } from '../utils/nameUtils.js';
 
 const SALT_ROUNDS = 10;
 
@@ -36,6 +37,9 @@ class User {
 
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+        // Capitalize name fields for proper formatting
+        const capitalizedFullName = capitalizeName(fullName);
+
         // All users can use the app
         const isApproved = true;
         // Under 18 users need parental approval
@@ -64,7 +68,7 @@ class User {
             RETURNING *`,
             [
                 username || email,
-                fullName,
+                capitalizedFullName,
                 email,
                 passwordHash,
                 role,
@@ -72,7 +76,7 @@ class User {
                 age,
                 gender,
                 phone,
-                timezone || 'Africa/Nairobi',
+                timezone || 'UTC',
                 school_name,
                 parent_email,
                 parent_phone,
@@ -91,24 +95,27 @@ class User {
     }
 
     /**
-     * Find user by email
+     * Find user by email (case-insensitive)
      * @param {string} email
      * @returns {Promise<Object|null>}
      */
     static async findByEmail(email) {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await pool.query(
+            'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
+            [email]
+        );
         return result.rows[0] || null;
     }
 
     /**
-     * Find user by email and role
+     * Find user by email and role (case-insensitive)
      * @param {string} email
      * @param {string} role
      * @returns {Promise<Object|null>}
      */
     static async findByEmailAndRole(email, role) {
         const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1 AND role = $2',
+            'SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND role = $2',
             [email, role]
         );
         return result.rows[0] || null;
@@ -125,13 +132,13 @@ class User {
     }
 
     /**
-     * Find user by username or email
+     * Find user by username or email (case-insensitive)
      * @param {string} identifier
      * @returns {Promise<Object|null>}
      */
     static async findByUsernameOrEmail(identifier) {
         const result = await pool.query(
-            'SELECT * FROM users WHERE username = $1 OR email = $1',
+            'SELECT * FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)',
             [identifier]
         );
         return result.rows[0] || null;
@@ -139,6 +146,7 @@ class User {
 
     /**
      * Find student by name and admission number
+     * Case-insensitive matching - "nelson", "Nelson", "NELSON" all match
      * @param {string} name - Full name
      * @param {string} admissionNumber - Admission number (handles ADM prefix)
      * @returns {Promise<Object|null>}
@@ -147,8 +155,10 @@ class User {
         const trimmed = admissionNumber.trim();
         const normalized = trimmed.startsWith('ADM') ? trimmed : `ADM${trimmed}`;
 
+        // Use case-insensitive matching with LOWER()
+        // This ensures "nelson", "Nelson", "NELSON" all match the same record
         const result = await pool.query(
-            'SELECT * FROM users WHERE full_name = $1 AND username LIKE $2 AND role = $3',
+            'SELECT * FROM users WHERE LOWER(full_name) = LOWER($1) AND username LIKE $2 AND role = $3',
             [name.trim(), `${normalized}%`, 'student']
         );
         return result.rows[0] || null;
@@ -175,9 +185,17 @@ class User {
         const values = [];
         let index = 1;
 
+        // Fields that should be capitalized
+        const nameFields = ['full_name', 'fullName', 'guardian_name'];
+
         for (const [key, value] of Object.entries(updateData)) {
             fields.push(`${key} = $${index}`);
-            values.push(value);
+            // Capitalize name fields
+            if (nameFields.includes(key) && typeof value === 'string') {
+                values.push(capitalizeName(value));
+            } else {
+                values.push(value);
+            }
             index++;
         }
 
@@ -219,7 +237,7 @@ class User {
     }
 
     /**
-     * Get security questions for a user
+     * Get security questions for a user (case-insensitive email)
      * @param {string} email
      * @param {string} role
      * @returns {Promise<Object|null>}
@@ -228,14 +246,14 @@ class User {
         const result = await pool.query(
             `SELECT id, email, full_name,
                     security_question_1, security_question_2, security_question_3
-             FROM users WHERE email = $1 AND role = $2`,
+             FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
             [email, role]
         );
         return result.rows[0] || null;
     }
 
     /**
-     * Verify security answers
+     * Verify security answers (case-insensitive email)
      * @param {string} email
      * @param {string} role
      * @param {string[]} answers - Array of 3 answers
@@ -245,7 +263,7 @@ class User {
         const result = await pool.query(
             `SELECT id, email, full_name,
                     security_answer_1_hash, security_answer_2_hash, security_answer_3_hash
-             FROM users WHERE email = $1 AND role = $2`,
+             FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
             [email, role]
         );
 

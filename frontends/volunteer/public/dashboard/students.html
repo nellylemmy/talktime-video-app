@@ -2,57 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>TalkTime - Student Profiles | Volunteer Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <meta name="description" content="Browse Maasai student profiles, learn their stories, and schedule English language practice sessions as a TalkTime volunteer.">
-    <link rel="canonical" href="/volunteer/dashboard/students">
+    <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/dashboard/students">
     <meta name="robots" content="index, follow">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Flowbite CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
-
-    <!-- Google Fonts: Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-    <!-- Main Styles (includes responsive framework) -->
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
     <link rel="stylesheet" href="/volunteer/css/main.css">
-
-    <!-- Dashboard Polishing Styles -->
+    <link rel="stylesheet" href="/volunteer/css/responsive-framework.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-forms.css">
+    <link rel="stylesheet" href="/volunteer/css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
     <link rel="stylesheet" href="/css/dashboard.css">
-    
-    <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
-    
-    <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
-    
-    <!-- Approval Status Component -->
-    <script src="/volunteer/components/approval-status.js"></script>
-    
-    <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
-    
-    <!-- Notification Enforcement System -->
-    <script src="/shared/js/notification-enforcer.js"></script>
-    
-    <!-- Socket.IO Client -->
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
-    
-    <!-- Flowbite JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
-    
+
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="/volunteer/partials/nav-loader.js"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js"></script>
+    <script defer src="/volunteer/js/modal-utils.js"></script>
+    <script defer src="/volunteer/components/approval-status.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/shared/js/notification-enforcer.js"></script>
+    <script defer src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+
+
     <style>
         /* Base styles matching the landing page */
         body {
@@ -79,7 +69,7 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .gradient-text {
-            background-image: linear-gradient(to right, #4f46e5, #a855f7);
+            background-image: var(--brand-gradient-primary);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -238,221 +228,6 @@
             border-color: #22c55e !important;
         }
         
-        /* TalkTime Date Filter Input - Real Input Appearance */
-        .talktime-datepicker-input {
-            background: rgba(255, 255, 255, 0.4) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid #d1d5db !important;
-            border-radius: 8px !important;
-            color: #374151 !important;
-            font-family: 'Inter', sans-serif !important;
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        
-        /* Date Filter Container Hover Effects */
-        #date-filter-container:hover .talktime-datepicker-input {
-            border-color: #9ca3af !important;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-            background: rgba(255, 255, 255, 0.6) !important;
-        }
-        
-        .talktime-datepicker-input::placeholder {
-            color: #9ca3af !important;
-            font-weight: 400 !important;
-        }
-        
-        /* Active state when datepicker is open */
-        #date-filter-container.active .talktime-datepicker-input {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-            background: rgba(255, 255, 255, 0.7) !important;
-            outline: none !important;
-        }
-        
-        /* TalkTime Datepicker Popup - Features Overview Card Style */
-        .datepicker-picker {
-            background: linear-gradient(to right, #eff6ff, #faf5ff) !important;
-            border: 1px solid #dbeafe !important;
-            border-radius: 16px !important;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(59, 130, 246, 0.05) !important;
-            padding: 24px !important;
-            font-family: 'Inter', sans-serif !important;
-            z-index: 9999 !important;
-        }
-        
-        /* Datepicker Header - Light Blue Style */
-        .datepicker-header {
-            background: rgba(239, 246, 255, 0.8) !important;
-            border: 1px solid #dbeafe !important;
-            border-radius: 12px !important;
-            margin-bottom: 16px !important;
-            padding: 16px !important;
-        }
-        
-        .datepicker-title {
-            color: #1e40af !important;
-            font-weight: 700 !important;
-            font-size: 18px !important;
-        }
-        
-        /* Month/Year Display Button */
-        .view-switch {
-            background: rgba(239, 246, 255, 0.6) !important;
-            color: #1e40af !important;
-            border: 1px solid #dbeafe !important;
-            font-weight: 600 !important;
-        }
-        
-        .view-switch:hover {
-            background: #eff6ff !important;
-            color: #1d4ed8 !important;
-        }
-        
-        /* Navigation Arrows - Blue Branding Style */
-        .prev-btn,
-        .next-btn {
-            background: #3b82f6 !important;
-            color: white !important;
-            border: 1px solid #3b82f6 !important;
-            border-radius: 10px !important;
-            width: 36px !important;
-            height: 36px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
-        }
-        
-        .prev-btn:hover,
-        .next-btn:hover {
-            background: #1d4ed8 !important;
-            border-color: #1d4ed8 !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3) !important;
-        }
-        
-        .prev-btn svg,
-        .next-btn svg {
-            color: white !important;
-        }
-        
-        /* Days of Week Header */
-        .dow {
-            color: #1e40af !important;
-            font-weight: 600 !important;
-            font-size: 13px !important;
-            padding: 8px 4px !important;
-            text-align: center !important;
-        }
-        
-        /* Date Cells Base - Override Flowbite classes */
-        .datepicker-cell,
-        .datepicker-cell.day {
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            border-radius: 8px !important;
-            height: 36px !important;
-            width: 36px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 2px !important;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            color: #374151 !important;
-            border: 0 !important;
-            background: transparent !important;
-        }
-        
-        /* Today's Date - Blue Accent */
-        .datepicker-cell.today,
-        .datepicker-cell.day.today {
-            background: rgba(59, 130, 246, 0.1) !important;
-            color: #1e40af !important;
-            font-weight: 600 !important;
-            border: 2px solid rgba(59, 130, 246, 0.3) !important;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1) !important;
-        }
-        
-        /* Selected Date - Blue Solid Color */
-        .datepicker-cell.selected,
-        .datepicker-cell.day.selected,
-        .datepicker-cell.focused,
-        .datepicker-cell.day.focused {
-            background: #3b82f6 !important;
-            color: white !important;
-            font-weight: 700 !important;
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35) !important;
-            transform: scale(1.08) !important;
-            border: 2px solid rgba(255, 255, 255, 0.6) !important;
-        }
-        
-        /* Hover Effects - Blue Style */
-        .datepicker-cell:hover:not(.selected):not(.disabled):not(.prev):not(.next),
-        .datepicker-cell.day:hover:not(.selected):not(.disabled):not(.prev):not(.next) {
-            background: rgba(59, 130, 246, 0.15) !important;
-            color: #1e40af !important;
-            transform: scale(1.05) !important;
-            box-shadow: 0 3px 12px rgba(59, 130, 246, 0.15) !important;
-        }
-        
-        /* Disabled/Past Dates */
-        .datepicker-cell.disabled,
-        .datepicker-cell.day.disabled {
-            color: #d1d5db !important;
-            background: rgba(243, 244, 246, 0.5) !important;
-            cursor: not-allowed !important;
-            opacity: 0.4 !important;
-        }
-        
-        /* Previous/Next Month Dates */
-        .datepicker-cell.prev,
-        .datepicker-cell.next,
-        .datepicker-cell.day.prev,
-        .datepicker-cell.day.next {
-            color: #d1d5db !important;
-            opacity: 0.3 !important;
-        }
-        
-        /* Action Buttons (Today/Clear) - Light Blue Design */
-        .datepicker-footer {
-            padding: 16px !important;
-            border-top: 1px solid #dbeafe !important;
-            margin-top: 16px !important;
-            background: rgba(239, 246, 255, 0.5) !important;
-            border-radius: 0 0 16px 16px !important;
-        }
-        
-        .today-btn,
-        .clear-btn {
-            background: #eff6ff !important;
-            color: #1e40af !important;
-            border: 1px solid #dbeafe !important;
-            border-radius: 10px !important;
-            padding: 10px 18px !important;
-            font-weight: 500 !important;
-            font-size: 14px !important;
-            margin: 0 6px !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        
-        .today-btn:hover,
-        .clear-btn:hover {
-            background: #3b82f6 !important;
-            color: white !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25) !important;
-            border-color: #3b82f6 !important;
-        }
-        
         /* Newsletter Widget Protection - Preserve Original Styling */
         #newsletter-widget,
         #newsletter-minimized,
@@ -470,7 +245,7 @@
         
         /* Ensure newsletter minimized button keeps its gradient and styling */
         #newsletter-minimized .pulse-zoom {
-            background: linear-gradient(to right, #3b82f6, #4f46e5) !important;
+            background: var(--brand-gradient-primary) !important;
             color: white !important;
             border-radius: 9999px !important;
             padding: 1rem !important;
@@ -509,134 +284,45 @@
             color: white !important;
         }
         
-        /* Responsive Design */
-        @media (max-width: 640px) {
-            .datepicker-picker {
-                border-radius: 12px !important;
-                margin: 0 8px !important;
-            }
-            
-            .datepicker-cell {
-                height: 32px !important;
-                width: 32px !important;
-                font-size: 13px !important;
-            }
+        /* Student card - ensure full width in grid */
+        .student-card {
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* Student Cards Grid - Responsive Layout */
-        .students-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
+        /* Unavailable/Scheduled students - cannot be clicked */
+        .student-card.student-unavailable {
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+            user-select: none;
+            opacity: 0.5;
         }
 
-        @media (max-width: 768px) {
-            .students-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-                margin-top: 1rem;
-            }
+        /* Prevent any hover effects on unavailable students */
+        .student-card.student-unavailable:hover {
+            border-color: rgba(0, 0, 0, 0.04) !important;
+            transform: none !important;
+            box-shadow: none !important;
         }
 
-        @media (max-width: 480px) {
-            .students-grid {
-                gap: 0.5rem;
-                margin-top: 0.75rem;
-            }
+        /* Hide date input text selection highlight */
+        .date-input-no-select::selection {
+            background: transparent;
+            color: inherit;
+        }
+        .date-input-no-select::-moz-selection {
+            background: transparent;
+            color: inherit;
         }
 
-        /* Header and Content Spacing - Mobile Responsive */
-        @media (max-width: 768px) {
-            main.container {
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-                padding-top: 1.5rem !important;
-                padding-bottom: 1.5rem !important;
-            }
-            
-            .text-center.mb-3 .bg-gradient-to-r {
-                padding: 1rem !important;
-                margin-bottom: 1rem !important;
-            }
-            
-            .text-center.mb-3 .bg-gradient-to-r h2 {
-                font-size: 1.25rem !important;
-                margin-bottom: 0.75rem !important;
-            }
-            
-            #rotating-tip {
-                font-size: 0.9rem !important;
-                line-height: 1.5 !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r {
-                padding: 1rem !important;
-                margin-bottom: 1.5rem !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r h3 {
-                font-size: 1.1rem !important;
-                margin-bottom: 0.75rem !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r p {
-                font-size: 0.85rem !important;
-                line-height: 1.5 !important;
-            }
-            
-            /* Section headers */
-            h2.text-2xl.font-bold {
-                font-size: 1.5rem !important;
-                margin-bottom: 1rem !important;
-            }
-            
-            /* Flex layouts in headers - More specific to avoid nav conflicts */
-            .section-header.flex.items-center.justify-between.mb-6,
-            .dashboard-section .flex.items-center.justify-between.mb-6 {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 1rem !important;
-                margin-bottom: 1.5rem !important;
-            }
+        /* ===== ESSENTIAL RESPONSIVE STYLES ===== */
+
+        /* Date filter container - smooth transitions */
+        #date-filter-container {
+            transition: width 0.2s ease;
         }
 
-        @media (max-width: 480px) {
-            main.container {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
-                padding-top: 1rem !important;
-                padding-bottom: 1rem !important;
-            }
-            
-            .text-center.mb-3 .bg-gradient-to-r {
-                padding: 0.875rem !important;
-                margin-bottom: 0.875rem !important;
-            }
-            
-            .text-center.mb-3 .bg-gradient-to-r h2 {
-                font-size: 1.1rem !important;
-                margin-bottom: 0.625rem !important;
-            }
-            
-            #rotating-tip {
-                font-size: 0.85rem !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r {
-                padding: 0.875rem !important;
-                margin-bottom: 1.25rem !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r h3 {
-                font-size: 1rem !important;
-                margin-bottom: 0.625rem !important;
-            }
-            
-            .text-center.mb-6 .bg-gradient-to-r p {
-                font-size: 0.8rem !important;
-            }
-            
+
         /* Touch Targets and Buttons - Mobile Responsive */
         @media (max-width: 768px) {
             /* Ensure all buttons meet minimum touch target size */
@@ -757,6 +443,7 @@
                 max-width: 380px !important;
                 margin: 0 1rem !important;
             }
+
         }
 
         @media (max-width: 480px) {
@@ -805,32 +492,40 @@
 
         /* Overall Layout and Container - Mobile Responsive */
         @media (max-width: 768px) {
-            /* Main container adjustments */
-            .max-w-6xl.mx-auto {
+            /* Main container adjustments - Use full width on mobile */
+            main.container {
                 max-width: 100% !important;
+                width: 100% !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                padding-top: 1.5rem !important;
+                padding-bottom: 1.5rem !important;
+            }
+            
+            /* Page dashboard - full width */
+            #page-dashboard.page {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Main content container - use full available width */
+            .max-w-6xl.mx-auto {
+                /* max-width: 100% !important;
+                width: 100% !important;
                 padding-left: 0 !important;
-                padding-right: 0 !important;
+                padding-right: 0 !important; */
             }
             
             /* Sticky navigation improvements */
             #page-nav-sticky {
-                padding: 0.75rem 1rem !important;
+                /* padding: 0.75rem 1rem !important; */
             }
             
             #page-nav-sticky .container.mx-auto {
-                padding-left: 0 !important;
-                padding-right: 0 !important;
+                /* padding-left: 0 !important;
+                padding-right: 0 !important; */
             }
             
-            /* Sidebar adjustments */
-            .sidebar {
-                margin-top: 2rem !important;
-                padding: 0 1rem !important;
-            }
-            
-            .sidebar-card {
-                padding: 1.25rem !important;
-            }
             
             /* Space-y adjustments for mobile */
             .space-y-8 > * + * {
@@ -848,14 +543,6 @@
                 padding: 0.625rem 0.75rem !important;
             }
             
-            .sidebar {
-                margin-top: 1.5rem !important;
-                padding: 0 0.75rem !important;
-            }
-            
-            .sidebar-card {
-                padding: 1rem !important;
-            }
             
             .space-y-8 > * + * {
                 margin-top: 1.25rem !important;
@@ -871,12 +558,26 @@
                 max-width: calc(100vw - 1.5rem) !important;
             }
             
-            /* Increase main container padding for better mobile readability */
+            /* Main container - optimize for small screens */
             main.container {
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
                 padding-top: 1.5rem !important;
                 padding-bottom: 1.5rem !important;
+            }
+            
+            /* Ensure all content sections use full width */
+            section {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Student grid - responsive */
+            .students-grid {
+                width: 100% !important;
+                grid-template-columns: 1fr !important;
+                gap: 0.5rem !important;
+                margin-top: 0.75rem !important;
             }
         }
 
@@ -1029,28 +730,69 @@
         }
     }
     }
+
+    /* Cultural Notice Dismiss Button Styles */
+    #dismiss-cultural-notice {
+        opacity: 0.7;
+        transition: all 0.2s ease;
+    }
+
+    #dismiss-cultural-notice:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    #cultural-exchange-notice {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    /* Brand color classes */
+    .bg-brand-primary { background-color: var(--brand-primary) !important; }
+    .bg-brand-secondary { background-color: var(--brand-secondary) !important; }
+    .bg-brand-primary-dark { background-color: var(--brand-primary-dark) !important; }
+    .bg-brand-secondary-dark { background-color: var(--brand-secondary-dark) !important; }
+    .bg-brand-light { background-color: rgba(209, 1, 0, 0.1) !important; }
+    .bg-brand-light-secondary { background-color: rgba(56, 103, 255, 0.1) !important; }
+    .text-brand-primary { color: var(--brand-primary) !important; }
+    .text-brand-secondary { color: var(--brand-secondary) !important; }
+    .text-brand-primary-dark { color: var(--brand-primary-dark) !important; }
+    .border-brand { border-color: var(--brand-primary) !important; }
+    .hover\:bg-brand-primary-dark:hover { background-color: var(--brand-primary-dark) !important; }
+    .hover\:bg-brand-light:hover { background-color: rgba(209, 1, 0, 0.05) !important; }
+    .hover\:text-brand-primary:hover { color: var(--brand-primary) !important; }
+    .focus\:ring-brand-primary:focus { --tw-ring-color: var(--brand-primary) !important; }
+    .focus\:border-brand:focus { border-color: var(--brand-primary) !important; }
+    /* Semantic colors */
+    .bg-success { background-color: var(--color-success) !important; }
+    .bg-success-light { background-color: rgba(17, 108, 0, 0.1) !important; }
+    .bg-error { background-color: var(--color-error) !important; }
+    .bg-error-light { background-color: rgba(125, 0, 0, 0.1) !important; }
+    .bg-warning { background-color: var(--color-warning) !important; }
+    .bg-warning-light { background-color: rgba(255, 224, 6, 0.1) !important; }
+    .text-success { color: var(--color-success) !important; }
+    .text-error { color: var(--color-error) !important; }
+    .text-warning { color: var(--color-warning) !important; }
     </style>
 </head>
-<body>
-    <!-- Background Blobs -->
-    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
-    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
-    
-    <!-- Navigation Container -->
-    <div id="nav-container">
-        <!-- Navigation will be loaded dynamically -->
-    </div>
+<body class="dashboard-page" style="opacity:0">
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
 
-    <!-- Sticky Navigation Bar (only shows on profile and scheduler pages) -->
-    <div id="page-nav-sticky" class="hidden sticky top-0 z-10 glass-bg border-b border-white/20 shadow-sm">
-        <div class="container mx-auto px-4 py-3">
-            <div id="page-nav-content" class="flex justify-between items-center">
-                <!-- Content will be dynamically inserted here -->
-            </div>
-        </div>
-    </div>
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
 
-    <main class="container mx-auto px-4 py-20">
+    <main class="content-area">
         
         <!-- Notification Permission Warning Banner -->
         <div id="notification-permission-warning" class="notification-warning-banner" style="display: none;">
@@ -1092,27 +834,63 @@
 
         <!-- Dashboard Page -->
         <div id="page-dashboard" class="page w-full">
-            <!-- Header Section -->
-            <div class="text-center mb-3">
-                <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-3 text-center">
-                        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
-                        Scheduling Tips
-                    </h2>
-                    <div id="rotating-tip" class="text-center text-gray-700 text-base leading-relaxed">
+            <!-- Scheduling Tips Section -->
+            <div class="scheduling-tips-section mb-4">
+                <div class="bg-white/90 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm" style="border: 1px solid rgba(209, 1, 0, 0.4);">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-lightbulb text-yellow-500 text-xs md:text-sm"></i>
+                        </div>
+                        <span class="text-base md:text-lg font-semibold text-gray-800">Scheduling Tips</span>
+                    </div>
+                    <div id="rotating-tip" class="text-gray-600 text-xs md:text-sm leading-tight pl-9 md:pl-10 -mt-0.5">
                         Click on any student card to view their profile and schedule a meeting
+                    </div>
+
+                    <!-- Dual Timezone Display -->
+                    <div class="mt-3 pt-3 border-t border-gray-200/60 pl-9 md:pl-10">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs md:text-sm">
+                            <!-- Kenya Time -->
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100">
+                                    <i class="fas fa-globe-africa text-green-600 text-[10px]"></i>
+                                </span>
+                                <span class="text-gray-500">Kenya:</span>
+                                <span id="kenya-time" class="font-semibold text-gray-700">--:-- --</span>
+                            </div>
+                            <!-- Volunteer's Local Time -->
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100">
+                                    <i class="fas fa-user-clock text-blue-600 text-[10px]"></i>
+                                </span>
+                                <span class="text-gray-500">Your time:</span>
+                                <span id="local-time" class="font-semibold text-gray-700">--:-- --</span>
+                            </div>
+                            <!-- Time Difference -->
+                            <div class="flex items-center gap-1 text-gray-400 text-[11px]">
+                                <i class="fas fa-exchange-alt text-[9px]"></i>
+                                <span id="time-difference">--</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Cultural Exchange Warning Card -->
-            <div class="text-center mb-6">
-                <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 mb-6">
+            <!-- Cultural Exchange Warning Card (Dismissible) -->
+            <div id="cultural-exchange-notice" class="text-center mb-6 hidden">
+                <div class="rounded-2xl p-6 border border-amber-200 mb-6 relative" style="background:linear-gradient(to right,#fffbeb,#eff6ff);">
+                    <button
+                        id="dismiss-cultural-notice"
+                        class="absolute top-4 right-4 text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                        aria-label="Dismiss cultural exchange notice"
+                        title="Dismiss (won't show again)">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
                     <div class="flex items-start gap-4">
                         <div class="flex-shrink-0 mt-1">
                             <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
                         </div>
-                        <div class="text-left">
+                        <div class="text-left pr-8">
                             <h3 class="text-lg font-semibold text-amber-800 mb-3">
                                 Cultural Exchange Notice
                             </h3>
@@ -1133,84 +911,155 @@
                     <!-- Students Grid -->
                     <div class="space-y-8">
                         <!-- Available Students Section -->
-                        <section class="mb-12">
-                            <div class="flex items-center justify-between mb-6">
-                                <h2 class="text-2xl font-bold section-heading">Available Students</h2>
-                                <div class="flex items-center gap-3">
-                                    <!-- Unified Date Filter Input -->
-                                    <div class="relative cursor-pointer w-80" id="date-filter-container">
-                                        
-                                        <!-- Input Content Area -->
-                                        <div class="talktime-datepicker-input h-12 flex items-center justify-center px-4 cursor-pointer">
-                                            <div class="flex items-center gap-3 h-full">
-                                                <!-- Small filter icon before text -->
-                                                <svg class="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <!-- Horizontal lines with different lengths representing filtered content -->
-                                                    <path d="M4 6H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                    <path d="M6 12H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                    <path d="M8 18H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                    
-                                                    <!-- Filter dots/controls -->
-                                                    <circle cx="7" cy="6" r="2" fill="currentColor"/>
-                                                    <circle cx="14" cy="12" r="2" fill="currentColor"/>
-                                                    <circle cx="10" cy="18" r="2" fill="currentColor"/>
-                                                </svg>
-                                                <div class="flex items-center gap-2 whitespace-nowrap">
-                                                    <span class="text-sm text-gray-600 font-medium leading-none">Filter by date</span>
-                                                    <span class="text-sm text-gray-400 leading-none">•</span>
-                                                    <span id="selected-date-display" class="text-sm text-blue-600 font-semibold leading-none">Today</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Hidden actual datepicker input -->
-                                        <input id="sticky-student-date" datepicker datepicker-autohide datepicker-format="mm/dd/yyyy" datepicker-buttons datepicker-autoselect-today type="text" class="absolute opacity-0 pointer-events-none" placeholder="Select date">
-                                    </div>
-                                    <button id="sticky-apply-date" class="tt-btn-primary hidden">
-                                        <span class="hidden md:inline">Apply</span>
-                                        <span class="md:hidden">Go</span>
-                                    </button>
+                        <section class="mb-8 md:mb-12">
+                            <div class="flex items-center justify-between gap-3 sm:gap-4 mb-4 md:mb-6">
+                                <h2 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold section-heading whitespace-nowrap flex-shrink-0">Available Students</h2>
+                                <div class="flex items-center gap-2 sm:gap-3 flex-shrink min-w-0">
+                                    <!-- Native Date Filter - Click anywhere to open picker -->
+                                    <input
+                                        id="sticky-student-date"
+                                        type="date"
+                                        onclick="this.showPicker()"
+                                        class="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary cursor-pointer date-input-no-select"
+                                    />
                                 </div>
                             </div>
-                            <div id="student-list-available" class="students-grid">
+                            <div id="student-list-available" class="student-list mt-3 sm:mt-4 w-full">
                                 <!-- Cards injected by JS -->
                             </div>
                         </section>
 
                         <!-- Unavailable/Scheduled Students Section -->
-                        <section class="mb-12">
-                            <div class="flex items-center justify-between mb-6">
-                                <h2 class="text-2xl font-bold text-gray-800">Scheduled / Unavailable</h2>
+                        <section class="mb-8 md:mb-12">
+                            <div class="flex items-center justify-between mb-4 md:mb-6">
+                                <h2 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800">Scheduled / Unavailable</h2>
                             </div>
-                            <div id="student-list-unavailable" class="students-grid">
+                            <div id="student-list-unavailable" class="student-list mt-2 w-full">
                                 <!-- Cards injected by JS -->
                             </div>
                         </section>
                     </div>
-
-                    <!-- Optional Right Sidebar (desktop) -->
-                    <div class="sidebar mx-auto lg:mx-0 mt-6 lg:mt-0">
-                        <div class="sidebar-card">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Your Upcoming</h3>
-                            <p class="text-sm text-gray-600 mb-3">Quick access to your next sessions.</p>
-                            <div id="sidebar-upcoming" class="space-y-3">
-                                <!-- Future: render a few upcoming items via existing data -->
-                                <div class="skeleton student-skeleton"></div>
-                                <div class="skeleton student-skeleton"></div>
-                            </div>
-                        </div>
-
-                    </div>
                 </div>
+
             </div>
         </div>
     </main>
     
     <!-- Notification Toast -->
-    <div id="notification" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+    <div id="notification" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-success text-white px-6 py-3 rounded-lg shadow-lg"></div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('page-ready');
+        // ============================================
+        // CHECK FOR INSTANT CALL MESSAGE FROM STUDENT
+        // ============================================
+        const storedMessage = sessionStorage.getItem('instantCallMessage');
+        if (storedMessage) {
+            try {
+                const messageData = JSON.parse(storedMessage);
+                console.log('💬 Found instant call message from student:', messageData);
+
+                // Clear it immediately so it doesn't show again on refresh
+                sessionStorage.removeItem('instantCallMessage');
+
+                // Show the modal with a slight delay to ensure page is fully loaded
+                setTimeout(() => {
+                    showStudentMessageModal(messageData);
+                }, 300);
+            } catch (e) {
+                console.error('Error parsing stored message:', e);
+                sessionStorage.removeItem('instantCallMessage');
+            }
+        }
+
+        // Handle Cultural Exchange Notice
+        const culturalNotice = document.getElementById('cultural-exchange-notice');
+        const dismissBtn = document.getElementById('dismiss-cultural-notice');
+
+        // Check if notice has been dismissed before
+        const isNoticeDismissed = localStorage.getItem('culturalExchangeNoticeDismissed') === 'true';
+
+        if (culturalNotice && !isNoticeDismissed) {
+            // Show the notice if it hasn't been dismissed
+            culturalNotice.classList.remove('hidden');
+        }
+
+        // Handle dismiss button click
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', function() {
+                // Add smooth fade out animation
+                culturalNotice.style.transition = 'opacity 0.3s ease-out';
+                culturalNotice.style.opacity = '0';
+
+                setTimeout(() => {
+                    culturalNotice.classList.add('hidden');
+                    culturalNotice.style.opacity = '1'; // Reset for potential future use
+                }, 300);
+
+                // Save dismissal state to localStorage
+                localStorage.setItem('culturalExchangeNoticeDismissed', 'true');
+
+                console.log('Cultural exchange notice dismissed permanently');
+            });
+        }
+
+        // ============================================
+        // DUAL TIMEZONE DISPLAY (Kenya + Volunteer Local)
+        // ============================================
+        function updateTimezoneDisplay() {
+            const kenyaTimeEl = document.getElementById('kenya-time');
+            const localTimeEl = document.getElementById('local-time');
+            const timeDiffEl = document.getElementById('time-difference');
+
+            if (!kenyaTimeEl || !localTimeEl) return;
+
+            const now = new Date();
+
+            // Kenya time (always UTC+3, no DST)
+            const kenyaTime = now.toLocaleTimeString('en-US', {
+                timeZone: 'Africa/Nairobi',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            // Volunteer's local time (browser timezone)
+            const localTime = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            // Get timezone names for display
+            const kenyaTzName = 'EAT';
+            const localTzName = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g, ' ');
+
+            // Calculate time difference
+            const kenyaOffset = 3; // Kenya is always UTC+3
+            const localOffset = -now.getTimezoneOffset() / 60; // Browser's offset in hours
+            const diff = kenyaOffset - localOffset;
+            let diffText = '';
+            if (diff > 0) {
+                diffText = `Kenya is ${Math.abs(diff)}h ahead`;
+            } else if (diff < 0) {
+                diffText = `Kenya is ${Math.abs(diff)}h behind`;
+            } else {
+                diffText = 'Same time';
+            }
+
+            // Update display
+            kenyaTimeEl.textContent = `${kenyaTime} ${kenyaTzName}`;
+            localTimeEl.textContent = `${localTime}`;
+            if (timeDiffEl) {
+                timeDiffEl.textContent = diffText;
+            }
+        }
+
+        // Update immediately and then every minute
+        updateTimezoneDisplay();
+        setInterval(updateTimezoneDisplay, 60000);
+
         // Initialize Socket.IO connection
         const socket = io();
         
@@ -1229,9 +1078,10 @@
 
                 // (Removed) runtime mount for date controls — controls are now in static HTML
                 
-                // Redirect to call page after a short delay
+                // Redirect volunteer to call page after a short delay
+                // FIXED: Changed role=student to role=volunteer - this is the volunteer's redirect
                 setTimeout(() => {
-                    window.location.href = `/call.html?room=${data.meetingId}&role=student&instant=true`;
+                    window.location.href = `/call/call.html?room=${data.meetingId}&role=volunteer&instant=true`;
                 }, 2000);
             }
         });
@@ -1250,12 +1100,7 @@
         const pageDashboard = document.getElementById('page-dashboard');
         const availableStudentsContainer = document.getElementById('student-list-available');
         const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
-        const backButtonContainer = document.getElementById('page-nav-sticky');
-        const pageNavContent = document.getElementById('page-nav-content');
         const notificationEl = document.getElementById('notification');
-        const profileBtn = document.getElementById('profile-btn');
-        const profileDropdown = document.getElementById('profile-dropdown');
-        let upcomingBadge = null;
 
         // --- Global Variables ---
         let students = [];
@@ -1293,7 +1138,7 @@
 
             const message = document.createElement('div');
             message.id = 'notification-required-message';
-            message.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-error text-white px-6 py-3 rounded-lg shadow-lg z-50';
             message.innerHTML = '⚠️ Notifications must be enabled for scheduling and critical actions';
             document.body.appendChild(message);
 
@@ -1305,286 +1150,58 @@
         }
         let bookedSlots = {};
 
-        // --- Sticky Controls Bar (Tabs only; date controls removed per request) ---
-        if (pageNavContent && backButtonContainer) {
-            pageNavContent.innerHTML = `
-                <div class="w-full grid grid-cols-1 items-center">
-                    <!-- Center: Tabs navigation -->
-                    <nav class="flex justify-center space-x-4">
-                        <a href="/volunteer/dashboard/students" class="tab-btn py-1 px-3 text-sm font-medium text-blue-600 border-b-2 border-blue-600 bg-blue-50/40 rounded-t">
-                            <div class="flex items-center space-x-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                                <span>Students</span>
-                            </div>
-                        </a>
-                        <a href="/volunteer/dashboard/upcoming" class="tab-btn py-1 px-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 transition-all relative">
-                            <div class="flex items-center space-x-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                <span>Upcoming</span>
-                                <span id="upcoming-badge" class="upcoming-badge hidden"></span>
-                            </div>
-                        </a>
-                        <a href="/volunteer/dashboard/history" class="tab-btn py-1 px-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 transition-all">
-                            <div class="flex items-center space-x-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span>Call History</span>
-                            </div>
-                        </a>
-                    </nav>
+        // --- Native Date Filter Initialization ---
+        const stickyDateEl = document.getElementById('sticky-student-date');
 
-                    <!-- Right: EAT window hint -->
-                    <div class="hidden md:flex justify-end text-sm text-gray-600">
-                        Kenya time window: 9:00–17:00 EAT
-                    </div>
-                </div>
-            `;
-            backButtonContainer.classList.remove('hidden');
+        // Calculate date range (today to 3 months ahead)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const maxDate = new Date(today);
+        maxDate.setMonth(today.getMonth() + 3);
 
-            // Re-query the badge now that the sticky nav has been rendered
-            upcomingBadge = document.getElementById('upcoming-badge');
+        // Format as YYYY-MM-DD for native date input
+        const formatISO = (date) => date.toISOString().split('T')[0];
 
-            // Sync sticky date with main selector and initial value
-            const mainDateEl = document.getElementById('student-date-selector');
-            const stickyDateEl = document.getElementById('sticky-student-date');
-            const stickyApplyBtn = document.getElementById('sticky-apply-date');
+        if (stickyDateEl) {
+            // Set min/max constraints and default to today
+            stickyDateEl.min = formatISO(today);
+            stickyDateEl.max = formatISO(maxDate);
+            stickyDateEl.value = formatISO(today);
 
-            // PRODUCTION: Calculate EXACT 3-month scheduling window (proper month arithmetic)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Exactly 3 months from today (e.g., 8th -> 8th of target month)
-            const maxDate = new Date(today);
-            maxDate.setMonth(today.getMonth() + 3);
-            
-            // Format dates for Flowbite (MM/DD/YYYY)
-            const formatDate = (date) => {
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const day = date.getDate().toString().padStart(2, '0');
-                const year = date.getFullYear();
-                return `${month}/${day}/${year}`;
-            };
-            
-            const todayStr = formatDate(today);
-            const maxDateStr = formatDate(maxDate);
-            
-            // Apply STRICT date constraints
-            stickyDateEl.setAttribute('datepicker-min-date', todayStr);
-            stickyDateEl.setAttribute('datepicker-max-date', maxDateStr);
-            
-            console.log('TalkTime Date Restrictions Applied:', {
-                today: todayStr,
-                maxDate: maxDateStr,
-                monthsRange: 3,
-                actualDays: Math.ceil((maxDate - today) / (1000 * 60 * 60 * 24))
-            });
-            
-            if (mainDateEl) {
-                if (!mainDateEl.value) {
-                    mainDateEl.value = today.toISOString().split('T')[0];
-                    stickyDateEl.value = todayStr;
-                } else {
-                    // Convert ISO date to MM/DD/YYYY format for Flowbite
-                    const dateObj = new Date(mainDateEl.value);
-                    stickyDateEl.value = dateObj.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+            // Handle date change - load data when user selects a date
+            stickyDateEl.addEventListener('change', function() {
+                const selectedDate = this.value;
+                if (selectedDate) {
+                    loadDashboardData(selectedDate);
                 }
-            } else {
-                stickyDateEl.value = todayStr;
-            }
-            
-            // Initialize the date display
-            updateDateDisplay(today);
-            
-            // Make entire container clickable
-            const dateFilterContainer = document.getElementById('date-filter-container');
-            if (dateFilterContainer) {
-                dateFilterContainer.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Add active state
-                    dateFilterContainer.classList.add('active');
-                    
-                    // Trigger the datepicker
-                    if (stickyDateEl._datepicker) {
-                        stickyDateEl._datepicker.show();
-                    } else {
-                        // Fallback: click the hidden input
-                        stickyDateEl.click();
-                    }
-                });
-                
-                // Remove active state when datepicker closes
-                document.addEventListener('click', (e) => {
-                    if (!dateFilterContainer.contains(e.target)) {
-                        dateFilterContainer.classList.remove('active');
-                    }
-                });
-            }
-
-            // Multiple event listeners for Flowbite datepicker compatibility
-            stickyDateEl.addEventListener('changeDate', handleDateChange);
-            stickyDateEl.addEventListener('input', handleDateChange);
-            stickyDateEl.addEventListener('change', handleDateChange);
-            
-            // Listen for datepicker show/hide events
-            stickyDateEl.addEventListener('show', () => {
-                if (dateFilterContainer) {
-                    dateFilterContainer.classList.add('active');
-                }
-            });
-            
-            stickyDateEl.addEventListener('hide', () => {
-                if (dateFilterContainer) {
-                    dateFilterContainer.classList.remove('active');
-                }
-            });
-            
-            // Update date display helper
-            function updateDateDisplay(date) {
-                const dateDisplay = document.getElementById('selected-date-display');
-                if (dateDisplay) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    
-                    if (date.getTime() === today.getTime()) {
-                        dateDisplay.textContent = 'Today';
-                    } else {
-                        const options = { month: 'short', day: 'numeric' };
-                        if (date.getFullYear() !== today.getFullYear()) {
-                            options.year = 'numeric';
-                        }
-                        dateDisplay.textContent = date.toLocaleDateString('en-US', options);
-                    }
-                }
-            }
-            
-            function handleDateChange() {
-                const selectedDate = stickyDateEl.value;
-                if (!selectedDate) return;
-                
-                try {
-                    const dateObj = new Date(selectedDate);
-                    if (isNaN(dateObj.getTime())) return;
-                    
-                    // STRICT validation: Enforce 3-month window
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const maxDate = new Date(today);
-                    maxDate.setMonth(today.getMonth() + 3);
-                    
-                    const selectedTime = dateObj.getTime();
-                    const todayTime = today.getTime();
-                    const maxTime = maxDate.getTime();
-                    
-                    if (selectedTime >= todayTime && selectedTime <= maxTime) {
-                        // Valid date - proceed with data loading
-                        if (mainDateEl) {
-                            mainDateEl.value = dateObj.toISOString().split('T')[0];
-                        }
-                        
-                        // Update the visual display
-                        updateDateDisplay(dateObj);
-                        
-                        loadDashboardData(dateObj.toISOString().split('T')[0]);
-                        
-                        showNotification(
-                            `Showing students for ${dateObj.toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}`,
-                            'success'
-                        );
-                    } else {
-                        // Invalid date - reset to today and show error
-                        const todayFormatted = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
-                                             today.getDate().toString().padStart(2, '0') + '/' + 
-                                             today.getFullYear();
-                        
-                        stickyDateEl.value = todayFormatted;
-                        if (mainDateEl) {
-                            mainDateEl.value = today.toISOString().split('T')[0];
-                        }
-                        
-                        // Reset display to Today
-                        updateDateDisplay(today);
-                        
-                        const errorMsg = selectedTime < todayTime ? 
-                            'Cannot schedule meetings in the past' : 
-                            'Cannot schedule beyond 3 months from today';
-                            
-                        showNotification(errorMsg, 'error');
-                        loadDashboardData(today.toISOString().split('T')[0]);
-                    }
-                } catch (error) {
-                    console.error('Date validation error:', error);
-                    showNotification('Invalid date selected', 'error');
-                }
-            }
-            stickyApplyBtn.addEventListener('click', () => {
-                // Convert MM/DD/YYYY back to YYYY-MM-DD for main date element
-                const selectedDate = stickyDateEl.value;
-                if (selectedDate && mainDateEl) {
-                    const dateObj = new Date(selectedDate);
-                    mainDateEl.value = dateObj.toISOString().split('T')[0];
-                }
-                loadDashboardData(mainDateEl ? mainDateEl.value : convertToISODate(selectedDate));
             });
         }
 
         // --- Event Listeners ---
         document.addEventListener('click', e => {
-            // Profile dropdown toggle
-            if (profileBtn && profileBtn.contains(e.target)) {
-                console.log('Profile button clicked');
-                e.stopPropagation();
-                
-                if (profileDropdown) {
-                    const isHidden = profileDropdown.classList.contains('hidden');
-                    console.log('Dropdown is currently hidden:', isHidden);
-                    
-                    if (isHidden) {
-                        // Show dropdown
-                        profileDropdown.classList.remove('hidden');
-                        profileDropdown.classList.remove('opacity-0');
-                        profileDropdown.classList.remove('-translate-y-2');
-                        console.log('Showing dropdown');
-                    } else {
-                        // Hide dropdown
-                        profileDropdown.classList.add('hidden');
-                        profileDropdown.classList.add('opacity-0');
-                        profileDropdown.classList.add('-translate-y-2');
-                        console.log('Hiding dropdown');
-                    }
-                }
-            } else if (profileDropdown && !profileDropdown.classList.contains('hidden') && !profileDropdown.contains(e.target)) {
-                console.log('Clicking outside, closing dropdown');
-                profileDropdown.classList.add('hidden');
-                profileDropdown.classList.add('opacity-0');
-                profileDropdown.classList.add('-translate-y-2');
-            }
-            
             // Student card click
             if (e.target.closest('.student-card')) {
                 const studentCard = e.target.closest('.student-card');
+
+                // CRITICAL: Block clicks on unavailable/scheduled students
+                if (studentCard.classList.contains('student-unavailable')) {
+                    console.log('[TalkTime] Student is unavailable - already scheduled for today');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return; // Do nothing - student is not available
+                }
+
                 const studentId = studentCard.dataset.studentId;
                 const studentAdmission = studentCard.dataset.studentAdmission;
-                const studentName = studentCard.querySelector('h3').textContent;
-                
+                const studentName = studentCard.dataset.studentName || 'Student';
+
                 // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
                 if (!checkNotificationPermissionForCriticalAction('scheduling a meeting')) {
                     console.log('🚫 Blocking student detail navigation - notifications not enabled');
                     showNotificationRequiredMessage();
                     return; // Prevent navigation
                 }
-                
+
                 // Navigate to student detail page with parameters
                 window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
             }
@@ -1643,7 +1260,7 @@
         
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
-            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-success text-white' : 'bg-error text-white'}`;
             notificationEl.classList.remove('hidden');
             
             setTimeout(() => {
@@ -1926,70 +1543,25 @@
             .then(data => {
                 console.log('Dashboard data loaded:', data);
                 
-                // Show badge on upcoming tab if there are upcoming meetings
-                if (upcomingBadge && data.meetings && data.meetings.upcoming && data.meetings.upcoming.length > 0) {
-                    upcomingBadge.textContent = data.meetings.upcoming.length;
-                    upcomingBadge.classList.remove('hidden');
+                // Update badge counts in the dashboard nav
+                if (window.VolunteerDashboardNav && data.meetings && data.meetings.upcoming) {
+                    window.VolunteerDashboardNav.updateUpcomingBadge(data.meetings.upcoming.length);
                 }
                 
-                // Render real upcoming meetings in the sidebar (max 3)
-                const sidebarUpcoming = document.getElementById('sidebar-upcoming');
-                if (sidebarUpcoming) {
-                    const upcoming = (data.meetings && data.meetings.upcoming) ? data.meetings.upcoming.slice(0, 3) : [];
-                    if (!upcoming.length) {
-                        if (sidebarUpcoming) {
-                          sidebarUpcoming.innerHTML = '<p class="text-gray-500 text-sm">No upcoming sessions.</p>';
-                        }
-                    } else {
-                        const items = upcoming.map(item => {
-                            const when = new Date(item.time || item.start_time || item.scheduled_for || item.meeting_time || Date.now());
-                            const localTime = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            const localDate = when.toLocaleDateString();
-                            const studentName = (item.student && (item.student.full_name || item.student.name)) || item.student_name || 'Student';
-                            const avatar = (item.student && item.student.photo_url) || item.student_photo_url || '';
-                            return `
-                                <a href="/volunteer/dashboard/upcoming" class="flex items-center gap-4 p-3 rounded-xl border border-white/40 bg-white/40 hover:bg-white/60 shadow-sm transition" aria-label="Upcoming session with ${studentName} on ${localDate} at ${localTime}">
-                                    <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-100 ring-2 ring-blue-100 flex items-center justify-center">
-                                        <img src="${avatar || '/images/default-profile.svg'}" alt="${studentName}" loading="lazy" class="w-full h-full object-cover upc-avatar-img" />
-                                        <svg class="w-6 h-6 text-blue-500 ${avatar ? 'hidden' : ''} upc-avatar-fallback" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                            <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 16a8 8 0 1116 0v1H2v-1z" />
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-gray-800 truncate">${studentName}</p>
-                                        <p class="text-xs text-gray-500">${localDate} • ${localTime}</p>
-                                    </div>
-                                    <div class="shrink-0 text-gray-400"><i class="fas fa-video"></i></div>
-                                </a>
-                            `;
-                        }).join('');
-                        if (sidebarUpcoming) {
-                          sidebarUpcoming.innerHTML = items;
-                          // Attach avatar fallback handlers (sidebar)
-                          sidebarUpcoming.querySelectorAll('.upc-avatar-img').forEach(img => {
-                              img.addEventListener('error', function () {
-                                  this.classList.add('hidden');
-                                  const fallback = this.parentElement.querySelector('.upc-avatar-fallback');
-                                  if (fallback) fallback.classList.remove('hidden');
-                              }, { once: true });
-                          });
-                        }
+                // Sidebar removed - using FAB widget only for upcoming sessions
 
-                        // Remove the legacy sidebar block entirely to avoid duplicate UI
-                        const sidebarCard = document.querySelector('#sidebar-upcoming')?.closest('.sidebar-card');
-                        if (sidebarCard) sidebarCard.remove();
-
-                        // Floating mini-widget (FAB) for Upcoming
-                        // Create container once
-                        let fabRoot = document.getElementById('upcoming-fab');
-                        if (!fabRoot) {
-                            fabRoot = document.createElement('div');
-                            fabRoot.id = 'upcoming-fab';
-                            fabRoot.className = 'fixed bottom-6 right-6 z-40';
-                            fabRoot.innerHTML = `
+                // Floating mini-widget (FAB) for Upcoming
+                // Create container once
+                let fabRoot = document.getElementById('upcoming-fab');
+                if (!fabRoot && data.meetings && data.meetings.upcoming && data.meetings.upcoming.length > 0) {
+                    const upcoming = data.meetings.upcoming.slice(0, 3);
+                    fabRoot = document.createElement('div');
+                    fabRoot.id = 'upcoming-fab';
+                    fabRoot.className = 'fixed bottom-6 right-6 z-40';
+                    fabRoot.innerHTML = `
                               <div class="relative">
                                 <button id="upcoming-fab-btn" aria-label="Open upcoming sessions" aria-expanded="false"
-                                  class="group flex items-center gap-2 rounded-full px-4 h-12 shadow-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition">
+                                  class="group flex items-center gap-2 rounded-full px-4 h-12 shadow-lg bg-brand-primary text-white hover:bg-brand-primary-dark focus:outline-none focus:ring-4 focus:ring-brand-primary transition">
                                   <i class="fas fa-calendar-check"></i>
                                   <span class="text-sm font-semibold">Upcoming</span>
                                   <span id="upcoming-fab-count" class="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-xs">0</span>
@@ -2004,45 +1576,44 @@
                                   </div>
                                   <div id="upcoming-fab-list" class="space-y-2 max-h-72 overflow-auto pr-1"></div>
                                   <div class="pt-2 flex justify-end">
-                                    <a href="/volunteer/dashboard/upcoming" class="text-xs font-medium text-indigo-700 hover:text-indigo-900">View all</a>
+                                    <a href="/volunteer/dashboard/upcoming" class="text-xs font-medium text-brand-primary hover:text-brand-primary">View all</a>
                                   </div>
                                 </div>
                               </div>`;
-                            document.body.appendChild(fabRoot);
+                    document.body.appendChild(fabRoot);
 
-                            // Toggle logic
-                            const btn = document.getElementById('upcoming-fab-btn');
-                            const panel = document.getElementById('upcoming-fab-panel');
-                            const closeBtn = document.getElementById('upcoming-fab-close');
-                            function openPanel() {
-                              panel.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
-                              btn.setAttribute('aria-expanded', 'true');
-                            }
-                            function closePanel() {
-                              panel.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
-                              btn.setAttribute('aria-expanded', 'false');
-                            }
-                            btn.addEventListener('click', () => {
-                              const expanded = btn.getAttribute('aria-expanded') === 'true';
-                              if (expanded) closePanel(); else openPanel();
-                            });
-                            closeBtn.addEventListener('click', closePanel);
-                            document.addEventListener('keydown', (e) => {
-                              if (e.key === 'Escape') closePanel();
-                            });
-                            document.addEventListener('click', (e) => {
-                              const within = fabRoot.contains(e.target);
-                              const panelEl = document.getElementById('upcoming-fab-panel');
-                              if (!within && panelEl && !panelEl.classList.contains('pointer-events-none')) closePanel();
-                            });
-                        }
+                    // Toggle logic
+                    const btn = document.getElementById('upcoming-fab-btn');
+                    const panel = document.getElementById('upcoming-fab-panel');
+                    const closeBtn = document.getElementById('upcoming-fab-close');
+                    function openPanel() {
+                        panel.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+                        btn.setAttribute('aria-expanded', 'true');
+                    }
+                    function closePanel() {
+                        panel.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+                        btn.setAttribute('aria-expanded', 'false');
+                    }
+                    btn.addEventListener('click', () => {
+                        const expanded = btn.getAttribute('aria-expanded') === 'true';
+                        if (expanded) closePanel(); else openPanel();
+                    });
+                    closeBtn.addEventListener('click', closePanel);
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') closePanel();
+                    });
+                    document.addEventListener('click', (e) => {
+                        const within = fabRoot.contains(e.target);
+                        const panelEl = document.getElementById('upcoming-fab-panel');
+                        if (!within && panelEl && !panelEl.classList.contains('pointer-events-none')) closePanel();
+                    });
 
-                        // Render list into FAB
-                        const fabCount = document.getElementById('upcoming-fab-count');
-                        if (fabCount) fabCount.textContent = String(upcoming.length);
-                        const fabList = document.getElementById('upcoming-fab-list');
-                        if (fabList) {
-                          const fabItems = upcoming.map(item => {
+                    // Render list into FAB
+                    const fabCount = document.getElementById('upcoming-fab-count');
+                    if (fabCount) fabCount.textContent = String(upcoming.length);
+                    const fabList = document.getElementById('upcoming-fab-list');
+                    if (fabList) {
+                        const fabItems = upcoming.map(item => {
                             const when = new Date(item.time || item.start_time || item.scheduled_for || item.meeting_time || Date.now());
                             const localTime = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             const localDate = when.toLocaleDateString();
@@ -2050,9 +1621,9 @@
                             const avatar = (item.student && item.student.photo_url) || item.student_photo_url || '';
                             return `
                               <a href="/volunteer/dashboard/upcoming" class="flex items-center gap-3 p-2 rounded-lg border border-white/40 bg-white/60 hover:bg-white/80 transition" aria-label="Upcoming session with ${studentName} on ${localDate} at ${localTime}">
-                                <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-100 ring-2 ring-blue-100 flex items-center justify-center">
+                                <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-100 ring-2 ring-brand flex items-center justify-center">
                                   <img src="${avatar || '/images/default-profile.svg'}" alt="${studentName}" loading="lazy" class="w-full h-full object-cover upc-avatar-img" />
-                                  <svg class="w-5 h-5 text-blue-500 ${avatar ? 'hidden' : ''} upc-avatar-fallback" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                  <svg class="w-5 h-5 text-brand-primary ${avatar ? 'hidden' : ''} upc-avatar-fallback" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                     <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 16a8 8 0 1116 0v1H2v-1z" />
                                   </svg>
                                 </div>
@@ -2062,19 +1633,19 @@
                                 </div>
                                 <div class="shrink-0 text-gray-400"><i class="fas fa-video"></i></div>
                               </a>`;
-                          }).join('');
-                          fabList.innerHTML = fabItems || '<p class="text-xs text-gray-500 px-1">No upcoming sessions.</p>';
-                          // Attach avatar fallback handlers (FAB)
-                          fabList.querySelectorAll('.upc-avatar-img').forEach(img => {
-                              img.addEventListener('error', function () {
-                                  this.classList.add('hidden');
-                                  const fallback = this.parentElement.querySelector('.upc-avatar-fallback');
-                                  if (fallback) fallback.classList.remove('hidden');
-                              }, { once: true });
-                          });
-                        }
+                        }).join('');
+                        fabList.innerHTML = fabItems || '<p class="text-xs text-gray-500 px-1">No upcoming sessions.</p>';
+                        // Attach avatar fallback handlers (FAB)
+                        fabList.querySelectorAll('.upc-avatar-img').forEach(img => {
+                            img.addEventListener('error', function () {
+                                this.classList.add('hidden');
+                                const fallback = this.parentElement.querySelector('.upc-avatar-fallback');
+                                if (fallback) fallback.classList.remove('hidden');
+                            }, { once: true });
+                        });
                     }
                 }
+
                 console.log('=== MAKING STUDENT CARDS API CALL ===');
                 console.log('API URL:', `/api/v1/volunteers/students/cards?date=${selectedDate}`);
                 return window.TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/cards?date=${selectedDate}`, {
@@ -2107,29 +1678,58 @@
                     if (!availableStudents || availableStudents.length === 0) {
                         // Check if this is an empty database vs no students for this date
                         const emptyMessage = data.isEmpty ? 
-                            '<div class="text-center py-8"><div class="bg-blue-50 border border-blue-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full"><svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><h3 class="text-lg font-semibold text-blue-900 mb-2">No Students Found</h3><p class="text-blue-700 mb-4">The database appears to be empty. Please contact an administrator to add student profiles.</p><p class="text-sm text-blue-600">Once students are added, they will appear here for scheduling.</p></div></div>' :
+                            '<div class="text-center py-8"><div class="bg-brand-primary border border-brand rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-brand-light rounded-full"><svg class="w-8 h-8 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><h3 class="text-lg font-semibold text-brand-primary mb-2">No Students Found</h3><p class="text-brand-primary-dark mb-4">The database appears to be empty. Please contact an administrator to add student profiles.</p><p class="text-sm text-brand-primary">Once students are added, they will appear here for scheduling.</p></div></div>' :
                             '<div class="text-center py-8"><p class="text-gray-500">No students available for this date.</p></div>';
                         availableStudentsContainer.innerHTML = emptyMessage;
                     } else {
                         // Generate HTML for student cards from JSON data
-                        const studentCardsHtml = availableStudents.map(student => {
-                            const photoUrl = student.photo_url || '/images/default-profile.svg';
-                            const studentName = student.full_name || 'Student';
-                            const studentBio = student.interests || 'English conversation practice';
-                            return `
-                            <div class="student-card glass-bg p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center overflow-hidden">
-                                        ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover">` : 
-                                        `<span class="text-lg font-semibold text-indigo-600">${student.initial || studentName.charAt(0)}</span>`}
-                                    </div>
-                                    <div class="flex-grow">
-                                        <h3 class="font-semibold">${studentName}</h3>
-                                        <p class="text-sm text-gray-500">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
-                                    </div>
+                        const studentCardsHtml = availableStudents.map((student, index) => {
+                            // Capitalize each word in the name
+                            const rawName = student.full_name || 'Student';
+                            const studentName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                            // Generate initials from full name (first letter of first and last name)
+                            const nameParts = studentName.trim().split(' ').filter(p => p);
+                            const initials = nameParts.length >= 2
+                                ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                                : studentName.charAt(0).toUpperCase();
 
+                            // Check if photo exists and is valid
+                            const hasValidPhoto = student.photo_url &&
+                                student.photo_url !== '/images/default-profile.svg' &&
+                                student.photo_url.trim() !== '';
+
+                            // Build age and gender line (Boy/Girl)
+                            const agePart = student.age ? `${student.age} years` : '';
+                            const genderRaw = student.gender ? student.gender.toLowerCase() : '';
+                            const genderPart = genderRaw === 'm' || genderRaw === 'male' ? 'Boy' : genderRaw === 'f' || genderRaw === 'female' ? 'Girl' : student.gender || '';
+                            const ageGenderLine = [agePart, genderPart].filter(Boolean).join(' · ');
+
+                            // Availability status
+                            const availabilityText = student.is_available !== false ? 'Available' : 'Unavailable';
+
+                            // Show divider except for last item
+                            const isLast = index === availableStudents.length - 1;
+
+                            return `
+                            <div class="student-card cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(0,0,0,0.06);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor='rgba(0,0,0,0.15)'" onmouseleave="this.style.borderColor='rgba(0,0,0,0.06)'">
+                                <div style="display:flex;align-items:center;gap:16px">
+                                    <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.1);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                                        ${hasValidPhoto
+                                            ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><span style="display:none;font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`
+                                            : `<span style="font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`}
+                                    </div>
+                                    <div style="flex:1;min-width:0">
+                                        <div style="font-weight:600;font-size:22px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
+                                        <div style="font-size:18px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
+                                    </div>
+                                    <div style="flex-shrink:0;text-align:right;">
+                                        <div style="font-size:18px;color:#9ca3af">${availabilityText}</div>
+                                        <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
+                                    </div>
+                                    <svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                 </div>
                             </div>
+                            ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
                             `;
                         }).join('');
                         availableStudentsContainer.innerHTML = studentCardsHtml;
@@ -2167,67 +1767,97 @@
                     // Backend returns data in data.unavailable format
                     const unavailableStudents = data.data?.unavailable || [];
                     if (!unavailableStudents || unavailableStudents.length === 0) {
-                        unavailableStudentsContainer.innerHTML = '<div class="text-center py-8"><p class="text-gray-500">No unavailable students for this date.</p></div>';
+                        unavailableStudentsContainer.innerHTML = '<div class="text-center py-4"><p class="text-xs text-gray-500">No unavailable students for this date.</p></div>';
                     } else {
                         // Generate HTML for unavailable student cards with owner-specific UI
-                        const unavailableCardsHtml = unavailableStudents.map(student => {
-                            const photoUrl = student.photo_url || '/images/default-profile.svg';
-                            const studentName = student.full_name || 'Student';
-                            const studentBio = student.interests || 'English conversation practice';
+                        const unavailableCardsHtml = unavailableStudents.map((student, index) => {
+                            // Capitalize each word in the name
+                            const rawName = student.full_name || 'Student';
+                            const studentName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                            // Generate initials from full name
+                            const nameParts = studentName.trim().split(' ').filter(p => p);
+                            const initials = nameParts.length >= 2
+                                ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                                : studentName.charAt(0).toUpperCase();
+
+                            const hasValidPhoto = student.photo_url &&
+                                student.photo_url !== '/images/default-profile.svg' &&
+                                student.photo_url.trim() !== '';
+
                             const isOwner = student.meeting && student.meeting.isOwner;
                             const meetingTime = student.meeting ? new Date(student.meeting.time) : null;
-                            
+
+                            // Build age and gender line (Boy/Girl)
+                            const agePart = student.age ? `${student.age} years` : '';
+                            const genderRaw = student.gender ? student.gender.toLowerCase() : '';
+                            const genderPart = genderRaw === 'm' || genderRaw === 'male' ? 'Boy' : genderRaw === 'f' || genderRaw === 'female' ? 'Girl' : student.gender || '';
+                            const ageGenderLine = [agePart, genderPart].filter(Boolean).join(' · ');
+
+                            // Show divider except for last item
+                            const isLast = index === unavailableStudents.length - 1;
+
                             if (isOwner) {
-                                // Owner UI: Green background with countdown timer
+                                // Owner UI: Show "Your Meeting" status
                                 const timeUntilMeeting = meetingTime ? Math.max(0, meetingTime.getTime() - Date.now()) : 0;
                                 const hoursUntil = Math.floor(timeUntilMeeting / (1000 * 60 * 60));
                                 const minutesUntil = Math.floor((timeUntilMeeting % (1000 * 60 * 60)) / (1000 * 60));
-                                
+                                const timeDisplay = hoursUntil > 0 ? `${hoursUntil}h ${minutesUntil}m` : `${minutesUntil}m`;
+
                                 return `
-                                <div class="student-card bg-green-50 border-2 border-green-200 p-4 rounded-xl shadow-sm" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center overflow-hidden">
-                                            ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover">` : 
-                                            `<span class="text-lg font-semibold text-green-600">${student.initial || studentName.charAt(0)}</span>`}
+                                <div class="student-card cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(22,163,74,0.15);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor='rgba(22,163,74,0.4)'" onmouseleave="this.style.borderColor='rgba(22,163,74,0.15)'">
+                                    <div style="display:flex;align-items:center;gap:16px">
+                                        <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                                            ${hasValidPhoto
+                                                ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><span style="display:none;font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`
+                                                : `<span style="font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`}
                                         </div>
-                                        <div class="flex-grow">
-                                            <h3 class="font-semibold text-green-800">${studentName}</h3>
-                                            <p class="text-sm text-green-600">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
-                                            <p class="text-xs text-green-700 mt-1 font-medium">
-                                                <i class="fas fa-clock mr-1"></i>Your Meeting: ${hoursUntil}h ${minutesUntil}m
-                                            </p>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-weight:600;font-size:22px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
+                                            <div style="font-size:18px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
                                         </div>
-                                        <div class="text-green-600">
-                                            <i class="fas fa-video text-lg"></i>
+                                        <div style="flex-shrink:0;text-align:right;">
+                                            <div style="font-size:18px;color:#16a34a;font-weight:500">${timeDisplay}</div>
+                                            <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
                                         </div>
+                                        <svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                     </div>
                                 </div>
+                                ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
                                 `;
                             } else {
-                                // Non-owner UI: Standard unavailable styling
+                                // Non-owner UI: Show "Scheduled" status (muted) - DISABLED, cannot click
                                 return `
-                                <div class="student-card glass-bg p-4 rounded-xl shadow-sm opacity-60" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                                            ${photoUrl ? `<img src="${photoUrl}" alt="${studentName}" loading="lazy" onerror="this.onerror=null;this.src='/images/default-profile.svg';" class="w-full h-full object-cover grayscale">` : 
-                                            `<span class="text-lg font-semibold text-gray-400">${student.initial || studentName.charAt(0)}</span>`}
+                                <div class="student-card student-unavailable" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(0,0,0,0.04);opacity:0.5;pointer-events:none;cursor:not-allowed">
+                                    <div style="display:flex;align-items:center;gap:16px">
+                                        <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.08);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                                            ${hasValidPhoto
+                                                ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;filter:grayscale(1)"><span style="display:none;font-size:26px;font-weight:700;color:#9ca3af">${initials}</span>`
+                                                : `<span style="font-size:26px;font-weight:700;color:#9ca3af">${initials}</span>`}
                                         </div>
-                                        <div class="flex-grow">
-                                            <h3 class="font-semibold text-gray-600">${studentName}</h3>
-                                            <p class="text-sm text-gray-400">${studentBio.length > 50 ? studentBio.substring(0, 50) + '...' : studentBio}</p>
-                                            <p class="text-xs text-red-500 mt-1">Unavailable for selected date</p>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-weight:600;font-size:22px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
+                                            <div style="font-size:18px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
                                         </div>
+                                        <div style="flex-shrink:0;text-align:right;">
+                                            <div style="font-size:18px;color:#9ca3af">Scheduled</div>
+                                            <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
+                                        </div>
+                                        <svg style="width:30px;height:30px;color:#d1d5db;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                     </div>
                                 </div>
+                                ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
                                 `;
                             }
                         }).join('');
                         unavailableStudentsContainer.innerHTML = unavailableCardsHtml;
-                        
+
                         // Start countdown timers for owner meetings
                         startCountdownTimers();
                     }
                 }
+
+                // Fetch online status for all students
+                fetchOnlineStatus(data);
             })
             .catch(error => {
                 console.error('Error loading dashboard data:', error);
@@ -2239,7 +1869,7 @@
                 
                 // Show user-friendly empty state messages instead of error messages
                 if (availableStudentsContainer) {
-                    availableStudentsContainer.innerHTML = '<div class="text-center py-8"><div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full"><svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div><h3 class="text-lg font-semibold text-yellow-900 mb-2">Unable to Load Students</h3><p class="text-yellow-700 mb-4">There might be a connection issue or the database is empty.</p><button onclick="loadDashboardData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">Try Again</button></div></div>';
+                    availableStudentsContainer.innerHTML = '<div class="text-center py-8"><div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning-light rounded-full"><svg class="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div><h3 class="text-lg font-semibold text-yellow-900 mb-2">Unable to Load Students</h3><p class="text-yellow-700 mb-4">There might be a connection issue or the database is empty.</p><button onclick="loadDashboardData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">Try Again</button></div></div>';
                 }
                 if (document.getElementById('student-list-unavailable')) {
                     document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-8"><p class="text-gray-500">Unable to load unavailable students.</p></div>';
@@ -2250,6 +1880,40 @@
                 if (loadingTimeout) clearTimeout(loadingTimeout);
                 isLoadingDashboard = false;
                 console.log('loadDashboardData completed, flag reset');
+            });
+        }
+
+        // Fetch online status for all students and update indicators
+        function fetchOnlineStatus(data) {
+            const allStudents = [
+                ...(data.data?.available || []),
+                ...(data.data?.unavailable || [])
+            ];
+            const studentIds = allStudents.map(s => s.id);
+            if (studentIds.length === 0) return;
+
+            window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/students/online-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentIds: studentIds })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                var online = result.online || {};
+                studentIds.forEach(function(id) {
+                    var el = document.getElementById('online-status-' + id);
+                    if (!el) return;
+                    if (online[id]) {
+                        el.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#16a34a;margin-right:3px;vertical-align:middle;"></span>online';
+                        el.style.color = '#16a34a';
+                    } else {
+                        el.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#9ca3af;margin-right:3px;vertical-align:middle;"></span>offline';
+                        el.style.color = '#9ca3af';
+                    }
+                });
+            })
+            .catch(function(err) {
+                console.error('Failed to fetch online status:', err);
             });
         }
 
@@ -2264,7 +1928,7 @@
             window.countdownInterval = setInterval(() => {
                 const ownerCards = document.querySelectorAll('.student-card.bg-green-50');
                 ownerCards.forEach(card => {
-                    const timerElement = card.querySelector('.text-green-700');
+                    const timerElement = card.querySelector('.text-success-dark');
                     if (timerElement && timerElement.textContent.includes('Your Meeting:')) {
                         // Extract meeting time from data attributes or re-calculate
                         // For now, we'll refresh the entire section when timers need updating
@@ -2288,17 +1952,26 @@
                 // Handle student card clicks (for viewing details)
                 if (event.target.closest('.student-card')) {
                     const card = event.target.closest('.student-card');
+
+                    // CRITICAL: Block clicks on unavailable/scheduled students
+                    if (card.classList.contains('student-unavailable')) {
+                        console.log('[TalkTime] Student is unavailable - already scheduled by another volunteer');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return; // Do nothing - student is not available
+                    }
+
                     const studentId = card.dataset.studentId;
                     const studentAdmission = card.dataset.studentAdmission;
-                    const studentName = card.querySelector('h3')?.textContent || 'Student';
-                    
+                    const studentName = card.querySelector('h3')?.textContent || card.dataset.studentName || 'Student';
+
                     // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
                     if (!checkNotificationPermissionForCriticalAction('viewing student for scheduling')) {
                         console.log('🚫 Blocking student detail navigation - notifications not enabled');
                         showNotificationRequiredMessage();
                         return; // Prevent navigation
                     }
-                    
+
                     window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
                 }
             });
@@ -2328,113 +2001,7 @@
         
         // Initialize TalkTime Auth for volunteers FIRST
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-        
-        // Initialize TalkTime Production Datepicker with ABSOLUTE restrictions
-        setTimeout(() => {
-            if (window.Datepicker) {
-                const datepickerEl = document.getElementById('sticky-student-date');
-                if (datepickerEl && !datepickerEl._datepicker) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    
-                    // Exactly 3 months from today
-                    const maxDate = new Date(today);
-                    maxDate.setMonth(today.getMonth() + 3);
-                    
-                    const datepicker = new Datepicker(datepickerEl, {
-                        autohide: true,
-                        format: 'mm/dd/yyyy',
-                        minDate: today,
-                        maxDate: maxDate,
-                        weekStart: 0, // Sunday start (US standard)
-                        todayBtn: true,
-                        clearBtn: false, // Remove clear to prevent empty selection
-                        todayBtnMode: 1, // Select today when clicked
-                        orientation: 'auto',
-                        daysOfWeekDisabled: [], // All days allowed
-                        datesDisabled: [], // No specific dates disabled
-                        beforeShowDay: function(date) {
-                            const dateTime = date.getTime();
-                            const todayTime = today.getTime();
-                            const maxTime = maxDate.getTime();
-                            
-                            // STRICT: Block all dates outside 3-month range
-                            if (dateTime < todayTime || dateTime > maxTime) {
-                                return {
-                                    enabled: false,
-                                    classes: 'disabled blocked-date',
-                                    tooltip: dateTime < todayTime ? 
-                                        'Past dates not available for scheduling' : 
-                                        'Beyond 3-month scheduling window'
-                                };
-                            }
-                            
-                            return { 
-                                enabled: true,
-                                classes: 'available-date'
-                            };
-                        }
-                    });
-                    
-                    // Set default to today
-                    datepicker.setDate(today);
-                    datepickerEl._datepicker = datepicker;
-                    
-                    // Add change event listener for datepicker (fixed event name)
-                    datepickerEl.addEventListener('changeDate', function(e) {
-                        console.log('Datepicker changeDate event triggered:', e);
-                        const selectedDate = e.detail?.date || e.target.value;
-                        if (selectedDate) {
-                            let isoDate;
-                            if (selectedDate instanceof Date) {
-                                isoDate = selectedDate.toISOString().split('T')[0];
-                            } else {
-                                // Convert MM/DD/YYYY to YYYY-MM-DD
-                                const parts = selectedDate.split('/');
-                                if (parts.length === 3) {
-                                    isoDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-                                } else {
-                                    isoDate = selectedDate;
-                                }
-                            }
-                            console.log('Datepicker date changed to:', isoDate);
-                            // Delay the call to prevent recursion
-                            setTimeout(() => {
-                                if (!isLoadingDashboard) {
-                                    loadDashboardData(isoDate);
-                                }
-                            }, 300);
-                        }
-                    });
-                    
-                    // Also listen for input change events as fallback
-                    datepickerEl.addEventListener('change', function(e) {
-                        console.log('Datepicker input change event triggered');
-                        const value = e.target.value;
-                        if (value && !isLoadingDashboard) {
-                            setTimeout(() => {
-                                if (!isLoadingDashboard) {
-                                    const parts = value.split('/');
-                                    if (parts.length === 3) {
-                                        const isoDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-                                        console.log('Input change date converted to:', isoDate);
-                                        loadDashboardData(isoDate);
-                                    }
-                                }
-                            }, 300);
-                        }
-                    });
-                    
-                    console.log('✅ TalkTime Production Datepicker Active:', {
-                        range: `${today.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`,
-                        months: 3,
-                        actualDays: Math.ceil((maxDate - today) / (1000 * 60 * 60 * 24)),
-                        restrictions: 'STRICT - Past dates and 3+ months blocked'
-                    });
-                }
-            }
-        }, 300);
-        
+
         // --- Initial Load ---
         loadDashboardData();
         setupEventListeners();
@@ -2517,8 +2084,8 @@
                 
                 const notification = new Notification('🎉 TalkTime Enhanced Notifications Enabled!', {
                     body: 'You\'ll receive rich notifications like this with action buttons for meetings, reminders, and instant calls. Notifications will persist until you interact with them.',
-                    icon: '/favicon.ico',
-                    badge: '/favicon.ico',
+                    icon: '/talktime.ico',
+                    badge: '/talktime.ico',
                     tag: 'talktime-enhanced-test',
                     requireInteraction: false,
                     actions: [
@@ -2580,15 +2147,15 @@
                         </button>
                         
                         <div class="text-center mb-6">
-                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-bell text-blue-600 text-2xl"></i>
+                            <div class="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-bell text-brand-primary text-2xl"></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-800 mb-2">Why Enable Notifications?</h3>
                         </div>
                         
                         <div class="space-y-4 text-sm text-gray-600">
                             <div class="flex items-start gap-3">
-                                <i class="fas fa-clock text-blue-500 mt-1"></i>
+                                <i class="fas fa-clock text-brand-primary mt-1"></i>
                                 <div>
                                     <strong>Meeting Reminders:</strong> Get notified 1 hour, 30 minutes, and 5 minutes before your scheduled meetings.
                                 </div>
@@ -2602,14 +2169,14 @@
                             </div>
                             
                             <div class="flex items-start gap-3">
-                                <i class="fas fa-calendar-alt text-purple-500 mt-1"></i>
+                                <i class="fas fa-calendar-alt text-brand-secondary mt-1"></i>
                                 <div>
                                     <strong>Schedule Changes:</strong> Get notified about meeting reschedules, cancellations, and confirmations.
                                 </div>
                             </div>
                             
                             <div class="flex items-start gap-3">
-                                <i class="fas fa-shield-alt text-indigo-500 mt-1"></i>
+                                <i class="fas fa-shield-alt text-brand-primary mt-1"></i>
                                 <div>
                                     <strong>Always Secure:</strong> Notifications only show basic info and never include personal details.
                                 </div>
@@ -2618,7 +2185,7 @@
                         
                         <div class="mt-6 flex gap-3">
                             <button onclick="requestNotificationPermission(); closeNotificationInfo();" 
-                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                                    class="flex-1 bg-brand-primary text-white py-3 rounded-lg font-medium hover:bg-brand-primary-dark transition-colors">
                                 <i class="fas fa-bell mr-2"></i>Enable Now
                             </button>
                             <button onclick="closeNotificationInfo()" 
@@ -2687,6 +2254,104 @@
 
         // Global functions now defined inside DOMContentLoaded handlers
 
+        // ============================================
+        // SHOW STUDENT MESSAGE MODAL
+        // Called when student sends a message in response to instant call
+        // ============================================
+        function showStudentMessageModal(data) {
+            const senderName = data.senderName || 'Student';
+            const senderId = data.senderId;
+            const messageContent = data.message || '';
+
+            // Remove any existing modal
+            const existingModal = document.getElementById('student-message-modal');
+            if (existingModal) existingModal.remove();
+
+            const modalHtml = `
+                <div id="student-message-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+                    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden transform transition-all animate-modal-in" style="box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                        <!-- Header - Primary Red Background -->
+                        <div class="p-6 text-center" style="background: #D10100;">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                                <svg class="w-8 h-8" style="color: #D10100;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-xl font-bold" style="color: #ffffff; font-family: 'Poppins', sans-serif;">Message from ${senderName}</h2>
+                            <p class="text-sm mt-1" style="color: rgba(255,255,255,0.9);">The student replied to your call</p>
+                        </div>
+
+                        <!-- Message Content - White Background -->
+                        <div class="p-6" style="background: #ffffff;">
+                            <div class="rounded-xl p-4 mb-5" style="background: #f9fafb; border: 1px solid #e5e7eb;">
+                                <p class="text-center text-lg" style="color: #111827; font-family: 'Poppins', sans-serif;">"${messageContent}"</p>
+                            </div>
+
+                            <div class="rounded-lg p-3 mb-5" style="background: rgba(209,1,0,0.05); border: 1px solid rgba(209,1,0,0.2);">
+                                <div class="flex items-start gap-2">
+                                    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: #D10100;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <p class="text-sm" style="color: #374151;">You can continue this conversation in the Messages section.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                                <a href="/volunteer/dashboard/messages.html${senderId ? '?openConversation=' + senderId : ''}"
+                                   class="w-full py-3.5 px-4 font-semibold rounded-xl transition-all text-center flex items-center justify-center gap-2"
+                                   style="background: #D10100; color: #ffffff; font-family: 'Poppins', sans-serif; box-shadow: 0 4px 6px -1px rgba(209, 1, 0, 0.2);"
+                                   onmouseover="this.style.background='#7d0000'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 15px -3px rgba(209, 1, 0, 0.3)';"
+                                   onmouseout="this.style.background='#D10100'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(209, 1, 0, 0.2)';">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>
+                                    Open Full Chat
+                                </a>
+                                <button id="close-student-message-modal"
+                                        class="w-full py-3.5 px-4 font-semibold rounded-xl transition-all"
+                                        style="background: #f9fafb; color: #374151; border: 1px solid #e5e7eb; font-family: 'Poppins', sans-serif;"
+                                        onmouseover="this.style.background='#e5e7eb';"
+                                        onmouseout="this.style.background='#f9fafb';">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Add close button handler
+            document.getElementById('close-student-message-modal').addEventListener('click', () => {
+                const modal = document.getElementById('student-message-modal');
+                if (modal) modal.remove();
+            });
+
+            // Close on backdrop click
+            document.getElementById('student-message-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'student-message-modal') {
+                    e.target.remove();
+                }
+            });
+
+            // Add animation styles if not already present
+            if (!document.getElementById('modal-animation-styles')) {
+                const styleEl = document.createElement('style');
+                styleEl.id = 'modal-animation-styles';
+                styleEl.textContent = `
+                    @keyframes modal-in {
+                        from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+                        to { opacity: 1; transform: scale(1) translateY(0); }
+                    }
+                    .animate-modal-in {
+                        animation: modal-in 0.3s ease-out forwards;
+                    }
+                `;
+                document.head.appendChild(styleEl);
+            }
+        }
+
         async function initializeApprovalStatus() {
             try {
                 // Use the new JWT authentication utility
@@ -2716,7 +2381,7 @@
         document.addEventListener('DOMContentLoaded', async function() {
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
-            
+
             // Initialize enhanced notification system
             console.log('🚀 Initializing enhanced notification system...');
             
@@ -2817,7 +2482,7 @@
                                     <h3 class="text-sm font-medium text-red-800">
                                         Notifications Blocked
                                     </h3>
-                                    <div class="mt-2 text-sm text-red-700">
+                                    <div class="mt-2 text-sm text-error-dark">
                                         <p>Browser notifications are blocked. To enable them:</p>
                                         <ol class="list-decimal list-inside mt-2 space-y-1">
                                             <li>Click the lock icon in your browser's address bar</li>

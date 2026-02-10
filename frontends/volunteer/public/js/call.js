@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const userRole = window.TalkTimeAuth ? window.TalkTimeAuth.getUser()?.role : null || params.get('role') || 'guest';
 
     if (!room) {
-        alert('No room specified. Redirecting to home.');
+        console.error('[TalkTime] No room specified');
+        // Redirect immediately - user will see home page
         window.location.href = '/';
         return;
     }

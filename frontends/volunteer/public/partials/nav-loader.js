@@ -50,6 +50,7 @@ class VolunteerNavLoader {
 
     /**
      * Ensure notification sound system is loaded
+     * Uses parallel loading for better performance
      */
     async ensureNotificationSoundSystem() {
         const requiredScripts = [
@@ -60,24 +61,23 @@ class VolunteerNavLoader {
             { src: '/shared/js/notification-sound-integration.js', check: 'TalkTimeNotificationSoundIntegration' }
         ];
 
-        console.log('🔊 Loading notification sound system...');
+        console.log('Loading notification sound system (parallel)...');
 
-        for (const scriptInfo of requiredScripts) {
-            if (!window[scriptInfo.check]) {
-                try {
-                    await this.loadScript(scriptInfo.src);
-                    console.log(`✅ Loaded ${scriptInfo.src}`);
-                } catch (error) {
-                    console.warn(`⚠️ Failed to load ${scriptInfo.src}:`, error);
-                }
-            } else {
-                console.log(`✅ ${scriptInfo.src} already loaded`);
-            }
+        // Filter scripts that need loading and load them in parallel
+        const scriptsToLoad = requiredScripts.filter(s => !window[s.check]);
+
+        if (scriptsToLoad.length > 0) {
+            const loadPromises = scriptsToLoad.map(scriptInfo =>
+                this.loadScript(scriptInfo.src)
+                    .then(() => console.log(`Loaded ${scriptInfo.src}`))
+                    .catch(err => console.warn(`Failed to load ${scriptInfo.src}:`, err))
+            );
+
+            await Promise.all(loadPromises);
         }
 
-        // Wait for sound system to initialize
         if (window.TalkTimeNotificationSoundManager) {
-            console.log('🔊 Notification sound system ready');
+            console.log('Notification sound system ready');
         }
     }
 
@@ -86,15 +86,17 @@ class VolunteerNavLoader {
      */
     loadScript(src) {
         return new Promise((resolve, reject) => {
-            // Check if script already exists
-            const existingScript = document.querySelector(`script[src="${src}"]`);
+            // Check if script already exists (without cache-bust param)
+            const baseSrc = src.split('?')[0];
+            const existingScript = document.querySelector(`script[src^="${baseSrc}"]`);
             if (existingScript) {
                 resolve();
                 return;
             }
 
             const script = document.createElement('script');
-            script.src = src;
+            // Add cache-busting timestamp
+            script.src = `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
             script.async = true;
             
             script.onload = () => resolve();
@@ -166,11 +168,44 @@ class VolunteerNavLoader {
      */
     async loadNavigation() {
         await this.checkAuthentication();
-        
+
+        // Confirm auth state for Anti-FOUC system
+        if (this.isAuthenticated) {
+            if (typeof window.confirmAuthenticated === 'function') {
+                window.confirmAuthenticated('volunteer');
+            }
+        } else {
+            if (typeof window.confirmUnauthenticated === 'function') {
+                window.confirmUnauthenticated();
+            }
+        }
+
         const navContainer = document.getElementById('nav-container');
         if (!navContainer) {
-            console.error('Nav container not found');
+            // Dashboard pages use dashboard-nav-container instead - this is expected
+            const dashboardNavContainer = document.getElementById('dashboard-nav-container');
+            if (dashboardNavContainer) {
+                console.log('Dashboard page detected, nav-loader skipping (dashboard-nav.js handles navigation)');
+            } else {
+                console.warn('No nav container found (neither nav-container nor dashboard-nav-container)');
+            }
             return;
+        }
+
+        // Show/hide appropriate navigation based on auth state
+        const unauthNav = document.getElementById('home-unauthenticated-nav');
+        if (this.isAuthenticated) {
+            // Show authenticated nav container, hide unauthenticated
+            navContainer.classList.remove('hidden');
+            if (unauthNav) {
+                unauthNav.style.display = 'none';
+            }
+        } else {
+            // Keep authenticated nav hidden, show unauthenticated
+            navContainer.classList.add('hidden');
+            if (unauthNav) {
+                unauthNav.style.display = '';
+            }
         }
 
         try {
@@ -181,31 +216,38 @@ class VolunteerNavLoader {
                 navPath = '/volunteer/partials/nav-unauthenticated.html';
             }
 
-            const response = await fetch(navPath);
+            const response = await fetch(navPath, {
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
             if (response.ok) {
                 const navHtml = await response.text();
                 navContainer.innerHTML = navHtml;
-                
-                // Add a small delay to ensure DOM elements are fully inserted
-                setTimeout(() => {
+
+                // Execute scripts and initialize after DOM is ready
+                requestAnimationFrame(() => {
                     // Execute any scripts in the loaded navigation
                     this.executeScripts(navContainer);
-                    
+
                     // Initialize dropdown functionality if authenticated
                     if (this.isAuthenticated) {
                         this.initializeDropdown();
                     }
-                    
-                    // Update user info if authenticated (after scripts are executed)
+
+                    // Initialize scroll handler for nav transparency
+                    this.initializeScrollHandler();
+
+                    // Update user info if authenticated
                     if (this.isAuthenticated && this.userInfo) {
-                        // Use setTimeout to ensure DOM elements are ready
-                        setTimeout(() => {
+                        requestAnimationFrame(() => {
                             this.updateUserInfo();
                             this.loadNotificationCount();
                             this.setupRealtimeNotifications();
-                        }, 100);
+                        });
                     }
-                }, 50);
+                });
             } else {
                 console.error('Failed to load navigation:', response.statusText);
             }
@@ -264,19 +306,31 @@ class VolunteerNavLoader {
             }
             console.log('Updated profile image to:', profileImagePath);
         } else if (initialElement) {
-            // Use username or name for initial letter
-            const nameForInitial = this.userInfo.username || 
-                                  this.userInfo.name || 
-                                  this.userInfo.full_name || 
-                                  this.userInfo.fullName || 
-                                  'V';
-            const firstLetter = nameForInitial.charAt(0).toUpperCase();
-            initialElement.textContent = firstLetter;
+            // Generate initials from first and last name
+            const fullName = this.userInfo.full_name ||
+                            this.userInfo.fullName ||
+                            this.userInfo.name ||
+                            this.userInfo.username ||
+                            'V';
+
+            // Split name and get initials
+            const nameParts = fullName.trim().split(/\s+/);
+            let initials = '';
+
+            if (nameParts.length >= 2) {
+                // First letter of first name + first letter of last name
+                initials = (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+            } else {
+                // Single name - just use first letter
+                initials = nameParts[0].charAt(0).toUpperCase();
+            }
+
+            initialElement.textContent = initials;
             initialElement.classList.remove('hidden');
             if (navProfileImage) {
                 navProfileImage.classList.add('hidden');
             }
-            console.log('Updated initial to:', firstLetter, 'from name:', nameForInitial);
+            console.log('Updated initials to:', initials, 'from name:', fullName);
         }
 
         // Also update any other name displays in mobile menu or dropdowns
@@ -406,42 +460,44 @@ class VolunteerNavLoader {
             logoutLink: !!logoutLink
         });
 
-        // Profile dropdown toggle
+        // Profile dropdown toggle - use inline style for reliable visibility
         if (profileBtn && profileDropdown) {
-            profileBtn.addEventListener('click', (e) => {
-                console.log('Profile button clicked');
-                e.stopPropagation();
-                
-                const isHidden = profileDropdown.classList.contains('hidden');
-                console.log('Dropdown is currently hidden:', isHidden);
-                
-                if (isHidden) {
-                    // Show dropdown
-                    profileDropdown.classList.remove('hidden');
-                    profileDropdown.classList.remove('opacity-0');
-                    profileDropdown.classList.remove('-translate-y-2');
-                    console.log('Showing dropdown');
-                } else {
-                    // Hide dropdown
-                    profileDropdown.classList.add('hidden');
-                    profileDropdown.classList.add('opacity-0');
-                    profileDropdown.classList.add('-translate-y-2');
-                    console.log('Hiding dropdown');
-                }
-            });
+            // Prevent duplicate listeners
+            if (!profileBtn.hasAttribute('data-dropdown-initialized')) {
+                profileBtn.setAttribute('data-dropdown-initialized', 'true');
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (profileDropdown && !profileDropdown.classList.contains('hidden') && 
-                    !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-                    console.log('Clicking outside, closing dropdown');
-                    profileDropdown.classList.add('hidden');
-                    profileDropdown.classList.add('opacity-0');
-                    profileDropdown.classList.add('-translate-y-2');
-                }
-            });
-            
-            console.log('Profile dropdown event listeners attached successfully');
+                profileBtn.addEventListener('click', (e) => {
+                    console.log('Profile button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const isHidden = profileDropdown.style.display === 'none' || profileDropdown.style.display === '';
+                    console.log('Dropdown is currently hidden:', isHidden);
+
+                    if (isHidden) {
+                        // Show dropdown
+                        profileDropdown.style.display = 'block';
+                        console.log('Showing dropdown');
+                    } else {
+                        // Hide dropdown
+                        profileDropdown.style.display = 'none';
+                        console.log('Hiding dropdown');
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (profileDropdown && profileDropdown.style.display === 'block' &&
+                        !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        console.log('Clicking outside, closing dropdown');
+                        profileDropdown.style.display = 'none';
+                    }
+                });
+
+                console.log('Profile dropdown event listeners attached successfully');
+            } else {
+                console.log('Profile dropdown already initialized, skipping');
+            }
         } else {
             console.error('Profile button or dropdown not found!');
         }
@@ -525,6 +581,44 @@ class VolunteerNavLoader {
     }
 
     /**
+     * Initialize scroll handler for nav transparency
+     * Nav should be transparent at top, gain background when scrolled
+     */
+    initializeScrollHandler() {
+        const header = document.getElementById('main-header');
+        console.log('[Nav-Loader] initializeScrollHandler called, header found:', !!header);
+
+        if (!header) {
+            console.warn('[Nav-Loader] No main-header found for scroll handler');
+            return;
+        }
+
+        // Prevent duplicate scroll handlers
+        if (header.hasAttribute('data-scroll-initialized')) {
+            console.log('[Nav-Loader] Scroll handler already initialized, skipping');
+            return;
+        }
+        header.setAttribute('data-scroll-initialized', 'true');
+
+        const handleScroll = () => {
+            const scrolled = window.scrollY > 50;
+            if (scrolled) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        };
+
+        // Run once on init to set initial state
+        handleScroll();
+        console.log('[Nav-Loader] Initial scroll state set, scrollY:', window.scrollY);
+
+        // Listen for scroll events
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        console.log('[Nav-Loader] Scroll handler initialized for nav transparency');
+    }
+
+    /**
      * Execute scripts from loaded navigation components
      */
     executeScripts(container) {
@@ -562,16 +656,47 @@ class VolunteerNavLoader {
 
     /**
      * Initialize navigation loader
+     * @param {boolean} requireAuth - If true, redirect to login if not authenticated
+     * @param {Object} options - Additional options
+     * @param {boolean} options.skipUnauthenticated - If true, don't load nav when user is not authenticated (allows page to show its own unauthenticated nav)
+     * @param {Function} options.onAuthenticated - Callback when user is authenticated, receives userInfo
+     * @returns {boolean|Object} - Returns true/false for backward compatibility, or {authenticated, loader} when options are provided
      */
-    static async init(requireAuth = false) {
+    static async init(requireAuth = false, options = {}) {
         const loader = new VolunteerNavLoader();
+        const hasOptions = Object.keys(options).length > 0;
+
+        // Check auth first if skipUnauthenticated is true
+        if (options.skipUnauthenticated) {
+            await loader.checkAuthentication();
+
+            if (!loader.isAuthenticated) {
+                // User is not authenticated, skip loading nav
+                // Page will show its own unauthenticated navigation
+                console.log('Nav-loader: User not authenticated, skipping nav load (skipUnauthenticated=true)');
+                return { authenticated: false, loader };
+            }
+        }
+
         await loader.loadNavigation();
-        
+
+        // Call onAuthenticated callback if provided and user is authenticated
+        // Note: Call callback even if userInfo is null - let the callback handle that case
+        if (options.onAuthenticated && loader.isAuthenticated) {
+            console.log('Nav-loader: Calling onAuthenticated callback, userInfo:', loader.userInfo);
+            options.onAuthenticated(loader.userInfo);
+        }
+
         if (requireAuth) {
             return loader.requireAuthentication();
         }
-        
-        return true;
+
+        // Return object with details when options are provided, otherwise maintain backward compatibility
+        if (hasOptions) {
+            return { authenticated: loader.isAuthenticated, loader };
+        }
+
+        return true; // Backward compatible return value
     }
 }
 

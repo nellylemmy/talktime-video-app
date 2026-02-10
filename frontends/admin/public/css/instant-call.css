@@ -10,7 +10,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--brand-primary-light) 0%, var(--brand-secondary-light) 100%);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -218,34 +218,34 @@
     transform: scale(0.95);
 }
 
-/* Accept Button - Green */
+/* Accept Button - Brand Success Green */
 .accept-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: var(--gradient-success);
     color: white;
 }
 
 .accept-btn:hover {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
+    background: var(--gradient-success-hover);
 }
 
-/* Reject Button - Red */
+/* Reject Button - Brand Error Red */
 .reject-btn {
-    background: linear-gradient(135deg, #f44336, #d32f2f);
+    background: var(--gradient-error);
     color: white;
 }
 
 .reject-btn:hover {
-    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    background: linear-gradient(135deg, var(--brand-primary-dark), var(--color-error));
 }
 
-/* Message Button - Blue */
+/* Message Button - Brand Secondary Blue */
 .message-btn {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
+    background: var(--gradient-info);
     color: white;
 }
 
 .message-btn:hover {
-    background: linear-gradient(135deg, #1976D2, #1565C0);
+    background: linear-gradient(135deg, var(--brand-secondary-dark), var(--brand-secondary-dark));
 }
 
 /* Button Icons */
@@ -312,11 +312,11 @@
 }
 
 .quick-msg-btn:hover {
-    background: #e3f2fd;
-    border-color: #2196F3;
-    color: #1976D2;
+    background: rgba(56, 103, 255, 0.1);
+    border-color: var(--brand-secondary);
+    color: var(--brand-secondary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+    box-shadow: 0 4px 12px rgba(56, 103, 255, 0.2);
 }
 
 /* Custom Message */
@@ -339,8 +339,8 @@
 
 .custom-message textarea:focus {
     outline: none;
-    border-color: #2196F3;
-    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    border-color: var(--brand-secondary);
+    box-shadow: 0 0 0 3px rgba(56, 103, 255, 0.1);
 }
 
 /* Message Actions */
@@ -368,7 +368,7 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
+    background: var(--gradient-info);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -379,9 +379,9 @@
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #1976D2, #1565C0);
+    background: linear-gradient(135deg, var(--brand-secondary-dark), var(--brand-secondary-dark));
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    box-shadow: 0 4px 12px rgba(56, 103, 255, 0.3);
 }
 
 /* Toast Notifications */
@@ -398,7 +398,7 @@
     transform: translateX(100%);
     transition: transform 0.3s ease;
     font-weight: 500;
-    border-left: 4px solid #2196F3;
+    border-left: 4px solid var(--brand-secondary);
 }
 
 .toast.show {
@@ -406,21 +406,21 @@
 }
 
 .toast-success {
-    border-left-color: #4CAF50;
-    background: #f1f8e9;
-    color: #2e7d32;
+    border-left-color: var(--color-success);
+    background: rgba(17, 108, 0, 0.1);
+    color: var(--color-success);
 }
 
 .toast-error {
-    border-left-color: #f44336;
-    background: #ffebee;
-    color: #c62828;
+    border-left-color: var(--color-error);
+    background: rgba(125, 0, 0, 0.1);
+    color: var(--color-error);
 }
 
 .toast-info {
-    border-left-color: #2196F3;
-    background: #e3f2fd;
-    color: #1565C0;
+    border-left-color: var(--brand-secondary);
+    background: rgba(56, 103, 255, 0.1);
+    color: var(--brand-secondary-dark);
 }
 
 /* Fade In Animation */

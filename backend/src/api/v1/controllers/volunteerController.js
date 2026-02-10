@@ -5,6 +5,9 @@
 import User from '../../../models/User.js';
 import Meeting from '../../../models/Meeting.js';
 import pool from '../../../config/database.js';
+import bcrypt from 'bcrypt';
+import * as notificationService from '../../../services/notificationService.js';
+import { getIO } from '../../../socket.js';
 
 // Local placeholder image for students (Volunteer Dashboard default)
 const PLACEHOLDER_LOCAL = '/images/default-profile.svg';
@@ -19,6 +22,322 @@ function sanitizeImageUrl(url) {
     }
     return src;
 }
+
+/**
+ * Get volunteer profile data
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Volunteer profile information
+ */
+export const getVolunteerProfile = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+
+        // Get volunteer data from database
+        const query = `
+            SELECT
+                id, username, full_name, email,
+                age, gender, phone, timezone,
+                profile_image, created_at, updated_at,
+                volunteer_type, school_name, parent_email, parent_phone,
+                security_question_1, security_question_2, security_question_3,
+                security_answer_1_hash, security_answer_2_hash, security_answer_3_hash
+            FROM users
+            WHERE id = $1 AND role = 'volunteer'
+        `;
+
+        const result = await pool.query(query, [volunteerId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer profile not found' });
+        }
+
+        const volunteer = result.rows[0];
+
+        // Return profile data
+        res.json({
+            success: true,
+            profile: {
+                id: volunteer.id,
+                username: volunteer.username,
+                fullName: volunteer.full_name,
+                email: volunteer.email,
+                age: volunteer.age,
+                gender: volunteer.gender,
+                phone: volunteer.phone,
+                timezone: volunteer.timezone,
+                profileImage: volunteer.profile_image,
+                volunteerType: volunteer.volunteer_type,
+                schoolName: volunteer.school_name,
+                parentEmail: volunteer.parent_email,
+                parentPhone: volunteer.parent_phone,
+                securityQuestion1: volunteer.security_question_1,
+                securityQuestion2: volunteer.security_question_2,
+                securityQuestion3: volunteer.security_question_3,
+                hasSecurityAnswer1: !!volunteer.security_answer_1_hash,
+                hasSecurityAnswer2: !!volunteer.security_answer_2_hash,
+                hasSecurityAnswer3: !!volunteer.security_answer_3_hash,
+                joinedDate: volunteer.created_at
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching volunteer profile:', error);
+        res.status(500).json({ error: 'Failed to fetch profile data' });
+    }
+};
+
+/**
+ * Update volunteer profile data
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Updated volunteer profile
+ */
+export const updateVolunteerProfile = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+        const body = req.body;
+
+        // Handle password change separately (requires current password verification)
+        if (body.currentPassword && body.newPassword) {
+            const userResult = await pool.query(
+                'SELECT password_hash FROM users WHERE id = $1 AND role = $2',
+                [volunteerId, 'volunteer']
+            );
+            if (userResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Volunteer not found' });
+            }
+            const validPassword = await bcrypt.compare(body.currentPassword, userResult.rows[0].password_hash);
+            if (!validPassword) {
+                return res.status(400).json({ error: 'Current password is incorrect' });
+            }
+            const newHash = await bcrypt.hash(body.newPassword, 10);
+            await pool.query(
+                'UPDATE users SET password_hash = $1 WHERE id = $2',
+                [newHash, volunteerId]
+            );
+        }
+
+        // Accept both camelCase (frontend) and snake_case field names
+        const full_name = body.full_name || body.fullName;
+        const username = body.username;
+        const email = body.email;
+        const age = body.age;
+        const gender = body.gender;
+        const phone = body.phone;
+        const timezone = body.timezone;
+        const volunteer_type = body.volunteer_type || body.volunteerType;
+        const school_name = body.school_name || body.schoolName;
+        const parent_email = body.parent_email || body.parentEmail;
+        const parent_phone = body.parent_phone || body.parentPhone;
+
+        // Security questions and answers
+        const securityQuestion1 = body.securityQuestion1;
+        const securityAnswer1 = body.securityAnswer1;
+        const securityQuestion2 = body.securityQuestion2;
+        const securityAnswer2 = body.securityAnswer2;
+        const securityQuestion3 = body.securityQuestion3;
+        const securityAnswer3 = body.securityAnswer3;
+
+        // Build update query dynamically based on provided fields
+        const updateFields = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (full_name !== undefined) {
+            updateFields.push(`full_name = $${paramCount}`);
+            values.push(full_name);
+            paramCount++;
+        }
+        if (username !== undefined) {
+            updateFields.push(`username = $${paramCount}`);
+            values.push(username);
+            paramCount++;
+        }
+        if (email !== undefined) {
+            updateFields.push(`email = $${paramCount}`);
+            values.push(email);
+            paramCount++;
+        }
+        if (age !== undefined) {
+            updateFields.push(`age = $${paramCount}`);
+            values.push(age);
+            paramCount++;
+        }
+        if (gender !== undefined) {
+            updateFields.push(`gender = $${paramCount}`);
+            values.push(gender);
+            paramCount++;
+        }
+        if (phone !== undefined) {
+            updateFields.push(`phone = $${paramCount}`);
+            values.push(phone);
+            paramCount++;
+        }
+        if (timezone !== undefined) {
+            updateFields.push(`timezone = $${paramCount}`);
+            values.push(timezone);
+            paramCount++;
+        }
+        if (volunteer_type !== undefined) {
+            updateFields.push(`volunteer_type = $${paramCount}`);
+            values.push(volunteer_type);
+            paramCount++;
+        }
+        if (school_name !== undefined) {
+            updateFields.push(`school_name = $${paramCount}`);
+            values.push(school_name);
+            paramCount++;
+        }
+        if (parent_email !== undefined) {
+            updateFields.push(`parent_email = $${paramCount}`);
+            values.push(parent_email);
+            paramCount++;
+        }
+        if (parent_phone !== undefined) {
+            updateFields.push(`parent_phone = $${paramCount}`);
+            values.push(parent_phone);
+            paramCount++;
+        }
+        if (securityQuestion1 !== undefined) {
+            updateFields.push(`security_question_1 = $${paramCount}`);
+            values.push(securityQuestion1);
+            paramCount++;
+        }
+        if (securityAnswer1) {
+            const hash = await bcrypt.hash(securityAnswer1.toLowerCase().trim(), 10);
+            updateFields.push(`security_answer_1_hash = $${paramCount}`);
+            values.push(hash);
+            paramCount++;
+        }
+        if (securityQuestion2 !== undefined) {
+            updateFields.push(`security_question_2 = $${paramCount}`);
+            values.push(securityQuestion2);
+            paramCount++;
+        }
+        if (securityAnswer2) {
+            const hash = await bcrypt.hash(securityAnswer2.toLowerCase().trim(), 10);
+            updateFields.push(`security_answer_2_hash = $${paramCount}`);
+            values.push(hash);
+            paramCount++;
+        }
+        if (securityQuestion3 !== undefined) {
+            updateFields.push(`security_question_3 = $${paramCount}`);
+            values.push(securityQuestion3);
+            paramCount++;
+        }
+        if (securityAnswer3) {
+            const hash = await bcrypt.hash(securityAnswer3.toLowerCase().trim(), 10);
+            updateFields.push(`security_answer_3_hash = $${paramCount}`);
+            values.push(hash);
+            paramCount++;
+        }
+
+        if (updateFields.length === 0) {
+            // Password-only update (already handled above)
+            if (body.currentPassword && body.newPassword) {
+                const userResult = await pool.query(
+                    `SELECT id, username, full_name, email, age, gender, phone, timezone,
+                            profile_image, created_at, updated_at, volunteer_type, school_name,
+                            parent_email, parent_phone, security_question_1, security_question_2, security_question_3
+                     FROM users WHERE id = $1 AND role = 'volunteer'`,
+                    [volunteerId]
+                );
+                return res.json({ success: true, volunteer: userResult.rows[0] });
+            }
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+        values.push(volunteerId);
+
+        const updateQuery = `
+            UPDATE users
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramCount} AND role = 'volunteer'
+            RETURNING id, username, full_name, email, age, gender, phone, timezone,
+                      profile_image, created_at, updated_at, volunteer_type, school_name,
+                      parent_email, parent_phone, security_question_1, security_question_2, security_question_3
+        `;
+
+        const result = await pool.query(updateQuery, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        res.json({
+            success: true,
+            volunteer: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Error updating volunteer profile:', error);
+        res.status(500).json({ error: 'Failed to update profile data' });
+    }
+};
+
+/**
+ * Get volunteer profile completion percentage
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Profile completion data
+ */
+export const getProfileCompletion = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+
+        // Get volunteer data from database
+        const query = `
+            SELECT
+                full_name, email, age, gender, phone, timezone,
+                profile_image, volunteer_type, school_name
+            FROM users
+            WHERE id = $1 AND role = 'volunteer'
+        `;
+
+        const result = await pool.query(query, [volunteerId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Volunteer not found' });
+        }
+
+        const volunteer = result.rows[0];
+
+        // Calculate completion percentage
+        const fields = [
+            'full_name',
+            'email',
+            'age',
+            'gender',
+            'phone',
+            'timezone',
+            'profile_image'
+        ];
+
+        let completedFields = 0;
+        const incompleteFields = [];
+
+        fields.forEach(field => {
+            if (volunteer[field]) {
+                completedFields++;
+            } else {
+                incompleteFields.push(field);
+            }
+        });
+
+        const completionPercentage = Math.round((completedFields / fields.length) * 100);
+
+        res.json({
+            success: true,
+            completionPercentage,
+            completedFields,
+            totalFields: fields.length,
+            incompleteFields
+        });
+    } catch (error) {
+        console.error('Error calculating profile completion:', error);
+        res.status(500).json({ error: 'Failed to calculate profile completion' });
+    }
+};
 
 /**
  * Get volunteer dashboard data
@@ -108,8 +427,9 @@ export const getVolunteerPerformance = async (req, res) => {
         const volunteerId = req.user.id;
         
         // Get all meetings data with status counts
+        // Exclude meetings cleared by admin from performance calculation
         const performanceQuery = `
-            SELECT 
+            SELECT
                 COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
                 COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
                 COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
@@ -118,10 +438,11 @@ export const getVolunteerPerformance = async (req, res) => {
                 COUNT(*) FILTER (WHERE status = 'completed' AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_completed,
                 COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled') AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_cancelled,
                 COUNT(*) FILTER (WHERE status = 'missed' AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_missed,
-                COALESCE(SUM(EXTRACT(EPOCH FROM (actual_end_time - actual_start_time))/60) FILTER (WHERE status = 'completed'), 0) as total_minutes,
+                COUNT(*) FILTER (WHERE status = 'completed') * 30 as total_minutes,
                 COUNT(DISTINCT student_id) FILTER (WHERE status = 'completed') as students_impacted
-            FROM meetings 
+            FROM meetings
             WHERE volunteer_id = $1 AND scheduled_time < NOW()
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
         `;
         
         const { rows } = await pool.query(performanceQuery, [volunteerId]);
@@ -302,36 +623,33 @@ export const getStudentCards = async (req, res) => {
         
         // Get students available/unavailable for the specified date
         const availableQuery = `
-            SELECT u.id, u.full_name, u.username as admission_number, u.email,
-                   u.age, u.gender, u.bio, u.story, u.interests,
-                   u.profile_image as photo_url, u.gallery_images as gallery, 
-                   u.location, u.english_level, u.learning_goals, u.preferred_topics,
-                   true as is_available
-            FROM users u
-            WHERE u.role = 'student'
-            AND u.id NOT IN (
-                SELECT DISTINCT m.student_id 
-                FROM meetings m 
-                WHERE DATE(m.scheduled_time) = $1 
+            SELECT s.id, s.full_name, s.admission_number,
+                   s.age, s.gender, s.bio, s.story,
+                   s.photo_url, s.gallery,
+                   s.is_available
+            FROM students s
+            WHERE s.is_available = true
+            AND s.id NOT IN (
+                SELECT DISTINCT m.student_id
+                FROM meetings m
+                WHERE DATE(m.scheduled_time) = $1
                 AND m.status IN ('scheduled', 'in_progress')
             )
-            ORDER BY u.full_name;
+            ORDER BY s.full_name;
         `;
-        
+
         const unavailableQuery = `
-            SELECT u.id, u.full_name, u.username as admission_number, u.email,
-                   u.age, u.gender, u.bio, u.story, u.interests,
-                   u.profile_image as photo_url, u.gallery_images as gallery,
-                   u.location, u.english_level, u.learning_goals, u.preferred_topics,
+            SELECT s.id, s.full_name, s.admission_number,
+                   s.age, s.gender, s.bio, s.story,
+                   s.photo_url, s.gallery,
                    false as is_available,
                    m.volunteer_id as meeting_volunteer_id, m.scheduled_time as meeting_time,
                    m.id as meeting_id
-            FROM users u
-            JOIN meetings m ON u.id = m.student_id
-            WHERE u.role = 'student'
-            AND DATE(m.scheduled_time) = $1
+            FROM students s
+            JOIN meetings m ON s.id = m.student_id
+            WHERE DATE(m.scheduled_time) = $1
             AND m.status IN ('scheduled', 'in_progress')
-            ORDER BY u.full_name;
+            ORDER BY s.full_name;
         `;
         
         const { rows: availableStudents } = await pool.query(availableQuery, [date]);
@@ -354,22 +672,14 @@ export const getStudentCards = async (req, res) => {
         // Process students into structured JSON data
         const processStudent = (student) => {
             // Determine interests or status text
-            const interests = student.interests || 'English conversation practice';
-            
+            const interests = 'English conversation practice';
+
             // Get the first letter of the student's name for avatar fallback
             const initial = student.full_name ? student.full_name.charAt(0).toUpperCase() : '?';
-            
-            // Parse gallery_images JSON array
-            let galleryImages = [];
-            if (student.gallery) {
-                try {
-                    galleryImages = JSON.parse(student.gallery);
-                } catch (e) {
-                    console.warn('Failed to parse gallery_images JSON:', e);
-                    galleryImages = [];
-                }
-            }
-            
+
+            // Gallery is already an array in students table
+            let galleryImages = student.gallery || [];
+
             // Sanitize/normalize image URLs
             const sanitizedPhoto = sanitizeImageUrl(student.photo_url);
             const sanitizedGallery = Array.isArray(galleryImages)
@@ -387,10 +697,10 @@ export const getStudentCards = async (req, res) => {
                 gender: student.gender,
                 bio: student.bio,
                 story: student.story,
-                location: student.location,
-                english_level: student.english_level,
-                learning_goals: student.learning_goals,
-                preferred_topics: student.preferred_topics,
+                location: 'Kenya', // Default location for students
+                english_level: 'Beginner', // Default level
+                learning_goals: 'Improve English conversation skills',
+                preferred_topics: 'General conversation',
                 gallery: sanitizedGallery,
                 is_available: student.is_available !== false // Default to true if not specified
             };
@@ -440,18 +750,29 @@ export const getStudentCards = async (req, res) => {
 export const getStudentProfile = async (req, res) => {
     try {
         const { id } = req.params;
-        
-        // Get student from unified users table with all profile data
-        const query = `
-            SELECT u.id, u.full_name, u.username as admission_number, u.email,
-                   u.age, u.gender, u.profile_image as photo_url,
-                   u.bio, u.story, u.location, u.interests, u.is_available,
-                   u.gallery_images,
-                   u.english_level, u.learning_goals, u.preferred_topics
-            FROM users u
-            WHERE u.id = $1 AND u.role = 'student';
+
+        // Check if id is numeric or admission number format
+        const isNumeric = /^\d+$/.test(id);
+
+        // Get student from students table with all profile data
+        // Support numeric ID (students.id or users.id via user_id) and admission number
+        const query = isNumeric ? `
+            SELECT s.id, s.user_id, s.full_name, s.admission_number,
+                   s.age, s.gender, s.photo_url,
+                   s.bio, s.story, s.is_available,
+                   s.gallery
+            FROM students s
+            WHERE s.id = $1 OR s.user_id = $1
+            LIMIT 1;
+        ` : `
+            SELECT s.id, s.user_id, s.full_name, s.admission_number,
+                   s.age, s.gender, s.photo_url,
+                   s.bio, s.story, s.is_available,
+                   s.gallery
+            FROM students s
+            WHERE s.admission_number = $1;
         `;
-        
+
         const { rows } = await pool.query(query, [id]);
         const student = rows[0];
         
@@ -459,18 +780,9 @@ export const getStudentProfile = async (req, res) => {
             return res.status(404).json({ error: 'Student not found' });
         }
         
-        // Parse gallery_images JSON array for unlimited images
+        // Gallery is already an array in students table
         const placeholderImage = PLACEHOLDER_LOCAL;
-        let galleryImages = [];
-        
-        if (student.gallery_images) {
-            try {
-                galleryImages = JSON.parse(student.gallery_images);
-            } catch (e) {
-                console.warn('Failed to parse gallery_images JSON:', e);
-                galleryImages = [];
-            }
-        }
+        let galleryImages = student.gallery || [];
         
         // Use actual gallery images if available, otherwise use profile image or placeholder
         const gallery = galleryImages.length > 0 
@@ -481,20 +793,21 @@ export const getStudentProfile = async (req, res) => {
         res.json({
             student: {
                 id: student.id,
+                userId: student.user_id,
                 name: student.full_name || 'Student Name Not Available',
                 profileImage: sanitizeImageUrl(student.photo_url) || placeholderImage,
-                interests: student.interests || 'English conversation practice',
+                interests: 'English conversation practice', // Default value
                 bio: student.bio || 'No biography available for this student.',
                 story: student.story || 'No story available.',
                 age: student.age || 'Age not specified',
                 gender: student.gender || 'Not specified',
                 admissionNumber: student.admission_number || 'Not available',
-                location: student.location || 'Kenya',
+                location: 'Kenya', // Default location
                 gallery: gallery,
                 isAvailable: student.is_available !== false, // Default to true if not specified
-                englishLevel: student.english_level || 'Beginner',
-                learningGoals: student.learning_goals || 'Improve English conversation skills',
-                preferredTopics: student.preferred_topics || 'General conversation'
+                englishLevel: 'Beginner', // Default level
+                learningGoals: 'Improve English conversation skills', // Default goals
+                preferredTopics: 'General conversation' // Default topics
             }
         });
     } catch (error) {
@@ -531,27 +844,78 @@ export const createMeeting = async (req, res) => {
             return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
         }
         
-        // Check if student exists
-        const student = await User.findById(studentId);
+        // Check if student exists - check users table first, then students table
+        let student = null;
+        let actualStudentId = studentId;
+
+        // First, try to find in users table with role='student'
+        // Note: is_available lives on the students table, not users
+        const userResult = await pool.query(
+            'SELECT u.id, u.full_name, s.is_available FROM users u LEFT JOIN students s ON s.user_id = u.id WHERE u.id = $1 AND u.role = $2',
+            [studentId, 'student']
+        );
+
+        if (userResult.rows.length > 0) {
+            student = userResult.rows[0];
+        } else {
+            // If not found in users, the studentId might be from students table
+            // Look up the student and get their user_id
+            console.log('[Volunteer] Student not in users table, checking students table for ID:', studentId);
+            const studentsResult = await pool.query(
+                'SELECT id, user_id, full_name, is_available FROM students WHERE id = $1',
+                [studentId]
+            );
+
+            if (studentsResult.rows.length > 0) {
+                const studentRecord = studentsResult.rows[0];
+                if (studentRecord.user_id) {
+                    // Use the user_id from students table for meeting creation
+                    actualStudentId = studentRecord.user_id;
+                    student = {
+                        id: actualStudentId,
+                        full_name: studentRecord.full_name,
+                        is_available: studentRecord.is_available
+                    };
+                    console.log('[Volunteer] Found student via students table:', {
+                        studentsTableId: studentId,
+                        usersTableId: actualStudentId
+                    });
+                } else {
+                    // Student exists but no linked user - use students.id directly
+                    student = {
+                        id: studentRecord.id,
+                        full_name: studentRecord.full_name,
+                        is_available: studentRecord.is_available
+                    };
+                    actualStudentId = studentRecord.id;
+                    console.log('[Volunteer] Using students.id directly (no user_id):', studentId);
+                }
+            }
+        }
+
         if (!student) {
             return res.status(404).json({ error: 'Student not found' });
         }
-        
+
+        // Use actualStudentId for all subsequent database operations
+        const effectiveStudentId = actualStudentId;
+
         // Check if student is available
         if (student.is_available === false) {
             return res.status(400).json({ error: 'Student is not available for meetings' });
         }
 
-        // Check volunteer performance restrictions
+        // Check volunteer performance restrictions (exclude admin-cleared meetings)
         const performanceQuery = `
-            SELECT 
+            SELECT
                 COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
                 COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
                 COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
                 COUNT(*) FILTER (WHERE status = 'missed') as missed_calls,
                 COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_scheduled
-            FROM meetings 
+            FROM meetings
             WHERE volunteer_id = $1 AND scheduled_time < NOW()
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
         `;
         
         const { rows: performanceRows } = await pool.query(performanceQuery, [volunteerId]);
@@ -603,7 +967,7 @@ export const createMeeting = async (req, res) => {
             AND status IN ('scheduled', 'in_progress')
         `;
         
-        const { rows: conflicts } = await pool.query(conflictQuery, [studentId, scheduledTime]);
+        const { rows: conflicts } = await pool.query(conflictQuery, [effectiveStudentId, scheduledTime]);
         
         if (conflicts.length > 0) {
             const conflict = conflicts[0];
@@ -641,20 +1005,71 @@ export const createMeeting = async (req, res) => {
         }
         
         // Create a unique room ID for the meeting
-        const roomId = `talktime-${volunteerId}-${studentId}-${Date.now()}`;
-        
+        const roomId = `talktime-${volunteerId}-${effectiveStudentId}-${Date.now()}`;
+
         // scheduledTime already defined above for conflict checking
-        
+
         // Create meeting in database with parameters expected by the Meeting model
         const meetingData = {
             volunteerId,
-            studentId,
+            studentId: effectiveStudentId,
             scheduledTime,
             roomId
         };
         
         const meeting = await Meeting.create(meetingData);
-        
+
+        // Format meeting time for notification messages
+        const meetingDateObj = new Date(meeting.scheduled_time);
+        const dateStr = meetingDateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = meetingDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const volunteerName = req.user.full_name || req.user.fullName || 'A volunteer';
+        const studentName = student.full_name || 'Student';
+
+        // Send notifications to both volunteer and student (non-blocking)
+        try {
+            // Notify volunteer (low priority — they just did it, no red toast needed)
+            await notificationService.sendNotification({
+                recipient_id: volunteerId,
+                recipient_role: 'volunteer',
+                title: 'Meeting Scheduled',
+                message: `Your meeting with ${studentName} is set for ${dateStr} at ${timeStr}.`,
+                type: 'meeting_scheduled',
+                priority: 'low',
+                metadata: { meeting_id: meeting.id, student_name: studentName, scheduled_time: meeting.scheduled_time }
+            }, ['in-app'], {
+                persistent: true,
+                action_url: '/volunteer/dashboard/upcoming'
+            });
+
+            // Notify student
+            await notificationService.sendNotification({
+                recipient_id: effectiveStudentId,
+                recipient_role: 'student',
+                title: 'New Meeting Scheduled',
+                message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
+                type: 'meeting_scheduled',
+                priority: 'high',
+                metadata: { meeting_id: meeting.id, volunteer_name: volunteerName, scheduled_time: meeting.scheduled_time }
+            }, ['in-app', 'push'], {
+                persistent: true,
+                action_url: '/student/dashboard'
+            });
+
+            // Emit real-time socket event to student
+            const io = getIO();
+            if (io) {
+                io.to(`user_${effectiveStudentId}`).emit('meeting-scheduled', {
+                    meeting_id: meeting.id,
+                    message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
+                    scheduledTime: meeting.scheduled_time,
+                    volunteerName
+                });
+            }
+        } catch (notifErr) {
+            console.error('Error sending meeting notifications:', notifErr);
+        }
+
         // Return the created meeting
         res.status(201).json({
             meeting: {
@@ -671,5 +1086,226 @@ export const createMeeting = async (req, res) => {
     } catch (error) {
         console.error('Error creating meeting:', error);
         res.status(500).json({ error: 'Failed to create meeting' });
+    }
+};
+
+/**
+ * Get volunteer settings
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Volunteer settings
+ */
+export const getVolunteerSettings = async (req, res) => {
+    console.log('getVolunteerSettings called for user:', req.user);
+    try {
+        const volunteerId = req.user.id;
+
+        // First check if settings exist for this volunteer
+        const checkQuery = `
+            SELECT * FROM volunteer_settings
+            WHERE volunteer_id = $1
+        `;
+
+        let result = await pool.query(checkQuery, [volunteerId]);
+
+        // If no settings exist, create default settings
+        if (result.rows.length === 0) {
+            const insertQuery = `
+                INSERT INTO volunteer_settings (volunteer_id)
+                VALUES ($1)
+                RETURNING *
+            `;
+            result = await pool.query(insertQuery, [volunteerId]);
+        }
+
+        const settings = result.rows[0];
+
+        // Format the response
+        res.json({
+            success: true,
+            settings: {
+                // Accessibility
+                theme_mode: settings.theme_mode || 'light',
+                font_size: settings.font_size || 'medium',
+                zoom_level: settings.zoom_level || 100,
+
+                // Availability
+                max_meetings_per_day: settings.max_meetings_per_day || 3,
+                max_meetings_per_week: settings.max_meetings_per_week || 15,
+                advance_notice_hours: settings.advance_notice_hours || 2,
+                auto_accept_meetings: settings.auto_accept_meetings || false,
+
+                // Timezone
+                primary_timezone: settings.primary_timezone || 'UTC',
+                display_timezone_preference: settings.display_timezone_preference || 'local',
+                dst_handling: settings.dst_handling !== false,
+
+                // Notifications
+                email_notifications: settings.email_notifications || {
+                    meeting_scheduled: true,
+                    meeting_reminder: true,
+                    meeting_cancelled: true,
+                    meeting_rescheduled: true,
+                    system_updates: false,
+                    new_student_alerts: false
+                },
+                sms_notifications: settings.sms_notifications || {
+                    meeting_reminder: false,
+                    urgent_changes: false
+                },
+                browser_notifications: settings.browser_notifications || {
+                    meeting_reminder: true,
+                    meeting_scheduled: true,
+                    instant_calls: true
+                },
+                reminder_timings: settings.reminder_timings || [60, 30, 5]
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching volunteer settings:', error);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+};
+
+/**
+ * Update volunteer settings
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Object} Updated volunteer settings
+ */
+export const updateVolunteerSettings = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+        const updates = req.body;
+
+        // Build update query dynamically
+        const updateFields = [];
+        const values = [];
+        let paramCount = 1;
+
+        // Map of allowed fields to update
+        const allowedFields = [
+            'theme_mode', 'font_size', 'zoom_level',
+            'max_meetings_per_day', 'max_meetings_per_week',
+            'advance_notice_hours', 'auto_accept_meetings',
+            'primary_timezone', 'display_timezone_preference', 'dst_handling',
+            'email_notifications', 'sms_notifications', 'browser_notifications',
+            'reminder_timings'
+        ];
+
+        for (const field of allowedFields) {
+            if (updates[field] !== undefined) {
+                updateFields.push(`${field} = $${paramCount}`);
+                // Handle JSONB fields
+                if (['email_notifications', 'sms_notifications', 'browser_notifications'].includes(field)) {
+                    values.push(JSON.stringify(updates[field]));
+                } else {
+                    values.push(updates[field]);
+                }
+                paramCount++;
+            }
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        values.push(volunteerId);
+
+        const updateQuery = `
+            UPDATE volunteer_settings
+            SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
+            WHERE volunteer_id = $${paramCount}
+            RETURNING *
+        `;
+
+        const result = await pool.query(updateQuery, values);
+
+        if (result.rows.length === 0) {
+            // Settings don't exist, create them first
+            const insertQuery = `
+                INSERT INTO volunteer_settings (volunteer_id)
+                VALUES ($1)
+                RETURNING *
+            `;
+            await pool.query(insertQuery, [volunteerId]);
+
+            // Now update with the new values
+            const retryResult = await pool.query(updateQuery, values);
+            const settings = retryResult.rows[0];
+
+            return res.json({
+                success: true,
+                settings: {
+                    theme_mode: settings.theme_mode || 'light',
+                    font_size: settings.font_size || 'medium',
+                    zoom_level: settings.zoom_level || 100,
+                    max_meetings_per_day: settings.max_meetings_per_day || 3,
+                    max_meetings_per_week: settings.max_meetings_per_week || 15,
+                    advance_notice_hours: settings.advance_notice_hours || 2,
+                    auto_accept_meetings: settings.auto_accept_meetings || false,
+                    primary_timezone: settings.primary_timezone || 'UTC',
+                    display_timezone_preference: settings.display_timezone_preference || 'local',
+                    dst_handling: settings.dst_handling !== false,
+                    email_notifications: settings.email_notifications || {
+                        meeting_scheduled: true,
+                        meeting_reminder: true,
+                        meeting_cancelled: true,
+                        meeting_rescheduled: true,
+                        system_updates: false,
+                        new_student_alerts: false
+                    },
+                    sms_notifications: settings.sms_notifications || {
+                        meeting_reminder: false,
+                        urgent_changes: false
+                    },
+                    browser_notifications: settings.browser_notifications || {
+                        meeting_reminder: true,
+                        meeting_scheduled: true,
+                        instant_calls: true
+                    },
+                    reminder_timings: settings.reminder_timings || [60, 30, 5]
+                }
+            });
+        }
+
+        const settings = result.rows[0];
+
+        res.json({
+            success: true,
+            settings: {
+                theme_mode: settings.theme_mode || 'light',
+                font_size: settings.font_size || 'medium',
+                zoom_level: settings.zoom_level || 100,
+                max_meetings_per_day: settings.max_meetings_per_day || 3,
+                max_meetings_per_week: settings.max_meetings_per_week || 15,
+                advance_notice_hours: settings.advance_notice_hours || 2,
+                auto_accept_meetings: settings.auto_accept_meetings || false,
+                primary_timezone: settings.primary_timezone || 'UTC',
+                display_timezone_preference: settings.display_timezone_preference || 'local',
+                dst_handling: settings.dst_handling !== false,
+                email_notifications: settings.email_notifications || {
+                    meeting_scheduled: true,
+                    meeting_reminder: true,
+                    meeting_cancelled: true,
+                    meeting_rescheduled: true,
+                    system_updates: false,
+                    new_student_alerts: false
+                },
+                sms_notifications: settings.sms_notifications || {
+                    meeting_reminder: false,
+                    urgent_changes: false
+                },
+                browser_notifications: settings.browser_notifications || {
+                    meeting_reminder: true,
+                    meeting_scheduled: true,
+                    instant_calls: true
+                },
+                reminder_timings: settings.reminder_timings || [60, 30, 5]
+            }
+        });
+    } catch (error) {
+        console.error('Error updating volunteer settings:', error);
+        res.status(500).json({ error: 'Failed to update settings' });
     }
 };

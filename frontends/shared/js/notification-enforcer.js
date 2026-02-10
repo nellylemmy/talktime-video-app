@@ -8,25 +8,25 @@ class TalkTimeNotificationEnforcer {
     constructor() {
         // Prevent multiple instances
         if (window.talktimeNotificationEnforcer) {
-            console.log('🔄 Using existing NotificationEnforcer instance');
+            console.log('[TalkTime] Using existing NotificationEnforcer instance');
             return window.talktimeNotificationEnforcer;
         }
-        
+
         this.initialized = false;
         this.permissionModal = null;
         this.checkCount = 0;
         this.maxChecks = 3;
         this.loadingModal = false;  // Prevent infinite loading loops
-        
+
         // Store this instance globally
         window.talktimeNotificationEnforcer = this;
-        
+
         this.init();
     }
 
     init() {
-        console.log('🔔 TalkTime Notification Enforcer initializing...');
-        
+        console.log('[TalkTime] Notification Enforcer initializing...');
+
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.start());
@@ -44,17 +44,17 @@ class TalkTimeNotificationEnforcer {
 
     checkAndEnforcePermission() {
         this.checkCount++;
-        console.log(`🔔 Permission check ${this.checkCount}/${this.maxChecks}`);
+        console.log(`[TalkTime] Permission check ${this.checkCount}/${this.maxChecks}`);
 
         // Check if notification modal class is available
         if (typeof NotificationPermissionModal === 'undefined') {
-            console.log('⏳ Waiting for NotificationPermissionModal to load...');
-            
+            console.log('[TalkTime] Waiting for NotificationPermissionModal to load...');
+
             if (this.checkCount < this.maxChecks) {
                 setTimeout(() => this.checkAndEnforcePermission(), 2000);
                 return;
             } else {
-                console.error('❌ NotificationPermissionModal failed to load');
+                console.error('[TalkTime] NotificationPermissionModal failed to load');
                 if (!this.loadingModal) {
                     this.loadNotificationModalScript();
                 }
@@ -66,7 +66,7 @@ class TalkTimeNotificationEnforcer {
         if (this.shouldShowPermissionModal()) {
             this.showPermissionModal();
         } else {
-            console.log('✅ Notification permission already granted or handled');
+            console.log('[TalkTime] Notification permission already granted or handled');
             this.onPermissionReady();
         }
     }
@@ -74,13 +74,13 @@ class TalkTimeNotificationEnforcer {
     shouldShowPermissionModal() {
         // Always show if notifications not supported
         if (!('Notification' in window)) {
-            console.log('🚫 Browser does not support notifications');
+            console.log('[TalkTime] Browser does not support notifications');
             return false;
         }
 
         // Show if permission is default (not granted or denied)
         if (Notification.permission === 'default') {
-            console.log('❓ Notification permission is default - showing modal');
+            console.log('[TalkTime] Notification permission is default - showing modal');
             return true;
         }
 
@@ -88,7 +88,7 @@ class TalkTimeNotificationEnforcer {
         if (Notification.permission === 'denied') {
             const dismissedPermanently = localStorage.getItem('talktime_notification_dismissed');
             if (!dismissedPermanently) {
-                console.log('❌ Notification permission denied but not permanently dismissed');
+                console.log('[TalkTime] Notification permission denied but not permanently dismissed');
                 return true;
             }
         }
@@ -97,19 +97,19 @@ class TalkTimeNotificationEnforcer {
     }
 
     showPermissionModal() {
-        console.log('📱 Showing universal notification permission modal');
+        console.log('[TalkTime] Showing universal notification permission modal');
 
         const modal = new NotificationPermissionModal({
-            title: '🔔 Enable TalkTime Notifications',
+            title: 'Enable TalkTime Notifications',
             message: 'TalkTime works best with notifications enabled. Stay connected with instant meeting reminders, call alerts, and important updates that help you never miss a conversation.',
             mandatory: true, // Make it mandatory for better engagement
-            allowButtonText: '🎯 Enable Notifications Now',
+            allowButtonText: 'Enable Notifications Now',
             onAllow: (permission) => {
-                console.log('✅ User granted notification permission:', permission);
+                console.log('[TalkTime] User granted notification permission:', permission);
                 this.onPermissionGranted();
             },
             onDeny: (permission) => {
-                console.log('❌ User denied notification permission:', permission);
+                console.log('[TalkTime] User denied notification permission:', permission);
                 this.onPermissionDenied();
             }
         });
@@ -117,7 +117,7 @@ class TalkTimeNotificationEnforcer {
         const shown = modal.show();
         if (shown) {
             this.permissionModal = modal;
-            
+
             // Track that we showed the modal
             this.trackEvent('notification_modal_shown', {
                 page: window.location.pathname,
@@ -128,15 +128,15 @@ class TalkTimeNotificationEnforcer {
     }
 
     onPermissionGranted() {
-        console.log('🎉 Notification permission granted - initializing notification features');
-        
+        console.log('[TalkTime] Notification permission granted - initializing notification features');
+
         // Store permission status
         localStorage.setItem('talktime_notification_status', 'granted');
         localStorage.setItem('talktime_notification_granted_at', new Date().toISOString());
-        
+
         // Initialize notification features
         this.initializeNotificationFeatures();
-        
+
         // Track successful permission
         this.trackEvent('notification_permission_success', {
             page: window.location.pathname,
@@ -147,15 +147,15 @@ class TalkTimeNotificationEnforcer {
     }
 
     onPermissionDenied() {
-        console.log('⚠️ Notification permission denied - limited functionality');
-        
+        console.log('[TalkTime] Notification permission denied - limited functionality');
+
         // Store permission status
         localStorage.setItem('talktime_notification_status', 'denied');
         localStorage.setItem('talktime_notification_denied_at', new Date().toISOString());
-        
+
         // Show subtle reminder
         this.showNotificationReminder();
-        
+
         // Track permission denial
         this.trackEvent('notification_permission_denied', {
             page: window.location.pathname,
@@ -166,11 +166,11 @@ class TalkTimeNotificationEnforcer {
     }
 
     onPermissionReady() {
-        console.log('🚀 TalkTime notification system ready');
-        
+        console.log('[TalkTime] Notification system ready');
+
         // Mark as initialized
         this.initialized = true;
-        
+
         // Emit custom event for other scripts
         document.dispatchEvent(new CustomEvent('talktimeNotificationReady', {
             detail: {
@@ -185,17 +185,17 @@ class TalkTimeNotificationEnforcer {
     }
 
     initializeNotificationFeatures() {
-        console.log('⚡ Initializing notification features...');
+        console.log('[TalkTime] Initializing notification features...');
 
         // Subscribe to push notifications if available
         this.subscribeToPushNotifications();
-        
+
         // Initialize Socket.IO notification listeners
         this.initializeSocketListeners();
-        
+
         // Initialize service worker for advanced notifications
         this.initializeServiceWorker();
-        
+
         // Show notification settings in UI
         this.showNotificationControls();
     }
@@ -203,44 +203,44 @@ class TalkTimeNotificationEnforcer {
     async subscribeToPushNotifications() {
         try {
             if ('serviceWorker' in navigator && 'PushManager' in window) {
-                console.log('📡 Registering for push notifications...');
-                
+                console.log('[TalkTime] Registering for push notifications...');
+
                 const registration = await navigator.serviceWorker.register('/notification-sw.js');
-                console.log('✅ Service Worker registered:', registration);
-                
+                console.log('[TalkTime] Service Worker registered:', registration);
+
                 // Get VAPID key from backend
                 const vapidKey = await this.getVapidKey();
-                
+
                 // Subscribe to push notifications
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: vapidKey
                 });
-                
-                console.log('✅ Push subscription created:', subscription);
-                
+
+                console.log('[TalkTime] Push subscription created:', subscription);
+
                 // Send subscription to backend
                 await this.sendSubscriptionToBackend(subscription);
-                
+
             } else {
-                console.log('⚠️ Push notifications not supported');
+                console.log('[TalkTime] Push notifications not supported');
             }
         } catch (error) {
-            console.error('❌ Error subscribing to push notifications:', error);
+            console.error('[TalkTime] Error subscribing to push notifications:', error);
         }
     }
 
     initializeSocketListeners() {
         // Initialize Socket.IO for real-time notifications
         if (typeof io !== 'undefined') {
-            console.log('🔌 Initializing Socket.IO notification listeners');
-            
+            console.log('[TalkTime] Initializing Socket.IO notification listeners');
+
             const socket = io();
-            
+
             socket.on('new-notification', (data) => {
                 this.handleRealtimeNotification(data);
             });
-            
+
             socket.on('notification-update', (data) => {
                 this.handleNotificationUpdate(data);
             });
@@ -248,7 +248,7 @@ class TalkTimeNotificationEnforcer {
             socket.on('notification-sound-trigger', (data) => {
                 this.handleNotificationSound(data);
             });
-            
+
             socket.on('push-notification-request', (data) => {
                 this.handlePushNotificationRequest(data);
             });
@@ -259,16 +259,16 @@ class TalkTimeNotificationEnforcer {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/notification-sw.js');
-                console.log('✅ Notification Service Worker registered');
-                
+                console.log('[TalkTime] Notification Service Worker registered');
+
                 // Listen for messages from service worker
                 navigator.serviceWorker.addEventListener('message', (event) => {
-                    console.log('📨 Message from service worker:', event.data);
+                    console.log('[TalkTime] Message from service worker:', event.data);
                     this.handleServiceWorkerMessage(event.data);
                 });
-                
+
             } catch (error) {
-                console.error('❌ Service Worker registration failed:', error);
+                console.error('[TalkTime] Service Worker registration failed:', error);
             }
         }
     }
@@ -281,19 +281,25 @@ class TalkTimeNotificationEnforcer {
             position: fixed;
             top: 10px;
             right: 10px;
-            background: #48bb78;
+            background: #116C00;
             color: white;
             padding: 8px 12px;
             border-radius: 20px;
             font-size: 12px;
             z-index: 1000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            font-family: system-ui, sans-serif;
+            font-family: 'Poppins', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         `;
-        indicator.innerHTML = '🔔 Notifications Active';
-        
+        indicator.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            Notifications Active
+        `;
+
         document.body.appendChild(indicator);
-        
+
         // Auto-hide after 3 seconds
         setTimeout(() => {
             indicator.style.animation = 'fadeOut 0.3s ease-out';
@@ -319,24 +325,25 @@ class TalkTimeNotificationEnforcer {
             z-index: 1000;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             cursor: pointer;
+            font-family: 'Poppins', sans-serif;
         `;
         reminder.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span>🔕</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#744210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                 <div>
                     <strong>Notifications Disabled</strong><br>
                     <small>Tap to enable for better experience</small>
                 </div>
             </div>
         `;
-        
+
         reminder.onclick = () => {
             this.showPermissionModal();
             reminder.remove();
         };
-        
+
         document.body.appendChild(reminder);
-        
+
         // Auto-hide after 10 seconds
         setTimeout(() => {
             if (reminder.parentNode) {
@@ -348,24 +355,24 @@ class TalkTimeNotificationEnforcer {
 
     initializeDependentFeatures() {
         // Initialize features that depend on notifications being ready
-        console.log('🔧 Initializing dependent features...');
-        
+        console.log('[TalkTime] Initializing dependent features...');
+
         // Initialize notification sound manager
         if (window.TalkTimeNotificationSoundManager) {
-            console.log('🔊 Initializing notification sound manager...');
+            console.log('[TalkTime] Initializing notification sound manager...');
             window.talkTimeNotificationSoundManager = window.TalkTimeNotificationSoundManager.getInstance();
         }
-        
+
         // Initialize meeting reminder system
         if (window.TalkTimeMeetingReminders) {
             window.TalkTimeMeetingReminders.init();
         }
-        
+
         // Initialize instant call system
         if (window.TalkTimeInstantCalls) {
             window.TalkTimeInstantCalls.init();
         }
-        
+
         // Initialize push notification handlers
         if (window.TalkTimePushHandler) {
             window.TalkTimePushHandler.init();
@@ -381,17 +388,17 @@ class TalkTimeNotificationEnforcer {
     initializeRealtimeNotifications() {
         // Initialize realtime notifications if not already done
         if (!window.realtimeNotifications && window.RealtimeNotifications) {
-            console.log('🔌 Initializing realtime notifications...');
-            
+            console.log('[TalkTime] Initializing realtime notifications...');
+
             // Determine user role from URL or default to volunteer
             const userRole = this.getUserRole();
             window.realtimeNotifications = new window.RealtimeNotifications(userRole);
-            
+
             // Initialize the realtime connection
             window.realtimeNotifications.initialize().then(() => {
-                console.log('✅ Realtime notifications initialized');
+                console.log('[TalkTime] Realtime notifications initialized');
             }).catch((error) => {
-                console.error('❌ Failed to initialize realtime notifications:', error);
+                console.error('[TalkTime] Failed to initialize realtime notifications:', error);
             });
         }
     }
@@ -405,33 +412,33 @@ class TalkTimeNotificationEnforcer {
         if (path.includes('/volunteer/')) return 'volunteer';
         if (path.includes('/student/')) return 'student';
         if (path.includes('/admin/')) return 'admin';
-        
+
         // Try to get from TalkTimeAuth if available
         if (window.TalkTimeAuth && window.TalkTimeAuth.getUser) {
             const user = window.TalkTimeAuth.getUser();
             if (user && user.role) return user.role;
         }
-        
+
         // Default to volunteer
         return 'volunteer';
     }
 
     handleRealtimeNotification(data) {
-        console.log('📨 Received real-time notification:', data);
-        
+        console.log('[TalkTime] Received real-time notification:', data);
+
         // Trigger sound notification
         this.triggerNotificationSound(data);
-        
+
         if (Notification.permission === 'granted') {
             const notification = new Notification(data.notification.title, {
                 body: data.notification.message,
-                icon: data.notification.icon_url || '/favicon.ico',
-                badge: data.notification.badge_url || '/favicon.ico',
+                icon: data.notification.icon_url || '/talktime.ico',
+                badge: data.notification.badge_url || '/talktime.ico',
                 tag: data.notification.tag || 'talktime-notification',
                 requireInteraction: data.notification.require_interaction || false,
                 data: data.notification.metadata || {}
             });
-            
+
             notification.onclick = () => {
                 if (data.notification.action_url) {
                     window.open(data.notification.action_url, '_blank');
@@ -442,8 +449,8 @@ class TalkTimeNotificationEnforcer {
     }
 
     handleNotificationUpdate(data) {
-        console.log('🔄 Notification update received:', data);
-        
+        console.log('[TalkTime] Notification update received:', data);
+
         // Trigger sound for updates if it's a new notification
         if (data.sound_enabled) {
             this.triggerNotificationSound(data);
@@ -451,7 +458,7 @@ class TalkTimeNotificationEnforcer {
     }
 
     handleNotificationSound(data) {
-        console.log('🔊 Notification sound trigger received:', data);
+        console.log('[TalkTime] Notification sound trigger received:', data);
         this.triggerNotificationSound(data);
     }
 
@@ -470,8 +477,8 @@ class TalkTimeNotificationEnforcer {
     }
 
     handlePushNotificationRequest(data) {
-        console.log('📲 Push notification request:', data);
-        
+        console.log('[TalkTime] Push notification request:', data);
+
         // Trigger sound for push notifications
         document.dispatchEvent(new CustomEvent('talktimePushNotificationSent', {
             detail: {
@@ -481,7 +488,7 @@ class TalkTimeNotificationEnforcer {
                 source: 'push'
             }
         }));
-        
+
         if (Notification.permission === 'granted') {
             const notification = new Notification(data.notificationData.title, {
                 ...data.notificationData,
@@ -490,7 +497,7 @@ class TalkTimeNotificationEnforcer {
                     ...data.metadata
                 }
             });
-            
+
             // Handle notification actions
             notification.onclick = () => {
                 if (data.notificationData.data.url) {
@@ -504,8 +511,8 @@ class TalkTimeNotificationEnforcer {
 
     handleServiceWorkerMessage(data) {
         if (data.type === 'notification-action') {
-            console.log('🎯 Notification action:', data.action);
-            
+            console.log('[TalkTime] Notification action:', data.action);
+
             switch (data.action) {
                 case 'join':
                     this.handleJoinMeeting(data.meetingId);
@@ -522,7 +529,7 @@ class TalkTimeNotificationEnforcer {
             }
         } else if (data.type === 'play-notification-sound') {
             // Handle sound requests from service worker
-            console.log('🔊 Service worker sound request:', data.data);
+            console.log('[TalkTime] Service worker sound request:', data.data);
             document.dispatchEvent(new CustomEvent('talktimePlayNotificationSound', {
                 detail: {
                     type: data.data.sound_type || 'default',
@@ -548,9 +555,10 @@ class TalkTimeNotificationEnforcer {
         // Set a 5-minute reminder
         setTimeout(() => {
             if (Notification.permission === 'granted') {
-                new Notification('⏰ Meeting Reminder', {
+                new Notification('Meeting Reminder', {
                     body: 'Your meeting is starting soon!',
-                    tag: `meeting-${meetingId}-reminder`
+                    tag: `meeting-${meetingId}-reminder`,
+                    icon: '/talktime.ico'
                 });
             }
         }, 5 * 60 * 1000);
@@ -563,8 +571,8 @@ class TalkTimeNotificationEnforcer {
     handleDeclineCall(callId) {
         // Send decline to backend
         fetch(`/api/v1/calls/${callId}/decline`, { method: 'POST' })
-            .then(() => console.log('Call declined'))
-            .catch(err => console.error('Error declining call:', err));
+            .then(() => console.log('[TalkTime] Call declined'))
+            .catch(err => console.error('[TalkTime] Error declining call:', err));
     }
 
     async sendSubscriptionToBackend(subscription) {
@@ -574,7 +582,7 @@ class TalkTimeNotificationEnforcer {
             if (!userId) {
                 throw new Error('No user ID available for subscription');
             }
-            
+
             const response = await fetch('/api/push-notifications/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -594,18 +602,18 @@ class TalkTimeNotificationEnforcer {
                     timestamp: new Date().toISOString()
                 })
             });
-            
+
             if (response.ok) {
-                console.log('✅ Subscription sent to backend');
+                console.log('[TalkTime] Subscription sent to backend');
                 const result = await response.json();
                 if (result.testNotificationSent) {
-                    console.log('📱 Test notification should appear shortly');
+                    console.log('[TalkTime] Test notification should appear shortly');
                 }
             } else {
-                console.error('❌ Failed to send subscription to backend:', response.statusText);
+                console.error('[TalkTime] Failed to send subscription to backend:', response.statusText);
             }
         } catch (error) {
-            console.error('❌ Error sending subscription:', error);
+            console.error('[TalkTime] Error sending subscription:', error);
         }
     }
 
@@ -613,15 +621,15 @@ class TalkTimeNotificationEnforcer {
         try {
             const response = await fetch('/api/push-notifications/vapid-public-key');
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to get VAPID key');
             }
-            
+
             // Convert the base64 key to Uint8Array for WebPush API
             return this.urlBase64ToUint8Array(data.publicKey);
         } catch (error) {
-            console.error('❌ Error getting VAPID key:', error);
+            console.error('[TalkTime] Error getting VAPID key:', error);
             // Fallback to a default key if needed
             const fallbackKey = 'BNxlp8gE5Jx7KqjOVOJNZN1jcKp2KzGQpY5k4M7X3N8vZwY2pF1nQrSt6uV9z2P3A5B7c9D1E3F5G7H9I1J3k5L7m9N1O3p5Q7r9S1t3U5v7W9x1Y3z5';
             return this.urlBase64ToUint8Array(fallbackKey);
@@ -649,7 +657,7 @@ class TalkTimeNotificationEnforcer {
         if (typeof gtag !== 'undefined') {
             gtag('event', eventName, data);
         }
-        
+
         // Send to backend (only if not on test pages)
         if (!window.location.pathname.includes('test-notifications')) {
             fetch('/api/v1/analytics/track', {
@@ -659,40 +667,39 @@ class TalkTimeNotificationEnforcer {
                 body: JSON.stringify({ event: eventName, data })
             }).catch(err => {
                 // Silently ignore analytics errors
-                // console.debug('Analytics not available:', err.message);
             });
         }
     }
 
     loadNotificationModalScript() {
         if (this.loadingModal) {
-            console.log('🔄 Modal script already loading...');
+            console.log('[TalkTime] Modal script already loading...');
             return;
         }
-        
+
         // Check if the modal class is already available
         if (typeof NotificationPermissionModal !== 'undefined') {
-            console.log('✅ NotificationPermissionModal already available');
+            console.log('[TalkTime] NotificationPermissionModal already available');
             this.checkCount = 0;
             setTimeout(() => this.checkAndEnforcePermission(), 500);
             return;
         }
-        
+
         this.loadingModal = true;
-        console.log('📥 Loading notification modal script...');
-        
+        console.log('[TalkTime] Loading notification modal script...');
+
         // Fallback: load the notification modal script if it's not available
         const script = document.createElement('script');
         script.src = '/shared/js/notification-permission-modal.js';
         script.onload = () => {
-            console.log('✅ Notification modal script loaded');
+            console.log('[TalkTime] Notification modal script loaded');
             this.loadingModal = false;
             // Reset check count and try again
             this.checkCount = 0;
             setTimeout(() => this.checkAndEnforcePermission(), 1000);
         };
         script.onerror = () => {
-            console.error('❌ Failed to load notification modal script');
+            console.error('[TalkTime] Failed to load notification modal script');
             this.loadingModal = false;
         };
         document.head.appendChild(script);
@@ -707,7 +714,7 @@ class TalkTimeNotificationEnforcer {
             const numericUserId = parseInt(userId);
             return isNaN(numericUserId) ? null : numericUserId;
         }
-        
+
         // Try to get from sessionStorage
         userId = sessionStorage.getItem('talktime_user_id');
         if (userId) {
@@ -717,7 +724,7 @@ class TalkTimeNotificationEnforcer {
                 return numericUserId;
             }
         }
-        
+
         // Try to get from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         userId = urlParams.get('userId') || urlParams.get('user_id');
@@ -728,7 +735,7 @@ class TalkTimeNotificationEnforcer {
                 return numericUserId;
             }
         }
-        
+
         // Try to get from path (e.g., /user/123/dashboard)
         const pathMatch = window.location.pathname.match(/\/user\/(\d+)/);
         if (pathMatch) {
@@ -738,11 +745,11 @@ class TalkTimeNotificationEnforcer {
                 return numericUserId;
             }
         }
-        
+
         // For development/testing, use a default test user ID (student from database)
         const testUserId = 23; // ADM0001-anderson-gatere student
         sessionStorage.setItem('talktime_user_id', testUserId.toString());
-        console.log('📝 Using test userId:', testUserId);
+        console.log('[TalkTime] Using test userId:', testUserId);
         return testUserId;
     }
 
@@ -764,7 +771,7 @@ window.talkTimeNotificationEnforcer = new TalkTimeNotificationEnforcer();
 // Make the class globally available
 window.TalkTimeNotificationEnforcer = TalkTimeNotificationEnforcer;
 
-console.log('🔔 TalkTime Notification Enforcer loaded');
+console.log('[TalkTime] Notification Enforcer loaded');
 
 // Make NotificationEnforcer available globally
 window.NotificationEnforcer = TalkTimeNotificationEnforcer;

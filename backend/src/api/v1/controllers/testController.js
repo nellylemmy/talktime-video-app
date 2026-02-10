@@ -48,7 +48,7 @@ export const testNotificationScheduler = async (req, res) => {
         const testResult = {
             success: true,
             timestamp: now.toISOString(),
-            timezone: 'Africa/Nairobi',
+            timezone: 'UTC',
             scheduler_status: 'running',
             processed_notifications: processedCount,
             upcoming_notifications: upcomingNotifications.rows,

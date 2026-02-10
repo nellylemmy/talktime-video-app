@@ -263,7 +263,7 @@ class ThemeManager {
         // Sync with backend API if user is logged in
         if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
             try {
-                const response = await fetch('/api/v1/volunteer/settings', {
+                const response = await fetch('/api/v1/volunteers/settings', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ class ThemeManager {
         // Load settings from server if user is logged in
         if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
             try {
-                const response = await fetch('/api/v1/volunteer/settings', {
+                const response = await fetch('/api/v1/volunteers/settings', {
                     headers: {
                         'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`
                     }

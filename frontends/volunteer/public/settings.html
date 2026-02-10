@@ -2,172 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Settings - TalkTime | Volunteer Portal</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <meta name="description" content="Manage your volunteer account settings and preferences on TalkTime.">
-    <link rel="canonical" href="/volunteer/settings">
+    <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/settings">
     <meta name="robots" content="index, follow">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive-framework.css">
+    <link rel="stylesheet" href="css/responsive-forms.css">
+    <link rel="stylesheet" href="css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="css/volunteer-dashboard.css">
 
-    <!-- Google Fonts: Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
-    <!-- Main Styles -->
-    <link rel="stylesheet" href="css/main.css" />
-    
-    <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
-    
-    <!-- Theme Manager -->
-    <script src="/shared/js/theme-manager.js"></script>
-    
-    <!-- Socket.IO Client -->
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
-    
-    <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
-    
-    <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="/volunteer/partials/nav-loader.js"></script>
+    <script defer src="js/dashboard-nav.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/volunteer/js/enhanced-mobile-nav.js"></script>
+    <script defer src="/shared/js/theme-manager.js"></script>
+    <script defer src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    <script defer src="/volunteer/js/modal-utils.js"></script>
 
-    <!-- Initialize TalkTimeAuth -->
+    <!-- Initialize TalkTimeAuth - waits for jwt-auth-utils.js to load -->
     <script>
-        if (typeof TalkTimeJWTAuth !== 'undefined') {
-            window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-        }
+        // TalkTimeAuth will be initialized after DOMContentLoaded in the main script
+        // This prevents race conditions with deferred scripts
     </script>
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        /* Page-specific styles only - framework styles in main.css */
+        .settings-tabs-mobile {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
-        .font-poppins {
-            font-family: 'Poppins', sans-serif;
+        .settings-tabs-mobile::-webkit-scrollbar {
+            display: none;
         }
-        .blob {
-            border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.3;
-            position: absolute;
-            z-index: -1;
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+
+        @media (max-width: 640px) {
+            .settings-tab {
+                white-space: nowrap;
+                padding: 12px 16px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
-<body class="min-h-screen" style="background-color: #f0f4ff;">
-    <!-- Background Blobs -->
-    <div class="blob bg-indigo-300 w-72 h-72 top-10 left-10 -translate-x-1/2 -translate-y-1/2"></div>
-    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
-
-    <!-- Navigation Container -->
-    <div id="nav-container">
-        <!-- Navigation will be loaded dynamically -->
-    </div>
+<body class="dashboard-page" style="opacity:0">
+    <!-- Dashboard Navigation -->
+    <div id="dashboard-nav-container"></div>
 
     <!-- Main Content -->
-    <div class="pt-24 pb-12 px-4">
-        <div class="container mx-auto max-w-3xl py-20">
-            <h1 class="text-3xl font-poppins font-bold text-gray-900 mb-8">Settings</h1>
+    <main class="content-area">
+        <div class="container mx-auto px-4">
+            <h1 class="text-2xl sm:text-3xl font-poppins font-bold text-gray-900 mb-6">Settings</h1>
             
             <!-- Settings Navigation Tabs -->
             <div class="bg-white rounded-xl shadow-sm mb-6">
                 <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8 px-6" aria-label="Settings tabs">
-                        <button class="settings-tab active py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600" data-tab="accessibility">
-                            <i class="fas fa-universal-access mr-2"></i>Accessibility
+                    <nav class="settings-tabs-mobile -mb-px flex px-3 sm:px-4" aria-label="Settings tabs">
+                        <button class="settings-tab active py-3 px-2 sm:px-3 border-b-2 border-brand font-medium text-xs sm:text-sm text-brand-primary flex-shrink-0" data-tab="accessibility">
+                            <i class="fas fa-universal-access mr-1 sm:mr-2"></i><span class="hidden sm:inline">Accessibility</span><span class="sm:hidden">Access</span>
                         </button>
-                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="availability">
-                            <i class="fas fa-calendar-check mr-2"></i>Availability
+                        <button class="settings-tab py-3 px-2 sm:px-3 border-b-2 border-transparent font-medium text-xs sm:text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex-shrink-0" data-tab="availability">
+                            <i class="fas fa-calendar-check mr-1 sm:mr-2"></i><span class="hidden sm:inline">Availability</span><span class="sm:hidden">Avail</span>
                         </button>
-                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="timezone">
-                            <i class="fas fa-globe mr-2"></i>Time Zone
+                        <button class="settings-tab py-3 px-2 sm:px-3 border-b-2 border-transparent font-medium text-xs sm:text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex-shrink-0" data-tab="timezone">
+                            <i class="fas fa-globe mr-1 sm:mr-2"></i><span class="hidden sm:inline">Time Zone</span><span class="sm:hidden">TZ</span>
                         </button>
-                        <button class="settings-tab py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="notifications">
-                            <i class="fas fa-bell mr-2"></i>Notifications
+                        <button class="settings-tab py-3 px-2 sm:px-3 border-b-2 border-transparent font-medium text-xs sm:text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex-shrink-0" data-tab="notifications">
+                            <i class="fas fa-bell mr-1 sm:mr-2"></i><span class="hidden sm:inline">Notifications</span><span class="sm:hidden">Notif</span>
                         </button>
                     </nav>
                 </div>
             </div>
             
             <!-- Accessibility Settings -->
-            <div id="accessibility-content" class="settings-content bg-white rounded-xl shadow-sm p-8">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Accessibility & Display</h2>
-                
+            <div id="accessibility-content" class="settings-content bg-white rounded-xl shadow-sm p-4 sm:p-6">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-5">Accessibility & Display</h2>
+
                 <!-- Font Size -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Text size</label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="small">
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-size="small">
                             <span class="block font-medium">Small</span>
                             <span class="text-xs text-gray-500">14px</span>
                         </button>
-                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-size="medium">
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors bg-brand-light border-brand text-brand-primary" data-size="medium">
                             <span class="block font-medium">Medium</span>
                             <span class="text-xs text-gray-500">16px</span>
                         </button>
-                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="large">
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-size="large">
                             <span class="block font-medium">Large</span>
                             <span class="text-xs text-gray-500">18px</span>
                         </button>
-                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-size="xl">
+                        <button class="font-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-size="xl">
                             <span class="block font-medium">Extra Large</span>
                             <span class="text-xs text-gray-500">20px</span>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Theme Mode -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Theme</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-theme="light">
-                            <i class="fas fa-sun text-2xl mb-2"></i>
-                            <div class="text-sm font-medium">Light</div>
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                        <button class="theme-option p-3 sm:p-4 border border-gray-300 rounded-lg hover:border-brand transition-colors bg-brand-light border-brand text-brand-primary text-center" data-theme="light">
+                            <i class="fas fa-sun text-xl sm:text-2xl mb-1 sm:mb-2"></i>
+                            <div class="text-xs sm:text-sm font-medium">Light</div>
                         </button>
-                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-theme="dark">
-                            <i class="fas fa-moon text-2xl mb-2"></i>
-                            <div class="text-sm font-medium">Dark</div>
+                        <button class="theme-option p-3 sm:p-4 border border-gray-300 rounded-lg hover:border-brand transition-colors text-center" data-theme="dark">
+                            <i class="fas fa-moon text-xl sm:text-2xl mb-1 sm:mb-2"></i>
+                            <div class="text-xs sm:text-sm font-medium">Dark</div>
                         </button>
-                        <button class="theme-option p-4 border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-theme="auto">
-                            <i class="fas fa-adjust text-2xl mb-2"></i>
-                            <div class="text-sm font-medium">Auto</div>
+                        <button class="theme-option p-3 sm:p-4 border border-gray-300 rounded-lg hover:border-brand transition-colors text-center" data-theme="auto">
+                            <i class="fas fa-adjust text-xl sm:text-2xl mb-1 sm:mb-2"></i>
+                            <div class="text-xs sm:text-sm font-medium">Auto</div>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Zoom Level -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Page zoom</label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="75">
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-zoom="75">
                             <span class="block font-medium">75%</span>
                             <span class="text-xs text-gray-500">Smaller</span>
                         </button>
-                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors bg-indigo-100 border-indigo-500 text-indigo-600" data-zoom="100">
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors bg-brand-light border-brand text-brand-primary" data-zoom="100">
                             <span class="block font-medium">100%</span>
                             <span class="text-xs text-gray-500">Default</span>
                         </button>
-                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="125">
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-zoom="125">
                             <span class="block font-medium">125%</span>
                             <span class="text-xs text-gray-500">Larger</span>
                         </button>
-                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-indigo-500 transition-colors" data-zoom="150">
+                        <button class="zoom-option p-3 text-sm border border-gray-300 rounded-lg hover:border-brand transition-colors" data-zoom="150">
                             <span class="block font-medium">150%</span>
                             <span class="text-xs text-gray-500">Largest</span>
                         </button>
@@ -175,38 +166,45 @@
                 </div>
                 
                 <!-- Live Preview -->
-                <div class="mb-8">
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Live Preview</h3>
-                        <p class="text-gray-600 mb-4">This preview shows how your settings will affect the appearance of TalkTime.</p>
-                        <div class="bg-white rounded-lg shadow-sm p-4 border">
-                            <div class="flex items-center justify-between mb-3">
+                <div class="mb-6">
+                    <div class="bg-gradient-to-r from-brand-primary to-brand-secondary rounded-lg p-4 sm:p-5 border">
+                        <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Live Preview</h3>
+                        <p class="text-gray-600 text-sm mb-3">This preview shows how your settings will affect the appearance of TalkTime.</p>
+                        <div class="bg-white rounded-lg shadow-sm p-3 sm:p-4 border">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                                 <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                                    <div class="w-8 h-8 bg-brand-primary rounded-full flex items-center justify-center flex-shrink-0">
                                         <i class="fas fa-user text-white text-sm"></i>
                                     </div>
-                                    <div>
-                                        <div class="font-medium text-gray-900">Sample Student</div>
+                                    <div class="min-w-0">
+                                        <div class="font-medium text-gray-900 truncate">Sample Student</div>
                                         <div class="text-sm text-gray-500">Available for conversation</div>
                                     </div>
                                 </div>
-                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Schedule Meeting</button>
+                                <button class="px-4 py-2 bg-brand-primary text-white rounded-lg text-sm w-full sm:w-auto flex-shrink-0">Schedule Meeting</button>
                             </div>
                             <p class="text-gray-600 text-sm">This is how student cards and text will appear with your current settings.</p>
                         </div>
                     </div>
                 </div>
+
+                <!-- Save Button for Accessibility -->
+                <div class="mt-6 pt-5 border-t border-gray-200">
+                    <button onclick="saveSettings()" class="w-full sm:w-auto px-6 py-3 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors">
+                        <i class="fas fa-save mr-2"></i>Save Accessibility Settings
+                    </button>
+                </div>
             </div>
-            
+
             <!-- Availability Settings -->
-            <div id="availability-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Availability Settings</h2>
-                
+            <div id="availability-content" class="settings-content bg-white rounded-xl shadow-sm p-4 sm:p-6 hidden">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-5">Availability Settings</h2>
+
                 <!-- Meeting Limits -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-4 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Maximum meetings per day</label>
-                        <select id="max-meetings-day" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <select id="max-meetings-day" class="w-full border border-gray-300 rounded-md px-3 py-2.5">
                             <option value="1">1 meeting</option>
                             <option value="2">2 meetings</option>
                             <option value="3" selected>3 meetings</option>
@@ -216,7 +214,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Maximum meetings per week</label>
-                        <select id="max-meetings-week" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <select id="max-meetings-week" class="w-full border border-gray-300 rounded-md px-3 py-2.5">
                             <option value="5">5 meetings</option>
                             <option value="10">10 meetings</option>
                             <option value="15" selected>15 meetings</option>
@@ -225,11 +223,11 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Advance Notice -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Advance notice required</label>
-                    <select id="advance-notice" class="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2">
+                    <select id="advance-notice" class="w-full border border-gray-300 rounded-md px-3 py-2.5">
                         <option value="0">Immediate booking</option>
                         <option value="1">1 hour</option>
                         <option value="2" selected>2 hours</option>
@@ -238,174 +236,174 @@
                         <option value="24">24 hours</option>
                     </select>
                 </div>
-                
+
                 <!-- Auto Accept -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between">
-                        <div>
+                <div class="mb-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0">
                             <label class="text-sm font-medium text-gray-700">Auto-accept meetings</label>
-                            <p class="text-sm text-gray-500">Automatically accept meeting requests without manual approval</p>
+                            <p class="text-sm text-gray-500 mt-0.5">Automatically accept meeting requests without manual approval</p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
                             <input type="checkbox" id="auto-accept" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                         </label>
                     </div>
                 </div>
-                
+
                 <!-- Weekly Availability (Placeholder for complex UI) -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Weekly Availability</h3>
-                    <div class="bg-gray-50 rounded-lg p-6 text-center">
-                        <i class="fas fa-calendar-week text-3xl text-gray-400 mb-3"></i>
-                        <p class="text-gray-600">Weekly schedule builder coming soon</p>
-                        <p class="text-sm text-gray-500 mt-1">Set your preferred meeting times for each day of the week</p>
+                <div class="mb-6">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-3">Weekly Availability</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 sm:p-6 text-center">
+                        <i class="fas fa-calendar-week text-2xl sm:text-3xl text-gray-400 mb-2 sm:mb-3"></i>
+                        <p class="text-gray-600 text-sm sm:text-base">Weekly schedule builder coming soon</p>
+                        <p class="text-xs sm:text-sm text-gray-500 mt-1">Set your preferred meeting times for each day of the week</p>
                     </div>
                 </div>
             </div>
             
             <!-- Time Zone Settings -->
-            <div id="timezone-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Time Zone Management</h2>
-                
+            <div id="timezone-content" class="settings-content bg-white rounded-xl shadow-sm p-4 sm:p-6 hidden">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-5">Time Zone Management</h2>
+
                 <!-- Current Time Zone -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Primary Time Zone</label>
-                    <select id="primary-timezone" class="w-full max-w-lg border border-gray-300 rounded-md px-3 py-2">
+                    <select id="primary-timezone" class="w-full border border-gray-300 rounded-md px-3 py-2.5">
                         <option value="" disabled selected>Detecting your timezone...</option>
                         <!-- Populated by JavaScript with comprehensive timezone list -->
                     </select>
-                    <p class="text-sm text-gray-500 mt-1" id="timezone-detection-note">We'll auto-detect your current timezone, but you can change it if needed.</p>
-                    <button type="button" id="detect-timezone-btn" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 underline">
+                    <p class="text-sm text-gray-500 mt-2" id="timezone-detection-note">We'll auto-detect your current timezone, but you can change it if needed.</p>
+                    <button type="button" id="detect-timezone-btn" class="mt-2 text-sm text-brand-primary hover:text-brand-primary underline">
                         <i class="fas fa-sync-alt mr-1"></i>Re-detect timezone
                     </button>
                 </div>
-                
+
                 <!-- Display Preference -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Display times in</label>
                     <div class="space-y-3">
                         <label class="flex items-center">
-                            <input type="radio" name="display-tz" value="local" class="text-indigo-600 focus:ring-indigo-500" checked>
+                            <input type="radio" name="display-tz" value="local" class="text-brand-primary focus:ring-brand-primary" checked>
                             <span class="ml-2 text-sm text-gray-700">My local time zone</span>
                         </label>
                         <label class="flex items-center">
-                            <input type="radio" name="display-tz" value="eat" class="text-indigo-600 focus:ring-indigo-500">
+                            <input type="radio" name="display-tz" value="eat" class="text-brand-primary focus:ring-brand-primary">
                             <span class="ml-2 text-sm text-gray-700">Kenya time (EAT) - for student coordination</span>
                         </label>
                     </div>
                 </div>
-                
+
                 <!-- DST Handling -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between">
-                        <div>
+                <div class="mb-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0">
                             <label class="text-sm font-medium text-gray-700">Automatic daylight saving adjustments</label>
-                            <p class="text-sm text-gray-500">Automatically adjust for daylight saving time changes</p>
+                            <p class="text-sm text-gray-500 mt-0.5">Automatically adjust for daylight saving time changes</p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
                             <input type="checkbox" id="dst-handling" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                         </label>
                     </div>
                 </div>
             </div>
             
             <!-- Notification Settings -->
-            <div id="notifications-content" class="settings-content bg-white rounded-xl shadow-sm p-8 hidden">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
-                
+            <div id="notifications-content" class="settings-content bg-white rounded-xl shadow-sm p-4 sm:p-6 hidden">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-5">Notification Preferences</h2>
+
                 <!-- Email Notifications -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Email Notifications</h3>
+                <div class="mb-6">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-3">Email Notifications</h3>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting scheduled</label>
-                                <p class="text-sm text-gray-500">When a new meeting is booked</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When a new meeting is booked</p>
                             </div>
-                            <input type="checkbox" class="email-notification" data-type="meeting_scheduled" checked>
+                            <input type="checkbox" class="email-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_scheduled" checked>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
-                                <p class="text-sm text-gray-500">Before your scheduled meetings</p>
+                                <p class="text-sm text-gray-500 mt-0.5">Before your scheduled meetings</p>
                             </div>
-                            <input type="checkbox" class="email-notification" data-type="meeting_reminder" checked>
+                            <input type="checkbox" class="email-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_reminder" checked>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting changes</label>
-                                <p class="text-sm text-gray-500">When meetings are cancelled or rescheduled</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When meetings are cancelled or rescheduled</p>
                             </div>
-                            <input type="checkbox" class="email-notification" data-type="meeting_cancelled" checked>
+                            <input type="checkbox" class="email-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_cancelled" checked>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Browser Notifications -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Browser Notifications</h3>
+                <div class="mb-6">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-3">Browser Notifications</h3>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
-                                <p class="text-sm text-gray-500">Pop-up notifications before meetings</p>
+                                <p class="text-sm text-gray-500 mt-0.5">Pop-up notifications before meetings</p>
                             </div>
-                            <input type="checkbox" class="browser-notification" data-type="meeting_reminder" checked>
+                            <input type="checkbox" class="browser-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_reminder" checked>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Instant calls</label>
-                                <p class="text-sm text-gray-500">When students make instant calls</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When students make instant calls</p>
                             </div>
-                            <input type="checkbox" class="browser-notification" data-type="instant_calls" checked>
+                            <input type="checkbox" class="browser-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="instant_calls" checked>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- SMS Notifications -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">SMS Notifications</h3>
-                    <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                <div class="mb-6">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-3">SMS Notifications</h3>
+                    <div class="bg-brand-primary rounded-lg p-3 sm:p-4 mb-4">
                         <div class="flex">
                             <div class="flex-shrink-0">
-                                <i class="fas fa-info-circle text-blue-400"></i>
+                                <i class="fas fa-info-circle text-brand-primary"></i>
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm text-blue-800">SMS notifications are sent to your registered phone number for urgent reminders and meeting updates.</p>
+                                <p class="text-sm text-brand-primary">SMS notifications are sent to your registered phone number for urgent reminders and meeting updates.</p>
                             </div>
                         </div>
                     </div>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Urgent meeting reminders</label>
-                                <p class="text-sm text-gray-500">5 minutes before meeting start</p>
+                                <p class="text-sm text-gray-500 mt-0.5">5 minutes before meeting start</p>
                             </div>
-                            <input type="checkbox" class="sms-notification" data-type="urgent_reminder">
+                            <input type="checkbox" class="sms-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="urgent_reminder">
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting changes</label>
-                                <p class="text-sm text-gray-500">When meetings are cancelled or rescheduled</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When meetings are cancelled or rescheduled</p>
                             </div>
-                            <input type="checkbox" class="sms-notification" data-type="meeting_changes">
+                            <input type="checkbox" class="sms-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_changes">
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">System alerts</label>
-                                <p class="text-sm text-gray-500">Critical system notifications</p>
+                                <p class="text-sm text-gray-500 mt-0.5">Critical system notifications</p>
                             </div>
-                            <input type="checkbox" class="sms-notification" data-type="system_alerts">
+                            <input type="checkbox" class="sms-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="system_alerts">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Push Notifications -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Push Notifications</h3>
-                    <div class="bg-amber-50 rounded-lg p-4 mb-4">
+                <div class="mb-6">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900 mb-3">Push Notifications</h3>
+                    <div class="bg-amber-50 rounded-lg p-3 sm:p-4 mb-4">
                         <div class="flex">
                             <div class="flex-shrink-0">
                                 <i class="fas fa-bell text-amber-400"></i>
@@ -417,48 +415,48 @@
                         </div>
                     </div>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Meeting reminders</label>
-                                <p class="text-sm text-gray-500">All scheduled meeting reminders</p>
+                                <p class="text-sm text-gray-500 mt-0.5">All scheduled meeting reminders</p>
                             </div>
-                            <input type="checkbox" class="push-notification" data-type="meeting_reminder">
+                            <input type="checkbox" class="push-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="meeting_reminder">
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">New meeting requests</label>
-                                <p class="text-sm text-gray-500">When students request meetings</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When students request meetings</p>
                             </div>
-                            <input type="checkbox" class="push-notification" data-type="new_requests">
+                            <input type="checkbox" class="push-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="new_requests">
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
                                 <label class="text-sm font-medium text-gray-700">Instant calls</label>
-                                <p class="text-sm text-gray-500">When students initiate instant calls</p>
+                                <p class="text-sm text-gray-500 mt-0.5">When students initiate instant calls</p>
                             </div>
-                            <input type="checkbox" class="push-notification" data-type="instant_calls">
+                            <input type="checkbox" class="push-notification flex-shrink-0 mt-0.5 w-4 h-4" data-type="instant_calls">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Reminder Timing -->
-                <div class="mb-8">
+                <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-3">Reminder timing</label>
                     <div class="space-y-3">
                         <label class="flex items-center">
-                            <input type="checkbox" class="reminder-timing" value="60" checked>
+                            <input type="checkbox" class="reminder-timing w-4 h-4" value="60" checked>
                             <span class="ml-2 text-sm text-gray-700">1 hour before</span>
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" class="reminder-timing" value="30" checked>
+                            <input type="checkbox" class="reminder-timing w-4 h-4" value="30" checked>
                             <span class="ml-2 text-sm text-gray-700">30 minutes before</span>
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" class="reminder-timing" value="5" checked>
+                            <input type="checkbox" class="reminder-timing w-4 h-4" value="5" checked>
                             <span class="ml-2 text-sm text-gray-700">5 minutes before</span>
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" class="reminder-timing" value="15">
+                            <input type="checkbox" class="reminder-timing w-4 h-4" value="15">
                             <span class="ml-2 text-sm text-gray-700">15 minutes before</span>
                         </label>
                     </div>
@@ -466,13 +464,13 @@
             </div>
             
             <!-- Save Button -->
-            <div class="mt-8">
-                <button id="save-settings" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+            <div class="mt-6">
+                <button id="save-settings" class="w-full sm:w-auto bg-brand-primary text-white px-6 py-3 rounded-lg hover:bg-brand-primary-dark transition-colors font-medium">
                     <i class="fas fa-save mr-2"></i>Save Settings
                 </button>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
         // Initialize push notification permission handling
@@ -531,7 +529,7 @@
                 if (Notification.permission === 'granted') {
                     new Notification('TalkTime Test Notification', {
                         body: messages[type],
-                        icon: '/favicon.ico'
+                        icon: '/talktime.ico'
                     });
                 } else {
                     showNotification('Browser notifications not enabled', 'error');
@@ -592,12 +590,12 @@
             const currentSize = window.TalkTimeTheme.getCurrentFontSize();
             
             document.querySelectorAll('.font-option').forEach(button => {
-                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
                 button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
                 
                 if (button.getAttribute('data-size') === currentSize) {
                     button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
-                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                    button.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
                 }
             });
         }
@@ -608,20 +606,26 @@
             const currentTheme = window.TalkTimeTheme.currentTheme; // Get the preference, not computed
             
             document.querySelectorAll('.theme-option').forEach(button => {
-                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
                 button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
                 
                 if (button.getAttribute('data-theme') === currentTheme) {
                     button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
-                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                    button.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
                 }
             });
         }
         
         // Initialize settings page when DOM is loaded
         document.addEventListener('DOMContentLoaded', async function() {
+            document.body.classList.add('page-ready');
             console.log('Settings page loading...');
-            
+
+            // Initialize TalkTimeAuth if not already done (deferred scripts now loaded)
+            if (!window.TalkTimeAuth && typeof TalkTimeJWTAuth !== 'undefined') {
+                window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+            }
+
             // Initialize auth check
             if (!window.TalkTimeAuth || !window.TalkTimeAuth.getToken()) {
                 console.log('No authentication token found, redirecting to login');
@@ -633,7 +637,6 @@
             updateAuthenticatedUI();
             
             // Setup navigation components
-            setupProfileDropdown();
             setupLogoutHandlers();
             
             // Setup mobile menu toggle
@@ -659,18 +662,22 @@
 
         // Authentication and UI setup
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Settings page DOMContentLoaded');
-            
-            // Initialize authentication
+            console.log('Settings page DOMContentLoaded - UI setup');
+
+            // Initialize TalkTimeAuth if not already done
+            if (!window.TalkTimeAuth && typeof TalkTimeJWTAuth !== 'undefined') {
+                window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+            }
+
+            // Initialize authentication check
             if (!window.TalkTimeAuth) {
-                window.location.href = '/volunteer/login.html';
-                return;
+                console.log('TalkTimeAuth not available');
+                return; // First handler will handle redirect
             }
             
             setupSettingsTabs();
             setupScrollBehavior();
             updateAuthenticatedUI();
-            setupProfileDropdown();
             setupMobileMenu();
             setupLogoutHandlers();
             
@@ -715,11 +722,11 @@
                     
                     // Update tab styles
                     tabs.forEach(t => {
-                        t.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+                        t.classList.remove('active', 'border-brand', 'text-brand-primary');
                         t.classList.add('border-transparent', 'text-gray-500');
                     });
                     
-                    this.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+                    this.classList.add('active', 'border-brand', 'text-brand-primary');
                     this.classList.remove('border-transparent', 'text-gray-500');
                     
                     // Show/hide content
@@ -736,33 +743,59 @@
         }
         
         function setupAccessibilityControls() {
-            // Theme selection
-            const themeInputs = document.querySelectorAll('input[name="theme"]');
-            themeInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    if (this.checked && window.TalkTimeTheme) {
-                        window.TalkTimeTheme.setTheme(this.value);
-                        updateThemeSelection();
+            // Theme selection buttons
+            const themeButtons = document.querySelectorAll('.theme-option');
+            themeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update visual selection
+                    themeButtons.forEach(btn => {
+                        btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                        btn.classList.add('border-gray-300');
+                    });
+                    this.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                    this.classList.remove('border-gray-300');
+
+                    // Apply theme
+                    const theme = this.getAttribute('data-theme');
+                    if (window.TalkTimeTheme) {
+                        window.TalkTimeTheme.setTheme(theme);
                     }
                 });
             });
-            
-            // Font size slider
-            const fontSlider = document.getElementById('font-size-slider');
-            if (fontSlider) {
-                fontSlider.addEventListener('input', function() {
-                    const sizes = ['small', 'medium', 'large', 'xl'];
-                    const selectedSize = sizes[parseInt(this.value)];
+
+            // Font size buttons
+            const fontButtons = document.querySelectorAll('.font-option');
+            fontButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update visual selection
+                    fontButtons.forEach(btn => {
+                        btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                        btn.classList.add('border-gray-300');
+                    });
+                    this.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                    this.classList.remove('border-gray-300');
+
+                    // Apply font size
+                    const size = this.getAttribute('data-size');
                     if (window.TalkTimeTheme) {
-                        window.TalkTimeTheme.setFontSize(selectedSize);
+                        window.TalkTimeTheme.setFontSize(size);
                     }
                 });
-            }
-            
+            });
+
             // Zoom buttons
             const zoomButtons = document.querySelectorAll('.zoom-option');
             zoomButtons.forEach(button => {
                 button.addEventListener('click', function() {
+                    // Update visual selection
+                    zoomButtons.forEach(btn => {
+                        btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                        btn.classList.add('border-gray-300');
+                    });
+                    this.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                    this.classList.remove('border-gray-300');
+
+                    // Apply zoom
                     const zoomLevel = parseInt(this.getAttribute('data-zoom'));
                     if (window.TalkTimeTheme) {
                         window.TalkTimeTheme.setZoom(zoomLevel);
@@ -799,14 +832,14 @@
                 themeInput.checked = true;
                 // Update visual selection
                 document.querySelectorAll('.theme-card').forEach(card => {
-                    card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    card.classList.remove('border-brand', 'bg-brand-primary');
                     card.classList.add('border-gray-200');
                 });
                 
                 const selectedCard = themeInput.parentNode.querySelector('.theme-card');
                 if (selectedCard) {
                     selectedCard.classList.remove('border-gray-200');
-                    selectedCard.classList.add('border-indigo-500', 'bg-indigo-50');
+                    selectedCard.classList.add('border-brand', 'bg-brand-primary');
                 }
             }
         }
@@ -830,12 +863,12 @@
             const currentZoom = window.TalkTimeTheme.getCurrentZoom();
             
             document.querySelectorAll('.zoom-option').forEach(button => {
-                button.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                button.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
                 button.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
                 
                 if (parseInt(button.getAttribute('data-zoom')) === currentZoom) {
                     button.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
-                    button.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-600');
+                    button.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
                 }
             });
         }
@@ -843,7 +876,7 @@
         // Function to load settings and populate the form
         async function loadServerSettings() {
             try {
-                const response = await fetch('/api/v1/volunteer/settings', {
+                const response = await fetch('/api/v1/volunteers/settings', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`
@@ -860,23 +893,65 @@
                 console.log('Loaded settings:', settings);
                 
                 if (settings) {
-                    // Populate basic settings
-                    if (settings.max_meetings_per_day !== null) {
-                        document.getElementById('max-meetings-day').value = settings.max_meetings_per_day;
+                    // Populate accessibility settings - Update button selections
+                    if (settings.theme_mode) {
+                        const themeButtons = document.querySelectorAll('.theme-option');
+                        themeButtons.forEach(btn => {
+                            btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                            btn.classList.add('border-gray-300');
+                            if (btn.getAttribute('data-theme') === settings.theme_mode) {
+                                btn.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                                btn.classList.remove('border-gray-300');
+                            }
+                        });
                     }
-                    if (settings.max_meetings_per_week !== null) {
-                        document.getElementById('max-meetings-week').value = settings.max_meetings_per_week;
+
+                    if (settings.font_size) {
+                        const fontButtons = document.querySelectorAll('.font-option');
+                        fontButtons.forEach(btn => {
+                            btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                            btn.classList.add('border-gray-300');
+                            if (btn.getAttribute('data-size') === settings.font_size) {
+                                btn.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                                btn.classList.remove('border-gray-300');
+                            }
+                        });
                     }
-                    if (settings.advance_notice_hours !== null) {
-                        document.getElementById('advance-notice').value = settings.advance_notice_hours;
+
+                    if (settings.zoom_level) {
+                        const zoomButtons = document.querySelectorAll('.zoom-option');
+                        zoomButtons.forEach(btn => {
+                            btn.classList.remove('bg-brand-light', 'border-brand', 'text-brand-primary');
+                            btn.classList.add('border-gray-300');
+                            if (parseInt(btn.getAttribute('data-zoom')) === settings.zoom_level) {
+                                btn.classList.add('bg-brand-light', 'border-brand', 'text-brand-primary');
+                                btn.classList.remove('border-gray-300');
+                            }
+                        });
                     }
-                    if (settings.auto_accept_meetings !== null) {
-                        document.getElementById('auto-accept').checked = settings.auto_accept_meetings;
+
+                    // Populate availability settings
+                    if (settings.max_meetings_per_day !== null && settings.max_meetings_per_day !== undefined) {
+                        const element = document.getElementById('max-meetings-day');
+                        if (element) element.value = settings.max_meetings_per_day;
                     }
-                    
+                    if (settings.max_meetings_per_week !== null && settings.max_meetings_per_week !== undefined) {
+                        const element = document.getElementById('max-meetings-week');
+                        if (element) element.value = settings.max_meetings_per_week;
+                    }
+                    if (settings.advance_notice_hours !== null && settings.advance_notice_hours !== undefined) {
+                        const element = document.getElementById('advance-notice');
+                        if (element) element.value = settings.advance_notice_hours;
+                    }
+                    if (settings.auto_accept_meetings !== null && settings.auto_accept_meetings !== undefined) {
+                        const element = document.getElementById('auto-accept');
+                        if (element) element.checked = settings.auto_accept_meetings;
+                    }
+
                     // Populate timezone settings
                     if (settings.primary_timezone) {
-                        document.getElementById('primary-timezone').value = settings.primary_timezone;
+                        const element = document.getElementById('primary-timezone');
+                        if (element) element.value = settings.primary_timezone;
                     }
                     
                     if (settings.display_timezone_preference) {
@@ -1013,10 +1088,10 @@
                             <div class="text-xs text-gray-500">${window.timezone}</div>
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="editAvailabilityWindow(${window.id})" class="text-indigo-600 hover:text-indigo-800 text-sm">
+                            <button onclick="editAvailabilityWindow(${window.id})" class="text-brand-primary hover:text-brand-primary text-sm">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button onclick="deleteAvailabilityWindow(${window.id})" class="text-red-600 hover:text-red-800 text-sm">
+                            <button onclick="deleteAvailabilityWindow(${window.id})" class="text-error hover:text-red-800 text-sm">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
@@ -1037,12 +1112,12 @@
                 showNotification('Please log in to save settings', 'error');
                 return;
             }
-            
+
             const settingsData = {
-                // Accessibility settings
-                theme_mode: document.querySelector('input[name="theme"]:checked')?.value || 'light',
-                font_size: ['small', 'medium', 'large', 'xl'][parseInt(document.getElementById('font-size-slider')?.value || 1)],
-                zoom_level: parseInt(document.querySelector('.zoom-option.bg-indigo-100')?.getAttribute('data-zoom') || 100),
+                // Accessibility settings - Get from button selections
+                theme_mode: document.querySelector('.theme-option.bg-brand-light')?.getAttribute('data-theme') || 'light',
+                font_size: document.querySelector('.font-option.bg-brand-light')?.getAttribute('data-size') || 'medium',
+                zoom_level: parseInt(document.querySelector('.zoom-option.bg-brand-light')?.getAttribute('data-zoom') || 100),
                 
                 // Availability settings
                 max_meetings_per_day: parseInt(document.getElementById('max-meetings-day')?.value || 3),
@@ -1061,7 +1136,7 @@
             };
             
             try {
-                const response = await fetch('/api/v1/volunteer/settings', {
+                const response = await fetch('/api/v1/volunteers/settings', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`,
@@ -1107,9 +1182,9 @@
             // Create notification element
             const notification = document.createElement('div');
             notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
-                type === 'success' ? 'bg-green-500 text-white' :
-                type === 'error' ? 'bg-red-500 text-white' :
-                'bg-blue-500 text-white'
+                type === 'success' ? 'bg-success text-white' :
+                type === 'error' ? 'bg-error text-white' :
+                'bg-brand-primary text-white'
             }`;
             notification.innerHTML = `
                 <div class="flex items-center">
@@ -1221,7 +1296,7 @@
             const selectedTimezone = commonTimezones.find(tz => tz.value === detectedTimezone);
             if (selectedTimezone && detectionNote) {
                 detectionNote.textContent = `✓ Detected: ${selectedTimezone.label}. You can change this if needed.`;
-                detectionNote.classList.add('text-green-600');
+                detectionNote.classList.add('text-success');
             } else if (detectionNote) {
                 detectionNote.textContent = `Detected timezone: ${detectedTimezone}. Please select your preferred timezone from the list.`;
             }
@@ -1250,7 +1325,7 @@
                 const selectedTimezone = commonTimezones.find(tz => tz.value === timezone);
                 if (selectedTimezone && detectionNote) {
                     detectionNote.textContent = `✓ Re-detected: ${selectedTimezone.label}`;
-                    detectionNote.classList.add('text-green-600');
+                    detectionNote.classList.add('text-success');
                 }
                 
                 showNotification('Timezone detected and updated!', 'success');
@@ -1266,10 +1341,14 @@
         };
         
         window.deleteAvailabilityWindow = async function(windowId) {
-            if (!confirm('Are you sure you want to delete this availability window?')) {
+            const confirmed = window.showConfirmation
+                ? await window.showConfirmation('Are you sure you want to delete this availability window?', { title: 'Delete Availability', confirmText: 'Delete', cancelText: 'Cancel', type: 'warning' })
+                : confirm('Are you sure you want to delete this availability window?');
+
+            if (!confirmed) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/v1/volunteer/availability/${windowId}`, {
                     method: 'DELETE',
@@ -1308,34 +1387,6 @@
             }
         }
         
-        function setupProfileDropdown() {
-            const profileBtn = document.getElementById('profile-btn');
-            const profileDropdown = document.getElementById('profile-dropdown');
-            
-            if (!profileBtn || !profileDropdown) return;
-            
-            profileBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const dropdown = document.getElementById('profile-dropdown');
-                const isHidden = dropdown.classList.contains('hidden');
-                
-                if (isHidden) {
-                    dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
-                } else {
-                    dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
-                }
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!profileBtn.contains(e.target)) {
-                    profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
-                }
-            });
-        }
-        
         function setupMobileMenu() {
             const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -1368,7 +1419,10 @@
         }
         
         function setupScrollBehavior() {
-            const header = document.getElementById('main-header');
+            // Uses mobile-header from dashboard-nav
+            const header = document.querySelector('.mobile-header');
+            if (!header) return;
+
             const handleScroll = () => {
                 if (window.scrollY > 50) {
                     header.classList.add('scrolled');
@@ -1391,7 +1445,7 @@
             function showTab(tabName) {
                 // Remove active class from all tabs and hide all content
                 tabs.forEach(tab => {
-                    tab.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+                    tab.classList.remove('active', 'border-brand', 'text-brand-primary');
                     tab.classList.add('border-transparent', 'text-gray-500');
                 });
                 
@@ -1404,7 +1458,7 @@
                 const selectedContent = document.getElementById(`${tabName}-content`);
                 
                 if (selectedTab && selectedContent) {
-                    selectedTab.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+                    selectedTab.classList.add('active', 'border-brand', 'text-brand-primary');
                     selectedTab.classList.remove('border-transparent', 'text-gray-500');
                     selectedContent.style.display = 'block';
                 }
@@ -1427,13 +1481,7 @@
             showTab(activeTab);
         }
 
-        // Load notification count when page loads
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize navigation loader (handles authentication and notifications)
-            if (typeof VolunteerNavLoader !== 'undefined') {
-                await VolunteerNavLoader.init(true);
-            }
-        });
+        // Dashboard navigation is handled by dashboard-nav.js (auto-initializes)
     </script>
 </body>
 </html>

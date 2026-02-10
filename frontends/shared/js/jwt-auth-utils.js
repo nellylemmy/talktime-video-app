@@ -15,13 +15,28 @@ class TalkTimeJWTAuth {
 
     /**
      * Store JWT tokens and user data in localStorage
+     * SECURITY: Clears tokens from other roles to prevent role confusion
      */
     storeAuth(accessToken, user, refreshToken = null) {
+        // Clear tokens from other roles first to prevent role confusion
+        const allRoles = ['volunteer', 'student', 'admin'];
+        allRoles.forEach(role => {
+            if (role !== this.rolePrefix) {
+                localStorage.removeItem(`${role}_talktime_access_token`);
+                localStorage.removeItem(`${role}_talktime_refresh_token`);
+                localStorage.removeItem(`${role}_talktime_user`);
+            }
+        });
+
+        // Store new tokens for current role
         localStorage.setItem(this.accessTokenKey, accessToken);
         localStorage.setItem(this.userKey, JSON.stringify(user));
         if (refreshToken) {
             localStorage.setItem(this.refreshTokenKey, refreshToken);
         }
+
+        // Store current role in sessionStorage for call page fallback
+        sessionStorage.setItem('talktime_current_role', this.rolePrefix);
     }
 
     /**

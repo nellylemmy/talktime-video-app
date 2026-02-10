@@ -1553,8 +1553,9 @@ export const getVolunteerPerformance = async (req, res) => {
         const volunteerId = req.user.id;
         
         // Get all meetings data with status counts
+        // Exclude meetings cleared by admin from performance calculation
         const performanceQuery = `
-            SELECT 
+            SELECT
                 COUNT(*) FILTER (WHERE status = 'completed') as completed_calls,
                 COUNT(*) FILTER (WHERE status = 'canceled') as cancelled_calls,
                 COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_calls_alt,
@@ -1564,8 +1565,9 @@ export const getVolunteerPerformance = async (req, res) => {
                 COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled') AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_cancelled,
                 COUNT(*) FILTER (WHERE status = 'missed' AND scheduled_time >= NOW() - INTERVAL '30 days') as recent_missed,
                 COUNT(DISTINCT student_id) FILTER (WHERE status = 'completed') as students_impacted
-            FROM meetings 
+            FROM meetings
             WHERE volunteer_id = $1 AND scheduled_time < NOW()
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
         `;
         
         const { rows } = await pool.query(performanceQuery, [volunteerId]);

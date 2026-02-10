@@ -219,10 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (letterAvatar && name) {
                         const firstLetter = name.charAt(0).toUpperCase();
                         
-                        // Generate a consistent color based on the name
-                        const colors = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#c026d3'];
-                        const colorIndex = Math.abs(firstLetter.charCodeAt(0)) % colors.length;
-                        const bgColor = colors[colorIndex];
+                        // Use white background for all avatars
+                        const bgColor = 'white';
                         
                         // Update and show letter avatar
                         letterAvatar.textContent = firstLetter;
@@ -231,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (letterAvatar) {
                         // Fallback avatar if no name
                         letterAvatar.textContent = 'V';
-                        letterAvatar.style.backgroundColor = '#4f46e5';
+                        letterAvatar.style.backgroundColor = 'white';
                         letterAvatar.classList.remove('hidden');
                     }
                 }

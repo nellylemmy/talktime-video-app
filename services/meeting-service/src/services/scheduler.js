@@ -37,7 +37,7 @@ export const startScheduler = () => {
     // Run every minute
     schedulerTask = cron.schedule('* * * * *', processOverdueMeetings, {
         scheduled: true,
-        timezone: 'Africa/Nairobi'
+        timezone: 'UTC' // Use UTC for global timezone support
     });
 
     console.log('[Meeting Service] Scheduler started (checking overdue meetings every minute)');

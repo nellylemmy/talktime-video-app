@@ -6,8 +6,10 @@ import {
     checkThreeMeetingLimit,
     checkVolunteerPerformance,
     validateSchedulingTime,
-    getRealTimeStatus
+    getRealTimeStatus,
+    getRealTimeStatusSync
 } from '../services/businessRules.js';
+import { getAutoTimeoutMinutes, getMeetingDuration } from '../config/appConfig.js';
 import {
     publishMeetingCreated,
     publishMeetingRescheduled,
@@ -76,20 +78,54 @@ export const createMeeting = async (req, res) => {
         }
 
         // Validate scheduling time constraints
-        const timeValidation = validateSchedulingTime(scheduledTime);
+        const timeValidation = await validateSchedulingTime(scheduledTime);
         if (!timeValidation.valid) {
             return res.status(400).json(timeValidation);
         }
 
-        // Verify student exists
-        const studentResult = await pool.query(
+        // Verify student exists - check users table first, then students table
+        let student = null;
+        let actualStudentId = studentId;
+
+        // First, try to find in users table
+        const userResult = await pool.query(
             'SELECT id, full_name FROM users WHERE id = $1 AND role = $2',
             [studentId, 'student']
         );
-        if (studentResult.rows.length === 0) {
+
+        if (userResult.rows.length > 0) {
+            student = userResult.rows[0];
+        } else {
+            // If not found in users, the studentId might be from students table
+            // Look up the student and get their user_id
+            console.log('[Meeting Service] Student not in users table, checking students table for ID:', studentId);
+            const studentsResult = await pool.query(
+                'SELECT id, user_id, full_name FROM students WHERE id = $1',
+                [studentId]
+            );
+
+            if (studentsResult.rows.length > 0) {
+                const studentRecord = studentsResult.rows[0];
+                if (studentRecord.user_id) {
+                    // Use the user_id from students table
+                    actualStudentId = studentRecord.user_id;
+                    student = { id: actualStudentId, full_name: studentRecord.full_name };
+                    console.log('[Meeting Service] Found student via students table:', {
+                        studentsTableId: studentId,
+                        usersTableId: actualStudentId
+                    });
+                } else {
+                    // Student exists but no linked user - use students.id directly
+                    student = { id: studentRecord.id, full_name: studentRecord.full_name };
+                    console.log('[Meeting Service] Using students.id directly (no user_id):', studentId);
+                }
+            }
+        }
+
+        if (!student) {
+            console.error('[Meeting Service] Student not found:', studentId);
             return res.status(404).json({ error: 'Student not found' });
         }
-        const student = studentResult.rows[0];
 
         // Verify volunteer exists
         const volunteerResult = await pool.query(
@@ -140,7 +176,6 @@ export const createMeeting = async (req, res) => {
             volunteerId,
             scheduledTime,
             roomId,
-            duration: 40,
             status: 'scheduled'
         });
 
@@ -319,12 +354,18 @@ export const getMeetingsByStudentId = async (req, res) => {
         // Get all meetings between this volunteer and student
         const volunteerStudentMeetings = await Meeting.findByStudentIdWithVolunteer(studentId, volunteerId);
 
+        // Get config values for status calculation
+        const [timeoutMinutes, durationMinutes] = await Promise.all([
+            getAutoTimeoutMinutes(),
+            getMeetingDuration()
+        ]);
+
         // Process meetings and check for auto-timeout
         const processedMeetings = [];
         const meetingsToUpdate = [];
 
         for (const meeting of volunteerStudentMeetings) {
-            const realTimeStatus = getRealTimeStatus(meeting);
+            const realTimeStatus = getRealTimeStatusSync(meeting, timeoutMinutes, durationMinutes);
 
             if (realTimeStatus === 'auto_missed' && meeting.status === 'scheduled') {
                 meetingsToUpdate.push(meeting.id);
@@ -349,14 +390,17 @@ export const getMeetingsByStudentId = async (req, res) => {
             !['missed', 'canceled', 'cancelled'].includes(m.status)
         ).length;
 
+        // Get meeting limit from config
+        const { limit: meetingLimit } = await checkThreeMeetingLimit(volunteerId, studentId);
+
         res.json({
             activeMeeting: activeMeeting ? {
                 ...activeMeeting,
-                realTimeStatus: getRealTimeStatus(activeMeeting)
+                realTimeStatus: getRealTimeStatusSync(activeMeeting, timeoutMinutes, durationMinutes)
             } : null,
             meeting: activeMeeting ? {
                 ...activeMeeting,
-                realTimeStatus: getRealTimeStatus(activeMeeting)
+                realTimeStatus: getRealTimeStatusSync(activeMeeting, timeoutMinutes, durationMinutes)
             } : null,
             volunteerStudentMeetings: processedMeetings.map(m => ({
                 id: m.id,
@@ -371,8 +415,8 @@ export const getMeetingsByStudentId = async (req, res) => {
             })),
             meetingStats: {
                 volunteerStudentMeetingCount,
-                meetingLimit: 3,
-                canScheduleMore: volunteerStudentMeetingCount < 3,
+                meetingLimit,
+                canScheduleMore: volunteerStudentMeetingCount < meetingLimit,
                 totalVolunteerMeetings: processedMeetings.length
             },
             currentVolunteerId: volunteerId

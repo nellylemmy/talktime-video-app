@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Signup | TalkTime</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/main.css">
     <script>
         tailwind.config = {
             theme: {
@@ -38,8 +41,8 @@
             <p class="mt-2 text-sm text-gray-600">Create a secure administrator account</p>
         </div>
         
-        <div id="error-message" class="hidden p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert"></div>
-        <div id="success-message" class="hidden p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert"></div>
+        <div id="error-message" class="hidden p-4 mb-4 text-sm text-error-dark bg-error-light rounded-lg" role="alert"></div>
+        <div id="success-message" class="hidden p-4 mb-4 text-sm text-success-dark bg-success-light rounded-lg" role="alert"></div>
         
         <form id="admin-signup-form" class="space-y-6">
             <div>

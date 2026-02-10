@@ -107,7 +107,7 @@ export const getVolunteerMetrics = async (req, res) => {
             return res.json(JSON.parse(cached));
         }
 
-        // Get volunteer stats
+        // Get volunteer stats (exclude meetings cleared by admin)
         const statsResult = await pool.query(`
             SELECT
                 COUNT(*) as total_meetings,
@@ -117,6 +117,7 @@ export const getVolunteerMetrics = async (req, res) => {
                 COUNT(DISTINCT student_id) as unique_students
             FROM meetings
             WHERE volunteer_id = $1
+            AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
         `, [volunteerId]);
 
         const stats = statsResult.rows[0];

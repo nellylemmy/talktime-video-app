@@ -1,76 +1,98 @@
 import redisClient from '../config/redis.js';
 import pool from '../config/database.js';
-
-// Meeting duration: 40 minutes
-const MEETING_DURATION_MS = 40 * 60 * 1000;
-const WARNING_5MIN_MS = 35 * 60 * 1000; // 5 min before end
-const WARNING_1MIN_MS = 39 * 60 * 1000; // 1 min before end
+import { getTimerConfig } from '../config/appConfig.js';
 
 // Active timers map
 const activeTimers = new Map();
 
+// Cached config (refreshed periodically)
+let timerConfig = null;
+let configLastFetched = 0;
+const CONFIG_REFRESH_INTERVAL = 60000; // Refresh config every minute
+
+/**
+ * Get timer configuration (with caching)
+ */
+async function getConfig() {
+    const now = Date.now();
+    if (!timerConfig || now - configLastFetched > CONFIG_REFRESH_INTERVAL) {
+        timerConfig = await getTimerConfig();
+        configLastFetched = now;
+        console.log(`[Call Service] Timer config loaded: ${timerConfig.durationMinutes} min duration`);
+    }
+    return timerConfig;
+}
+
 /**
  * Start the meeting timer for a room
- * Emits warnings at 5min and 1min remaining, then auto-ends
+ * Emits warnings at configured intervals, then auto-ends
  */
-export const startMeetingTimer = (io, roomId, meetingId) => {
+export const startMeetingTimer = async (io, roomId, meetingId) => {
     // Don't start if already running
     if (activeTimers.has(roomId)) {
         console.log(`[Call Service] Timer already running for room ${roomId}`);
         return activeTimers.get(roomId);
     }
 
+    // Get configurable timer settings
+    const config = await getConfig();
+    const { durationMs, warning1Ms, warning2Ms, warning1Minutes, warning2Minutes, durationMinutes } = config;
+
     const startTime = Date.now();
     const timerState = {
         roomId,
         meetingId,
         startTime,
-        endTime: startTime + MEETING_DURATION_MS,
-        warned5min: false,
-        warned1min: false
+        endTime: startTime + durationMs,
+        warned5min: false,  // Keeping legacy names for compatibility
+        warned1min: false,
+        config
     };
 
     // Store timer state in Redis for persistence
     redisClient.hset(`timer:${roomId}`, {
         meetingId: meetingId?.toString() || '',
         startTime: startTime.toString(),
-        endTime: timerState.endTime.toString()
+        endTime: timerState.endTime.toString(),
+        durationMs: durationMs.toString(),
+        warning1Ms: warning1Ms.toString(),
+        warning2Ms: warning2Ms.toString()
     });
     redisClient.expire(`timer:${roomId}`, 3600); // 1 hour TTL
 
     // Main timer loop - check every 10 seconds
     const intervalId = setInterval(async () => {
         const elapsed = Date.now() - startTime;
-        const remaining = MEETING_DURATION_MS - elapsed;
+        const remaining = durationMs - elapsed;
 
-        // 5-minute warning
-        if (!timerState.warned5min && elapsed >= WARNING_5MIN_MS) {
+        // First warning (e.g., 5 minutes remaining)
+        if (!timerState.warned5min && elapsed >= warning1Ms) {
             timerState.warned5min = true;
             io.to(roomId).emit('meeting-timer-warning', {
                 roomId,
                 meetingId,
                 remainingMs: remaining,
-                remainingMinutes: 5,
-                message: '5 minutes remaining in the call'
+                remainingMinutes: warning1Minutes,
+                message: `${warning1Minutes} minutes remaining in the call`
             });
-            console.log(`[Call Service] 5-minute warning sent for room ${roomId}`);
+            console.log(`[Call Service] ${warning1Minutes}-minute warning sent for room ${roomId}`);
         }
 
-        // 1-minute warning
-        if (!timerState.warned1min && elapsed >= WARNING_1MIN_MS) {
+        // Second warning (e.g., 1 minute remaining)
+        if (!timerState.warned1min && elapsed >= warning2Ms) {
             timerState.warned1min = true;
             io.to(roomId).emit('meeting-timer-warning', {
                 roomId,
                 meetingId,
                 remainingMs: remaining,
-                remainingMinutes: 1,
-                message: '1 minute remaining in the call'
+                remainingMinutes: warning2Minutes,
+                message: `${warning2Minutes} minute${warning2Minutes === 1 ? '' : 's'} remaining in the call`
             });
-            console.log(`[Call Service] 1-minute warning sent for room ${roomId}`);
+            console.log(`[Call Service] ${warning2Minutes}-minute warning sent for room ${roomId}`);
         }
 
         // Timer expired - auto-end meeting
-        if (elapsed >= MEETING_DURATION_MS) {
+        if (elapsed >= durationMs) {
             await endMeetingTimer(io, roomId, meetingId, 'timer_expired');
         }
     }, 10000); // Check every 10 seconds
@@ -78,16 +100,21 @@ export const startMeetingTimer = (io, roomId, meetingId) => {
     timerState.intervalId = intervalId;
     activeTimers.set(roomId, timerState);
 
-    // Emit timer started event
+    // Emit timer started event with config
     io.to(roomId).emit('meeting-timer-start', {
         roomId,
         meetingId,
-        durationMs: MEETING_DURATION_MS,
+        durationMs,
+        durationMinutes,
         startTime,
-        endTime: timerState.endTime
+        endTime: timerState.endTime,
+        warnings: {
+            first: { ms: warning1Ms, minutes: warning1Minutes },
+            second: { ms: warning2Ms, minutes: warning2Minutes }
+        }
     });
 
-    console.log(`[Call Service] Meeting timer started for room ${roomId}, ends at ${new Date(timerState.endTime).toISOString()}`);
+    console.log(`[Call Service] Meeting timer started for room ${roomId}, ${durationMinutes}min duration, ends at ${new Date(timerState.endTime).toISOString()}`);
     return timerState;
 };
 
@@ -176,6 +203,8 @@ export const isTimerRunning = (roomId) => {
 export const recoverTimers = async (io) => {
     console.log('[Call Service] Recovering persisted timers...');
 
+    const config = await getConfig();
+
     const keys = await redisClient.keys('timer:*');
     let recovered = 0;
 
@@ -187,6 +216,11 @@ export const recoverTimers = async (io) => {
             const endTime = parseInt(timerData.endTime);
             const remaining = endTime - Date.now();
 
+            // Use stored config or current config
+            const durationMs = timerData.durationMs ? parseInt(timerData.durationMs) : config.durationMs;
+            const warning1Ms = timerData.warning1Ms ? parseInt(timerData.warning1Ms) : config.warning1Ms;
+            const warning2Ms = timerData.warning2Ms ? parseInt(timerData.warning2Ms) : config.warning2Ms;
+
             if (remaining > 0) {
                 // Timer still has time - recreate it
                 const startTime = parseInt(timerData.startTime);
@@ -197,30 +231,31 @@ export const recoverTimers = async (io) => {
                     meetingId,
                     startTime,
                     endTime,
-                    warned5min: (Date.now() - startTime) >= WARNING_5MIN_MS,
-                    warned1min: (Date.now() - startTime) >= WARNING_1MIN_MS
+                    warned5min: (Date.now() - startTime) >= warning1Ms,
+                    warned1min: (Date.now() - startTime) >= warning2Ms,
+                    config: { durationMs, warning1Ms, warning2Ms }
                 };
 
                 // Set up the interval
                 const intervalId = setInterval(async () => {
                     const elapsed = Date.now() - startTime;
-                    const rem = MEETING_DURATION_MS - elapsed;
+                    const rem = durationMs - elapsed;
 
-                    if (!timerState.warned5min && elapsed >= WARNING_5MIN_MS) {
+                    if (!timerState.warned5min && elapsed >= warning1Ms) {
                         timerState.warned5min = true;
                         io.to(roomId).emit('meeting-timer-warning', {
-                            roomId, meetingId, remainingMs: rem, remainingMinutes: 5
+                            roomId, meetingId, remainingMs: rem, remainingMinutes: config.warning1Minutes
                         });
                     }
 
-                    if (!timerState.warned1min && elapsed >= WARNING_1MIN_MS) {
+                    if (!timerState.warned1min && elapsed >= warning2Ms) {
                         timerState.warned1min = true;
                         io.to(roomId).emit('meeting-timer-warning', {
-                            roomId, meetingId, remainingMs: rem, remainingMinutes: 1
+                            roomId, meetingId, remainingMs: rem, remainingMinutes: config.warning2Minutes
                         });
                     }
 
-                    if (elapsed >= MEETING_DURATION_MS) {
+                    if (elapsed >= durationMs) {
                         await endMeetingTimer(io, roomId, meetingId, 'timer_expired');
                     }
                 }, 10000);

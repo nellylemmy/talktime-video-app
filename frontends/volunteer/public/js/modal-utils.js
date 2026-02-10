@@ -131,7 +131,7 @@ class TalkTimeModal {
                         id="${inputId}" 
                         placeholder="${placeholder}" 
                         value="${defaultValue}"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     />
                 </div>
             `;
@@ -340,7 +340,7 @@ class TalkTimeModal {
 
     getButtonClass(type) {
         const classes = {
-            'btn-primary': 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5',
+            'btn-primary': 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5',
             'btn-secondary': 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300',
             'btn-success': 'bg-green-600 text-white hover:bg-green-700',
             'btn-danger': 'bg-red-600 text-white hover:bg-red-700'

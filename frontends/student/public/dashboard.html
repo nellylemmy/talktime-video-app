@@ -2,972 +2,3175 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Student Dashboard - TalkTime</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
     <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="./css/instant-call.css">
+    <!-- Real-time Notifications -->
+    <script src="/shared/js/realtime-notifications.js"></script>
+
     <style>
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
-        .pulse-animation {
-            animation: pulse 1s infinite;
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
         }
-        .hidden {
-            display: none;
+
+        /* ===========================================
+           MOBILE FIRST (< 768px)
+           =========================================== */
+        body {
+            padding-top: 70px;
+            padding-bottom: 85px; /* Enlarged bottom nav */
+            background-color: #f0f4ff;
+            min-height: 100vh;
         }
-        .gradient-text {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        #main-header {
-            background: rgba(255, 255, 255, 0.95);
+
+        /* Mobile header */
+        .mobile-header {
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            height: 70px;
         }
+
+        .header-inner {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            height: 100%;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-text {
+            font-size: 14px;
+        }
+
+        /* Bottom navigation for mobile - enlarged for accessibility */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 4px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            min-height: 72px;
+            transition: color 0.2s, background 0.2s;
+            gap: 4px;
+        }
+
+        .bottom-nav-item.active {
+            color: var(--brand-primary);
+            background: rgba(209, 1, 0, 0.05);
+        }
+
+        .bottom-nav-item i {
+            font-size: 24px;
+        }
+
+        .bottom-nav-item span {
+            margin-top: 2px;
+        }
+
+        /* Hide desktop tabs on mobile */
+        .desktop-tabs {
+            display: none;
+        }
+
+        /* Content area - mobile */
+        .content-area {
+            width: 100%;
+            padding: 16px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Card styles - mobile */
+        .meeting-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        /* Countdown timer card */
+        .countdown-card {
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin: 12px 0;
+        }
+
+        .countdown-title {
+            color: #4f46e5;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .countdown-timer {
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .countdown-timer.warning {
+            color: #f59e0b;
+        }
+
+        .countdown-timer.urgent {
+            color: #dc2626;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .countdown-timer.ready {
+            color: #16a34a;
+        }
+
+        .session-info {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Join button - hidden by default until meeting time */
+        .join-btn {
+            background: var(--color-success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .join-btn.visible {
+            display: inline-flex;
+        }
+
+        /* Waiting button - shown before meeting window */
+        .waiting-btn {
+            background: #e5e7eb;
+            color: #6b7280;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            width: 100%;
+            cursor: default;
+        }
+
+        .join-btn.visible {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .join-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-scheduled {
+            background: rgba(56, 103, 255, 0.1);
+            color: var(--brand-secondary);
+        }
+
+        .status-completed {
+            background: rgba(17, 108, 0, 0.1);
+            color: var(--color-success);
+        }
+
+        .status-canceled {
+            background: rgba(125, 0, 0, 0.1);
+            color: var(--color-error);
+        }
+
+        .status-missed {
+            background: rgba(255, 224, 6, 0.2);
+            color: #92400e;
+        }
+
+        /* Profile dropdown */
         #profile-dropdown.show {
             display: block;
             opacity: 1;
             transform: translateY(0);
         }
-        body { 
-            padding-top: 120px; 
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Tab content sections */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* History filter buttons */
+        .history-filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-filter-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .history-filter-btn.active {
+            background: var(--brand-primary);
+            color: white;
+        }
+
+        /* History item card */
+        .history-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .history-item-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .history-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-item-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 15px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item-date {
+            font-size: 13px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-item-date i {
+            font-size: 11px;
+        }
+
+        /* Status badges */
+        .history-status {
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .history-status.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .history-status.missed {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .history-status.declined {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .history-status.canceled,
+        .history-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Empty state for history */
+        .history-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 48px 20px;
+            color: #9ca3af;
+            min-height: 200px;
+        }
+
+        .history-empty i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+            display: block;
+        }
+
+        .history-empty p {
+            font-size: 15px;
+            margin: 0;
+        }
+
+        /* History grid - stack on mobile */
+        .history-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Meetings grid for upcoming/instant */
+        .meetings-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Messages grid */
+        .messages-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Notifications grid */
+        .notifications-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Section header */
+        .section-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Notification item */
+        .notification-item {
+            padding: 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--brand-primary);
+        }
+
+        .notification-item.unread {
+            background: rgba(209, 1, 0, 0.05);
+        }
+
+        /* Message item - clickable */
+        .message-item {
+            padding: 12px;
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 8px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .message-item:hover {
+            border-color: var(--brand-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .message-item:active {
+            transform: scale(0.99);
+        }
+
+        .message-item.unread {
+            background: rgba(209, 1, 0, 0.03);
+            border-color: var(--brand-primary);
+        }
+
+        .unread-badge {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--brand-primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Conversation Modal */
+        .conversation-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .conversation-modal.active {
+            display: flex;
+        }
+
+        .conversation-panel {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            height: 85vh;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .conversation-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .close-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .conversation-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--brand-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .conversation-info {
+            flex: 1;
+        }
+
+        .conversation-info h3 {
+            font-weight: 600;
+            font-size: 16px;
+            color: #111827;
+            margin: 0 0 2px;
+        }
+
+        .conversation-role {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: capitalize;
+        }
+
+        .conversation-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f9fafb;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message-bubble.sent {
+            background: var(--brand-primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background: white;
+            color: #111827;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .message-bubble.sent .message-time {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+        }
+
+        .message-bubble.sending {
+            opacity: 0.7;
+        }
+
+        .message-bubble.failed {
+            border: 2px solid #dc2626;
+        }
+
+        /* Message Input Area */
+        .message-input-area {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            border-radius: 24px;
+            padding: 4px 4px 4px 16px;
+        }
+
+        .input-wrapper input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            padding: 10px 0;
+            outline: none;
+            color: #111827;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #9ca3af;
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--brand-primary);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--brand-primary-dark, #b00000);
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .send-btn i {
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .conversation-panel {
+                height: 75vh;
+                border-radius: 16px;
+                margin: auto;
+            }
+
+            .conversation-modal {
+                align-items: center;
+            }
+        }
+
+        /* ===========================================
+           TABLET (768px - 1023px)
+           =========================================== */
+        @media (min-width: 768px) {
+            body {
+                /* Header (80px) + Tabs (~50px) */
+                padding-top: 130px;
+                padding-bottom: 0;
+            }
+
+            .mobile-header {
+                height: 80px;
+            }
+
+            .header-inner {
+                max-width: 768px;
+                padding: 0 24px;
+            }
+
+            .logo-text {
+                font-size: 16px;
+            }
+
+            .bottom-nav {
+                display: none;
+            }
+
+            .desktop-tabs {
+                display: block;
+                background: white;
+                border-bottom: 1px solid #e5e7eb;
+                position: fixed;
+                top: 80px;
+                left: 0;
+                right: 0;
+                z-index: 35;
+            }
+
+            .desktop-tabs nav {
+                max-width: 768px;
+                margin: 0 auto;
+                padding: 0 24px;
+                display: flex;
+                gap: 4px;
+            }
+
+            .tab-btn {
+                padding: 14px 16px;
+                font-size: 14px;
+            }
+
+            .content-area {
+                width: 100%;
+                padding: 24px;
+                max-width: 768px;
+                margin: 0 auto;
+            }
+
+            /* 2-column grid for history */
+            .history-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            /* 2-column for meetings */
+            .meetings-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            /* 2-column for messages */
+            .messages-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            /* Single column for notifications (better readability) */
+            .notifications-grid {
+                max-width: 600px;
+                gap: 12px;
+            }
+
+            .meeting-card {
+                padding: 20px;
+                border-radius: 16px;
+            }
+
+            .meeting-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+
+            .join-btn {
+                width: auto;
+                min-width: 140px;
+            }
+
+            .section-header {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .empty-state {
+                padding: 60px 40px;
+                grid-column: 1 / -1; /* Span all columns in grid */
+            }
+
+            .empty-state i {
+                font-size: 56px;
+            }
+        }
+
+        /* ===========================================
+           LAPTOP (1024px - 1279px)
+           =========================================== */
+        @media (min-width: 1024px) {
+            body {
+                /* Header (72px) + Tabs (~52px) */
+                padding-top: 124px;
+            }
+
+            .mobile-header {
+                height: 72px;
+            }
+
+            .header-inner {
+                max-width: 1024px;
+                padding: 0 32px;
+            }
+
+            .desktop-tabs {
+                top: 72px;
+            }
+
+            .desktop-tabs nav {
+                max-width: 1024px;
+                padding: 0 32px;
+                gap: 8px;
+            }
+
+            .tab-btn {
+                padding: 16px 20px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .tab-btn:hover {
+                background: #f9fafb;
+            }
+
+            .content-area {
+                width: 100%;
+                padding: 32px;
+                max-width: 1024px;
+                margin: 0 auto;
+            }
+
+            /* 3-column grid for history */
+            .history-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+
+            /* 2-column meetings with more space */
+            .meetings-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+
+            /* 3-column for messages */
+            .messages-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+
+            /* 2-column notifications for better use of space */
+            .notifications-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                max-width: none;
+                gap: 16px;
+            }
+
+            .meeting-card {
+                padding: 24px;
+            }
+
+            .section-header {
+                font-size: 22px;
+                margin-bottom: 24px;
+            }
+
+            .notification-item,
+            .message-item {
+                padding: 16px;
+                border-radius: 12px;
+            }
+        }
+
+        /* ===========================================
+           DESKTOP / LARGE MONITORS (1280px+)
+           =========================================== */
+        @media (min-width: 1280px) {
+            body {
+                /* Header (80px) + Tabs (~54px) */
+                padding-top: 134px;
+            }
+
+            .mobile-header {
+                height: 80px;
+            }
+
+            .header-inner {
+                max-width: 1280px;
+                padding: 0 48px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .desktop-tabs {
+                top: 80px;
+            }
+
+            .desktop-tabs nav {
+                max-width: 1280px;
+                padding: 0 48px;
+                gap: 12px;
+            }
+
+            .tab-btn {
+                padding: 16px 24px;
+                font-size: 15px;
+                border-radius: 8px 8px 0 0;
+            }
+
+            .content-area {
+                width: 100%;
+                padding: 40px 48px;
+                max-width: 1280px;
+                margin: 0 auto;
+            }
+
+            /* 3-column history with larger gaps */
+            .history-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 24px;
+            }
+
+            /* 3-column meetings on large screens */
+            .meetings-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 24px;
+            }
+
+            /* 3-column messages */
+            .messages-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+
+            /* 3-column notifications */
+            .notifications-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+
+            .meeting-card {
+                padding: 28px;
+                border-radius: 20px;
+            }
+
+            .join-btn {
+                padding: 14px 32px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+
+            .join-btn:hover {
+                background: #0d5200;
+                transform: translateY(-1px);
+            }
+
+            .section-header {
+                font-size: 24px;
+                margin-bottom: 28px;
+            }
+
+            .empty-state {
+                padding: 80px 60px;
+                grid-column: 1 / -1; /* Span all columns in grid */
+                max-width: 500px;
+            }
+
+            .empty-state i {
+                font-size: 64px;
+            }
+        }
+
+        /* ===========================================
+           EXTRA LARGE MONITORS (1536px+)
+           =========================================== */
+        @media (min-width: 1536px) {
+            .header-inner {
+                max-width: 1440px;
+                margin: 0 auto;
+            }
+
+            .desktop-tabs nav {
+                max-width: 1440px;
+                margin: 0 auto;
+            }
+
+            .content-area {
+                width: 100%;
+                max-width: 1440px;
+                padding: 48px 64px;
+                margin: 0 auto;
+            }
+
+            /* 4-column meetings on very large screens */
+            .meetings-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 28px;
+            }
+
+            /* 4-column messages */
+            .messages-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 24px;
+            }
+
+            /* 4-column notifications */
+            .notifications-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 24px;
+            }
+
+            .history-grid {
+                gap: 28px;
+            }
+
+            .meeting-card {
+                padding: 32px;
+            }
+
+            .message-item,
+            .notification-item {
+                padding: 20px;
+            }
+        }
+
+        /* Line clamp fallback */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Tab button transition */
+        .tab-btn {
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: var(--brand-primary);
+            color: var(--brand-primary);
+        }
+
+        /* Message and notification hover effects for desktop */
+        @media (min-width: 768px) {
+            .message-item:hover,
+            .notification-item:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+
+            .message-item,
+            .notification-item {
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+        }
+
+        /* Brand colors */
+        .text-brand-primary { color: var(--brand-primary) !important; }
+        .text-brand-secondary { color: var(--brand-secondary) !important; }
+        .bg-brand-primary { background-color: var(--brand-primary) !important; }
+        .text-success { color: var(--color-success) !important; }
+        .text-error { color: var(--color-error) !important; }
+
+        /* Gradient text */
+        .gradient-text {
+            color: var(--brand-primary);
+            font-weight: 700;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top-color: var(--brand-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pull to refresh indicator area */
+        .pull-indicator {
+            text-align: center;
+            padding: 8px;
+            color: #9ca3af;
+            font-size: 12px;
         }
     </style>
 </head>
-<body class="gradient-bg">
-    <!-- Phone-like Instant Call UI will be injected here by instant-call-ui.js -->
+<body>
+    <!-- Header -->
+    <header class="mobile-header fixed top-0 left-0 right-0 z-40">
+        <div class="header-inner">
+            <!-- Logo -->
+            <a href="/" class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-7 md:w-7" viewBox="0 0 24 24" fill="none">
+                    <path stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="logo-text font-bold text-gray-900 tracking-tight">TALKTIME</span>
+            </a>
 
-    <div class="min-h-screen bg-gray-50">
-        <!-- Header Navigation (same as other pages) -->
-        <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
-            <nav class="container mx-auto flex items-center justify-between relative">
-                <div class="flex flex-col">
-                    <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
-                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-                        </svg>
-                        <span class="gradient-text">TALK TIME</span>
-                    </a>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
-                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
-                            Powered by ADEA Foundation
-                        </a>
-                    </div>
-                </div>
-              
-                <!-- Desktop Navigation Menu -->
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="/student/dashboard" class="px-4 py-2 text-blue-600 bg-blue-50 rounded-lg transition-colors font-medium">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </a>
-                    <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                </div>
-                
+            <!-- Notification Bell & Profile Section -->
+            <div class="flex items-center gap-2">
+                <!-- Notification Bell -->
+                <button id="notification-bell-btn" class="relative p-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors" onclick="switchTab('notifications')">
+                    <i class="fas fa-bell text-gray-600 text-lg"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 hidden">0</span>
+                </button>
+
                 <!-- Profile Section -->
-                <div id="nav-profile-section" class="flex items-center space-x-4">
-                    <!-- Notification Bell -->
+                <div class="relative">
+                    <button id="profile-btn" class="flex items-center gap-2 md:gap-3 p-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                    <span class="text-sm font-medium text-gray-700 hidden sm:inline" id="studentName">Student</span>
                     <div class="relative">
-                        <div id="notificationBell" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Bell body -->
-                                <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                
-                                <!-- Bell clapper -->
-                                <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span id="notificationCount" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">0</span>
-                        </div>
+                        <img id="nav-profile-image" src="" alt="Profile" class="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border-2 border-gray-200 hidden">
+                        <div id="student-initial" class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm md:text-base">S</div>
                     </div>
-                    <div class="relative">
-                        <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
-                            <span id="student-greeting" class="font-semibold sm:inline">Welcome, <span id="studentName">Student</span>!</span>
-                            <div class="relative">
-                                <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
-                                <div id="student-initial" class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">S</div>
-                            </div>
-                            <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
-                            <div class="px-4 py-2 text-sm text-gray-600 border-b">
-                                <div class="font-medium" id="dropdown-student-name">Student</div>
-                                <div class="text-xs" id="dropdown-admission">Admission: <span id="admissionNumber"></span></div>
-                            </div>
-                            <hr class="my-2 border-gray-200">
-                            <a href="#" id="logout-link" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                            </a>
-                        </div>
-                    </div>
-                </div>
-              
-                <!-- Mobile Menu Button -->
-                <div class="md:hidden">
-                    <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                        </svg>
-                    </button>
-                </div>
-              
-                <!-- Mobile Menu -->
-                <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
-                    <a href="/student/dashboard" class="block py-2 px-4 text-blue-600 font-semibold">
-                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                    </a>
-                    <a href="/" class="block py-2 px-4 text-gray-800 hover:text-green-600">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </a>
-                    <div class="border-t pt-2">
-                        <div class="px-4 py-2 text-sm text-gray-600">
-                            <div class="font-medium" id="mobile-student-name">Student</div>
-                            <div class="text-xs">Admission: <span id="mobile-admission"></span></div>
-                        </div>
-                        <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                        </a>
-                    </div>
-                </div>
-            </nav>
-        </header>
+                </button>
 
-        <!-- Main Content -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Navigation Tabs -->
-            <div class="border-b border-gray-200 mb-8">
-                <nav class="-mb-px flex space-x-8">
-                    <button id="tab-upcoming" class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
-                        <i class="fas fa-calendar-alt mr-2"></i>Upcoming Meetings
-                    </button>
-                    <button id="tab-history" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        <i class="fas fa-history mr-2"></i>Meeting History
-                    </button>
-                    <button id="tab-instant" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        <i class="fas fa-phone mr-2"></i>Instant Calls
-                    </button>
-                    <button id="tab-messages" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        <i class="fas fa-envelope mr-2"></i>Messages
-                    </button>
-                    <button id="tab-notifications" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        <i class="fas fa-bell mr-2"></i>Notifications
-                    </button>
-                </nav>
+                <!-- Dropdown -->
+                <div id="profile-dropdown" class="absolute right-0 top-full mt-2 w-56 md:w-64 bg-white rounded-xl shadow-lg py-2 hidden opacity-0 transform -translate-y-2 transition-all z-50 border border-gray-100">
+                    <div class="px-4 py-3 border-b border-gray-100">
+                        <div class="font-semibold text-gray-900" id="dropdown-student-name">Student</div>
+                        <div class="flex items-center gap-1.5 mt-2 text-sm text-gray-600">
+                            <i class="fas fa-id-card text-gray-400"></i>
+                            <span id="admissionNumber" class="font-medium">Loading...</span>
+                        </div>
+                    </div>
+                    <a href="#" id="logout-link" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Desktop Tabs (hidden on mobile) -->
+    <div class="desktop-tabs">
+        <nav>
+            <button data-tab="upcoming" class="tab-btn active border-b-2 border-brand-primary text-brand-primary">
+                <span class="relative inline-block">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    <span id="upcoming-tab-badge" class="hidden absolute -top-1.5 -left-1 min-w-[18px] h-[18px] px-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center justify-center"></span>
+                </span>Upcoming
+            </button>
+            <button data-tab="history" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <i class="fas fa-history mr-2"></i>History
+            </button>
+            <button data-tab="instant" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <i class="fas fa-bolt mr-2"></i>Instant Calls
+            </button>
+            <button data-tab="messages" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <span class="relative inline-block">
+                    <i class="fas fa-envelope mr-2"></i>
+                    <span id="messages-tab-badge" class="hidden absolute -top-1.5 -left-1 min-w-[18px] h-[18px] px-1 bg-brand-primary text-white text-xs font-semibold rounded-full flex items-center justify-center"></span>
+                </span>Messages
+            </button>
+            <button data-tab="notifications" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <span class="relative inline-block">
+                    <i class="fas fa-bell mr-2"></i>
+                    <span id="notifications-tab-dot" class="hidden absolute -top-1 -left-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </span>Notifications
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <!-- Upcoming Meetings Tab -->
+        <div id="content-upcoming" class="tab-content active">
+            <h2 class="section-header">
+                <i class="fas fa-calendar-alt text-brand-secondary"></i>
+                Upcoming Meetings
+            </h2>
+            <div id="upcomingMeetingsList">
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Loading meetings...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting History Tab -->
+        <div id="content-history" class="tab-content">
+            <h2 class="section-header">
+                <i class="fas fa-history text-brand-secondary"></i>
+                Meeting History
+            </h2>
+
+            <!-- Filter Pills -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button data-filter="all" class="history-filter-btn active">All</button>
+                <button data-filter="completed" class="history-filter-btn">Completed</button>
+                <button data-filter="missed" class="history-filter-btn">Missed</button>
+                <button data-filter="declined" class="history-filter-btn">Declined</button>
+                <button data-filter="canceled" class="history-filter-btn">Canceled</button>
             </div>
 
-            <!-- Tab Content -->
-            <div id="tabContent">
-                <!-- Upcoming Meetings Tab -->
-                <div id="content-upcoming" class="tab-content">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Upcoming Meetings</h3>
-                        <div id="upcomingMeetingsList" class="space-y-4">
-                            <p class="text-center text-gray-500 italic">Loading your upcoming meetings...</p>
-                        </div>
+            <!-- History List -->
+            <div id="historyList" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">
+                    <div class="loading-spinner mx-auto mb-3"></div>
+                    Loading history...
+                </div>
+            </div>
+        </div>
+
+        <!-- Instant Calls Tab -->
+        <div id="content-instant" class="tab-content">
+            <h2 class="section-header">
+                <i class="fas fa-bolt text-brand-secondary"></i>
+                Instant Calls
+            </h2>
+            <div id="instantCallsList">
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Loading instant calls...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Tab -->
+        <div id="content-messages" class="tab-content">
+            <h2 class="section-header">
+                <i class="fas fa-envelope text-brand-secondary"></i>
+                Messages
+            </h2>
+            <div id="messagesList">
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Loading messages...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation Modal -->
+        <div id="conversation-modal" class="conversation-modal">
+            <div class="conversation-panel">
+                <div class="conversation-header">
+                    <button id="close-conversation" class="close-btn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="conversation-avatar" id="conversation-avatar">V</div>
+                    <div class="conversation-info">
+                        <h3 id="conversation-name">Volunteer Name</h3>
+                        <span class="conversation-role" id="conversation-role">Volunteer</span>
                     </div>
                 </div>
-
-                <!-- Meeting History Tab -->
-                <div id="content-history" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Completed Meetings -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h4 class="text-lg font-medium text-green-900 mb-4">
-                                <i class="fas fa-check-circle mr-2 text-green-500"></i>Completed
-                            </h4>
-                            <div id="completedMeetings" class="space-y-3">
-                                <p class="text-gray-500 text-sm">Loading...</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Canceled Meetings -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h4 class="text-lg font-medium text-red-900 mb-4">
-                                <i class="fas fa-times-circle mr-2 text-red-500"></i>Canceled
-                            </h4>
-                            <div id="canceledMeetings" class="space-y-3">
-                                <p class="text-gray-500 text-sm">Loading...</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Missed Meetings -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h4 class="text-lg font-medium text-yellow-900 mb-4">
-                                <i class="fas fa-exclamation-circle mr-2 text-yellow-500"></i>Missed
-                            </h4>
-                            <div id="missedMeetings" class="space-y-3">
-                                <p class="text-gray-500 text-sm">Loading...</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="conversation-messages" id="conversation-messages">
+                    <!-- Messages will be loaded here -->
                 </div>
-
-                <!-- Instant Calls Tab -->
-                <div id="content-instant" class="tab-content hidden">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Instant Call History</h3>
-                        <div id="instantCallsList" class="space-y-4">
-                            <p class="text-center text-gray-500 italic">Loading your instant call history...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Messages Tab -->
-                <div id="content-messages" class="tab-content hidden">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Your Messages</h3>
-                        <div id="messagesList" class="space-y-4">
-                            <p class="text-center text-gray-500 italic">Loading your messages...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notifications Tab -->
-                <div id="content-notifications" class="tab-content hidden">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-900">Your Notifications</h3>
-                            <button id="markAllRead" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
-                        </div>
-                        <div id="notificationsList" class="space-y-4">
-                            <p class="text-center text-gray-500 italic">Loading your notifications...</p>
-                        </div>
+                <div class="message-input-area">
+                    <div class="input-wrapper">
+                        <input type="text" id="message-input" placeholder="Type a message..." maxlength="2000" autocomplete="off">
+                        <button id="send-message-btn" class="send-btn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Load JWT Auth Utils -->
+
+        <!-- Notifications Tab -->
+        <div id="content-notifications" class="tab-content">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="section-header mb-0">
+                    <i class="fas fa-bell text-brand-secondary"></i>
+                    Notifications
+                </h2>
+                <button id="markAllRead" class="text-sm text-brand-primary font-medium">
+                    Mark all read
+                </button>
+            </div>
+            <div id="notificationsList">
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Loading notifications...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation (Mobile Only) -->
+    <nav class="bottom-nav">
+        <div class="flex">
+            <button data-tab="upcoming" class="bottom-nav-item active">
+                <span class="relative inline-block">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="upcoming-tab-badge-mobile" class="hidden absolute -top-1 -right-1.5 min-w-[16px] h-[16px] px-0.5 bg-green-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center"></span>
+                </span>
+                <span>Upcoming</span>
+            </button>
+            <button data-tab="history" class="bottom-nav-item">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </button>
+            <button data-tab="instant" class="bottom-nav-item">
+                <i class="fas fa-bolt"></i>
+                <span>Calls</span>
+            </button>
+            <button data-tab="messages" class="bottom-nav-item">
+                <span class="relative inline-block">
+                    <i class="fas fa-envelope"></i>
+                    <span id="messages-tab-badge-mobile" class="hidden absolute -top-0.5 -right-1.5 min-w-[16px] h-[16px] px-0.5 bg-brand-primary text-white text-[10px] font-semibold rounded-full flex items-center justify-center"></span>
+                </span>
+                <span>Messages</span>
+            </button>
+            <button data-tab="notifications" class="bottom-nav-item">
+                <span class="relative inline-block">
+                    <i class="fas fa-bell"></i>
+                    <span id="notifications-tab-dot-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </span>
+                <span>Alerts</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Scripts -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
 
     <script>
-    // Initialize TalkTime Auth for students FIRST
+    // Initialize TalkTime Auth for students
     window.TalkTimeAuth = new TalkTimeJWTAuth('student');
-    
-    // Load enhanced instant call UI AFTER JWT Auth is initialized
+
+    // Load enhanced instant call UI
     const script = document.createElement('script');
-    script.src = './js/enhanced-instant-call-ui.js';
-    script.onload = function() {
-        console.log('✅ Enhanced Instant Call UI loaded after JWT Auth initialization');
-    };
+    script.src = './js/enhanced-instant-call-ui.js?v=' + Date.now();
     document.head.appendChild(script);
-    
+
     // Global variables
     let currentUser = null;
     let currentTab = 'upcoming';
-    
-    // Check authentication on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if student is authenticated
+
+    // DOM Ready
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Check authentication
         if (!window.TalkTimeAuth.isAuthenticated()) {
-            // Redirect to login if not authenticated
             window.location.href = '/student/login.html';
             return;
         }
-        
-        // Get user info from JWT token
+
+        // Get user info from localStorage first for fast initial render
         currentUser = window.TalkTimeAuth.getUser();
         if (!currentUser) {
-            console.error('Student data not found in token');
             window.location.href = '/student/login.html';
             return;
         }
-        
-        // Set student info
-        document.getElementById('studentName').textContent = currentUser.fullName || 'Student';
-        document.getElementById('admissionNumber').textContent = currentUser.admissionNumber || '';
-        
-        // Initialize the dashboard
-        initDashboard(currentUser);
-        
-        // Add event listeners
+
+        // Update UI with cached data first
+        updateUserUI(currentUser);
+
+        // Fetch fresh user info from API to ensure admission number is correct
+        try {
+            const response = await fetch('/api/v1/students/me/info', {
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    currentUser = { ...currentUser, ...data.data };
+                    updateUserUI(currentUser);
+                }
+            }
+        } catch (err) {
+            console.log('Could not fetch fresh user info, using cached data');
+        }
+
+        // Initialize dashboard
+        initDashboard();
         setupEventListeners();
-        
-        // Load initial data
         loadUpcomingMeetings();
         loadNotifications();
     });
-    
-    // Initialize dashboard with user data
-    function initDashboard(user) {
-        console.log('Initializing comprehensive dashboard for student:', user.fullName, 'ID:', user.id);
-        
-        // Phone-like instant call UI is automatically initialized by instant-call-ui.js
-        joinSocketRoom(user.id);
+
+    function updateUserUI(user) {
+        const fullName = user.fullName || user.full_name || 'Student';
+        const profileImage = user.profileImage || user.profile_image || null;
+
+        // Extract admission number - check multiple field names
+        let admissionNumber = user.admissionNumber || user.admission_number || user.username || '';
+
+        // If it includes dashes, extract just the ADM part (e.g., "ADM0001" from "ADM0001-nelson-lemein")
+        if (admissionNumber && admissionNumber.includes('-')) {
+            admissionNumber = admissionNumber.split('-')[0];
+        }
+
+        // Update header name (first name only for mobile)
+        document.getElementById('studentName').textContent = fullName.split(' ')[0];
+
+        // Update dropdown name
+        document.getElementById('dropdown-student-name').textContent = fullName;
+
+        // Update admission number in dropdown
+        const admissionEl = document.getElementById('admissionNumber');
+        if (admissionEl) {
+            admissionEl.textContent = admissionNumber || 'N/A';
+        }
+
+        // Profile image or initials
+        const profileImgElement = document.getElementById('nav-profile-image');
+        const initialElement = document.getElementById('student-initial');
+
+        if (profileImage) {
+            profileImgElement.src = profileImage;
+            profileImgElement.classList.remove('hidden');
+            initialElement.classList.add('hidden');
+        } else {
+            const nameParts = fullName.trim().split(/\s+/);
+            let initials = nameParts.length >= 2
+                ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+                : nameParts[0].charAt(0).toUpperCase();
+            initialElement.textContent = initials || 'S';
+            initialElement.classList.remove('hidden');
+            profileImgElement.classList.add('hidden');
+        }
     }
-    
-    // Setup all event listeners
+
+    function initDashboard() {
+        console.log('Dashboard initialized for:', currentUser.fullName);
+        joinSocketRoom(currentUser.id);
+        // Fetch initial unread notification count
+        fetchUnreadNotificationCount();
+        fetchUnreadMessageCount();
+    }
+
     function setupEventListeners() {
-        // Logout button
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', handleLogout);
-        }
-        
-        // Tab navigation
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tabId = e.target.id.replace('tab-', '');
-                switchTab(tabId);
-            });
-        });
-        
-        // Notification bell
-        document.getElementById('notificationBell').addEventListener('click', () => {
-            switchTab('notifications');
-        });
-        
-        // Mark all notifications as read
-        document.getElementById('markAllRead').addEventListener('click', markAllNotificationsRead);
-    }
-    
-    // Switch between tabs
-    function switchTab(tabId) {
-        // Update tab buttons
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.classList.remove('active', 'border-blue-500', 'text-blue-600');
-            button.classList.add('border-transparent', 'text-gray-500');
-        });
-        
-        const activeTab = document.getElementById(`tab-${tabId}`);
-        if (activeTab) {
-            activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
-            activeTab.classList.remove('border-transparent', 'text-gray-500');
-        }
-        
-        // Update tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.add('hidden');
-        });
-        
-        const activeContent = document.getElementById(`content-${tabId}`);
-        if (activeContent) {
-            activeContent.classList.remove('hidden');
-        }
-        
-        currentTab = tabId;
-        
-        // Load data for the active tab
-        loadTabData(tabId);
-    }
-    
-    // Load data based on active tab
-    function loadTabData(tabId) {
-        switch(tabId) {
-            case 'upcoming':
-                loadUpcomingMeetings();
-                break;
-            case 'history':
-                loadMeetingHistory();
-                break;
-            case 'instant':
-                loadInstantCalls();
-                break;
-            case 'messages':
-                loadMessages();
-                break;
-            case 'notifications':
-                loadNotifications();
-                break;
-        }
-    }
-    
-    // Load upcoming meetings
-    async function loadUpcomingMeetings() {
-        try {
-            console.log('📅 Loading upcoming meetings...');
-            
-            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/meetings/upcoming', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Upcoming meetings loaded:', data);
-                
-                if (data.success && data.meetings) {
-                    displayUpcomingMeetings(data.meetings);
-                } else {
-                    displayUpcomingMeetings([]);
-                }
-            } else {
-                console.error('❌ Failed to fetch upcoming meetings, status:', response.status);
-                displayUpcomingMeetings([]);
-                
-                if (response.status === 401) {
-                    handleAuthError();
-                }
-            }
-        } catch (error) {
-            console.error('❌ Network error fetching upcoming meetings:', error);
-            displayUpcomingMeetings([]);
-        }
-    }
-    
-    // Load meeting history
-    async function loadMeetingHistory() {
-        try {
-            console.log('📚 Loading meeting history...');
-            
-            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/meetings/history', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Meeting history loaded:', data);
-                
-                if (data.success && data.history) {
-                    displayMeetingHistory(data.history);
-                } else {
-                    displayMeetingHistory({ completed: [], canceled: [], missed: [] });
-                }
-            } else {
-                console.error('❌ Failed to fetch meeting history, status:', response.status);
-                displayMeetingHistory({ completed: [], canceled: [], missed: [] });
-                
-                if (response.status === 401) {
-                    handleAuthError();
-                }
-            }
-        } catch (error) {
-            console.error('❌ Network error fetching meeting history:', error);
-            displayMeetingHistory({ completed: [], canceled: [], missed: [] });
-        }
-    }
-    
-    // Load instant calls
-    async function loadInstantCalls() {
-        try {
-            console.log('📞 Loading instant calls...');
-            
-            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/instant-calls', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Instant calls loaded:', data);
-                
-                if (data.success && data.instantCalls) {
-                    displayInstantCalls(data.instantCalls);
-                } else {
-                    displayInstantCalls([]);
-                }
-            } else {
-                console.error('❌ Failed to fetch instant calls, status:', response.status);
-                displayInstantCalls([]);
-                
-                if (response.status === 401) {
-                    handleAuthError();
-                }
-            }
-        } catch (error) {
-            console.error('❌ Network error fetching instant calls:', error);
-            displayInstantCalls([]);
-        }
-    }
-    
-    // Load messages
-    async function loadMessages() {
-        try {
-            console.log('💬 Loading messages...');
-            
-            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/messages', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Messages loaded:', data);
-                
-                if (data.success && data.messages) {
-                    displayMessages(data.messages);
-                } else {
-                    displayMessages([]);
-                }
-            } else {
-                console.error('❌ Failed to fetch messages, status:', response.status);
-                displayMessages([]);
-                
-                if (response.status === 401) {
-                    handleAuthError();
-                }
-            }
-        } catch (error) {
-            console.error('❌ Network error fetching messages:', error);
-            displayMessages([]);
-        }
-    }
-    
-    // Load notifications
-    async function loadNotifications() {
-        try {
-            console.log('🔔 Loading notifications...');
-            
-            const response = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/students/me/notifications', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.TalkTimeAuth.getAccessToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Notifications loaded:', data);
-                
-                if (data.success && data.notifications) {
-                    displayNotifications(data.notifications);
-                    updateNotificationCount(data.unreadCount || 0);
-                } else {
-                    displayNotifications([]);
-                    updateNotificationCount(0);
-                }
-            } else {
-                console.error('❌ Failed to fetch notifications, status:', response.status);
-                displayNotifications([]);
-                updateNotificationCount(0);
-                
-                if (response.status === 401) {
-                    handleAuthError();
-                }
-            }
-        } catch (error) {
-            console.error('❌ Network error fetching notifications:', error);
-            displayNotifications([]);
-            updateNotificationCount(0);
-        }
-    }
-    
-    // Display upcoming meetings list
-    function displayUpcomingMeetings(meetings) {
-        const meetingsList = document.getElementById('upcomingMeetingsList');
-        
-        if (!meetings || meetings.length === 0) {
-            meetingsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no upcoming meetings.</p>';
-            return;
-        }
-        
-        const meetingsHtml = meetings.map(meeting => {
-            const meetingDate = new Date(meeting.scheduledTime);
-            const formattedDate = meetingDate.toLocaleDateString();
-            const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Check if meeting was rescheduled
-            const isRescheduled = meeting.is_rescheduled || meeting.isRescheduled;
-            const rescheduleCount = meeting.reschedule_count || meeting.rescheduleCount || 0;
-            const lastRescheduledAt = meeting.last_rescheduled_at || meeting.lastRescheduledAt;
-            
-            // Format original time if available
-            let originalTimeInfo = '';
-            if (isRescheduled && meeting.original_scheduled_time) {
-                const originalDate = new Date(meeting.original_scheduled_time);
-                const originalFormattedDate = originalDate.toLocaleDateString();
-                const originalFormattedTime = originalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                originalTimeInfo = `
-                    <p class="text-xs text-orange-600 mt-1 bg-orange-50 px-2 py-1 rounded">
-                        <i class="fas fa-history mr-1"></i>Originally scheduled: ${originalFormattedDate} at ${originalFormattedTime}
-                    </p>
-                `;
-            }
-            
-            // Format reschedule info
-            let rescheduleInfo = '';
-            if (isRescheduled && lastRescheduledAt) {
-                const rescheduleDate = new Date(lastRescheduledAt);
-                const rescheduleFormatted = rescheduleDate.toLocaleDateString();
-                rescheduleInfo = `
-                    <p class="text-xs text-blue-600 mt-1">
-                        <i class="fas fa-sync-alt mr-1"></i>Rescheduled on ${rescheduleFormatted}${rescheduleCount > 1 ? ` (${rescheduleCount} times)` : ''}
-                    </p>
-                `;
-            }
-            
-            return `
-                <div class="bg-gray-50 rounded-lg p-4 border ${isRescheduled ? 'border-orange-300 bg-orange-50' : 'border-gray-200'}">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <h4 class="font-semibold text-gray-900">Meeting with ${meeting.volunteerName || 'Volunteer'}</h4>
-                                ${isRescheduled ? '<span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"><i class="fas fa-sync-alt mr-1"></i>Rescheduled</span>' : ''}
-                            </div>
-                            <p class="text-gray-600 mt-1 text-sm">
-                                <i class="fas fa-calendar mr-2"></i>${formattedDate} at ${formattedTime}
-                            </p>
-                            ${originalTimeInfo}
-                            ${rescheduleInfo}
-                            <p class="text-xs text-gray-500 mt-1">
-                                Status: <span class="capitalize font-medium">${meeting.status}</span>
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <a href="/call.html?room=${meeting.roomId}" 
-                               class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors inline-block">
-                                <i class="fas fa-video mr-1"></i>Join
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        meetingsList.innerHTML = meetingsHtml;
-    }
-    
-    // Display meeting history
-    function displayMeetingHistory(history) {
-        // Display completed meetings
-        const completedContainer = document.getElementById('completedMeetings');
-        if (history.completed && history.completed.length > 0) {
-            const completedHtml = history.completed.map(meeting => {
-                const meetingDate = new Date(meeting.scheduledTime);
-                const formattedDate = meetingDate.toLocaleDateString();
-                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                return `
-                    <div class="bg-green-50 border border-green-200 rounded p-3">
-                        <p class="font-medium text-green-900 text-sm">${meeting.volunteerName}</p>
-                        <p class="text-green-700 text-xs">${formattedDate} at ${formattedTime}</p>
-                    </div>
-                `;
-            }).join('');
-            completedContainer.innerHTML = completedHtml;
-        } else {
-            completedContainer.innerHTML = '<p class="text-gray-500 text-sm">No completed meetings</p>';
-        }
-        
-        // Display canceled meetings
-        const canceledContainer = document.getElementById('canceledMeetings');
-        if (history.canceled && history.canceled.length > 0) {
-            const canceledHtml = history.canceled.map(meeting => {
-                const meetingDate = new Date(meeting.scheduledTime);
-                const formattedDate = meetingDate.toLocaleDateString();
-                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                return `
-                    <div class="bg-red-50 border border-red-200 rounded p-3">
-                        <p class="font-medium text-red-900 text-sm">${meeting.volunteerName}</p>
-                        <p class="text-red-700 text-xs">${formattedDate} at ${formattedTime}</p>
-                    </div>
-                `;
-            }).join('');
-            canceledContainer.innerHTML = canceledHtml;
-        } else {
-            canceledContainer.innerHTML = '<p class="text-gray-500 text-sm">No canceled meetings</p>';
-        }
-        
-        // Display missed meetings
-        const missedContainer = document.getElementById('missedMeetings');
-        if (history.missed && history.missed.length > 0) {
-            const missedHtml = history.missed.map(meeting => {
-                const meetingDate = new Date(meeting.scheduledTime);
-                const formattedDate = meetingDate.toLocaleDateString();
-                const formattedTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                return `
-                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
-                        <p class="font-medium text-yellow-900 text-sm">${meeting.volunteerName}</p>
-                        <p class="text-yellow-700 text-xs">${formattedDate} at ${formattedTime}</p>
-                    </div>
-                `;
-            }).join('');
-            missedContainer.innerHTML = missedHtml;
-        } else {
-            missedContainer.innerHTML = '<p class="text-gray-500 text-sm">No missed meetings</p>';
-        }
-    }
-    
-    // Display instant calls
-    function displayInstantCalls(instantCalls) {
-        const instantCallsList = document.getElementById('instantCallsList');
-        
-        if (!instantCalls || instantCalls.length === 0) {
-            instantCallsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no instant call history.</p>';
-            return;
-        }
-        
-        const instantCallsHtml = instantCalls.map(call => {
-            const callDate = new Date(call.scheduledTime);
-            const formattedDate = callDate.toLocaleDateString();
-            const formattedTime = callDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            const statusColor = {
-                'completed': 'text-green-600 bg-green-100',
-                'canceled': 'text-red-600 bg-red-100',
-                'missed': 'text-yellow-600 bg-yellow-100'
-            }[call.status] || 'text-gray-600 bg-gray-100';
-            
-            return `
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h4 class="font-semibold text-gray-900">Instant Call with ${call.volunteerName || 'Volunteer'}</h4>
-                            <p class="text-gray-600 mt-1 text-sm">
-                                <i class="fas fa-clock mr-2"></i>${formattedDate} at ${formattedTime}
-                            </p>
-                            <span class="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
-                                ${call.status.charAt(0).toUpperCase() + call.status.slice(1)}
-                            </span>
-                        </div>
-                        <div class="text-right">
-                            <i class="fas fa-phone text-gray-400"></i>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        instantCallsList.innerHTML = instantCallsHtml;
-    }
-    
-    // Display messages
-    function displayMessages(messages) {
-        const messagesList = document.getElementById('messagesList');
-        
-        if (!messages || messages.length === 0) {
-            messagesList.innerHTML = '<p class="text-center text-gray-500 italic">You have no messages.</p>';
-            return;
-        }
-        
-        const messagesHtml = messages.map(message => {
-            const messageDate = new Date(message.messageTime);
-            const formattedDate = messageDate.toLocaleDateString();
-            const formattedTime = messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            return `
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-900">From ${message.volunteerName || 'Volunteer'}</h4>
-                            <p class="text-gray-700 mt-2">${message.message}</p>
-                            <p class="text-gray-500 text-xs mt-2">
-                                <i class="fas fa-clock mr-1"></i>${formattedDate} at ${formattedTime}
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <i class="fas fa-envelope text-gray-400"></i>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        messagesList.innerHTML = messagesHtml;
-    }
-    
-    // Display notifications
-    function displayNotifications(notifications) {
-        const notificationsList = document.getElementById('notificationsList');
-        
-        if (!notifications || notifications.length === 0) {
-            notificationsList.innerHTML = '<p class="text-center text-gray-500 italic">You have no notifications.</p>';
-            return;
-        }
-        
-        const notificationsHtml = notifications.map(notification => {
-            const notificationDate = new Date(notification.created_at || notification.createdAt);
-            const formattedDate = notificationDate.toLocaleDateString();
-            const formattedTime = notificationDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Special styling for reschedule notifications
-            const isReschedule = notification.type === 'meeting_rescheduled';
-            const isHighPriority = notification.priority === 'high' || isReschedule;
-            
-            let bgColor, borderColor, icon, iconColor;
-            if (isReschedule) {
-                bgColor = 'bg-orange-50';
-                borderColor = 'border-orange-200';
-                icon = 'fas fa-sync-alt';
-                iconColor = 'text-orange-600';
-            } else if (isHighPriority) {
-                bgColor = 'bg-red-50';
-                borderColor = 'border-red-200';
-                icon = 'fas fa-exclamation-triangle';
-                iconColor = 'text-red-600';
-            } else {
-                bgColor = 'bg-blue-50';
-                borderColor = 'border-blue-200';
-                icon = 'fas fa-bell';
-                iconColor = 'text-blue-600';
-            }
-            
-            const readStatus = notification.isRead ? 'opacity-60' : '';
-            
-            return `
-                <div class="${bgColor} ${borderColor} rounded-lg p-4 border-l-4 ${readStatus}" data-notification-id="${notification.id}">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-900 flex items-center">
-                                <i class="${icon} ${iconColor} mr-2"></i>
-                                ${notification.title}
-                                ${isReschedule ? '<span class="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">Rescheduled</span>' : ''}
-                            </h4>
-                            <p class="text-gray-700 mt-2">${notification.message}</p>
-                            <p class="text-gray-500 text-xs mt-2">
-                                <i class="fas fa-clock mr-1"></i>${formattedDate} at ${formattedTime}
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            ${!notification.isRead ? '<span class="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>' : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        notificationsList.innerHTML = notificationsHtml;
-    }
-    
-    // Update notification count in header
-    function updateNotificationCount(count) {
-        const notificationCount = document.getElementById('notificationCount');
-        if (count > 0) {
-            notificationCount.textContent = count;
-            notificationCount.classList.remove('hidden');
-        } else {
-            notificationCount.classList.add('hidden');
-        }
-    }
-    
-    // Mark all notifications as read
-    async function markAllNotificationsRead() {
-        try {
-            // This would require a batch endpoint, for now we'll just reload
-            console.log('Marking all notifications as read...');
-            loadNotifications();
-        } catch (error) {
-            console.error('Error marking notifications as read:', error);
-        }
-    }
-    
-    // Handle authentication errors
-    function handleAuthError() {
-        console.log('🔒 Authentication error, redirecting to login');
-        setTimeout(() => {
-            window.location.href = '/student/login.html';
-        }, 1000);
-    }
-    
-    // Socket room joining function
-    function joinSocketRoom(studentId) {
-        console.log('🔌 Joining socket room for student ID:', studentId);
-        
-        // The InstantCallUI class handles socket connections automatically
-        // This function is kept for compatibility with the fetchStudentInfo flow
-        if (window.instantCallUI) {
-            console.log('✅ InstantCallUI already initialized');
-        } else {
-            console.log('⚠️ InstantCallUI not yet initialized, will be handled by instant-call-ui.js');
-        }
-    }
-    
-    // All instant call functionality is now handled by the new phone-like InstantCallUI class
-    // Old functions removed for cleaner code
-    
-    // Navigation functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        // Mobile menu toggle
-        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-        const mobileMenu = document.getElementById('mobile-menu');
-        
-        if (mobileMenuToggle && mobileMenu) {
-            mobileMenuToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                mobileMenu.classList.toggle('hidden');
-            });
-        }
-        
         // Profile dropdown
         const profileBtn = document.getElementById('profile-btn');
         const profileDropdown = document.getElementById('profile-dropdown');
-        
-        if (profileBtn && profileDropdown) {
-            profileBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                profileDropdown.classList.toggle('show');
+
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('hidden');
+            profileDropdown.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            profileDropdown.classList.add('hidden');
+            profileDropdown.classList.remove('show');
+        });
+
+        // Logout
+        document.getElementById('logout-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogout();
+        });
+
+        // Tab navigation - Bottom nav
+        document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                switchTab(tab);
             });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-                    profileDropdown.classList.remove('show');
+        });
+
+        // Tab navigation - Desktop tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                switchTab(tab);
+            });
+        });
+
+        // Mark all read
+        document.getElementById('markAllRead').addEventListener('click', markAllNotificationsRead);
+    }
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+
+        // Update bottom nav
+        document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+
+        // Update desktop tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const isActive = btn.dataset.tab === tabId;
+            btn.classList.toggle('active', isActive);
+            btn.classList.toggle('border-brand-primary', isActive);
+            btn.classList.toggle('text-brand-primary', isActive);
+            btn.classList.toggle('border-transparent', !isActive);
+            btn.classList.toggle('text-gray-500', !isActive);
+        });
+
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`content-${tabId}`).classList.add('active');
+
+        // Load data if needed
+        if (tabId === 'history') loadMeetingHistory();
+        if (tabId === 'instant') loadInstantCalls();
+        if (tabId === 'messages') loadMessages();
+        if (tabId === 'notifications') loadNotifications();
+    }
+
+    function handleLogout() {
+        window.TalkTimeAuth.logout();
+        window.location.href = '/student/login.html';
+    }
+
+    // Socket.IO connection and real-time notifications
+    let dashboardSocket = null;
+
+    function joinSocketRoom(userId) {
+        try {
+            // Initialize Socket.IO connection
+            dashboardSocket = io(window.location.origin, {
+                transports: ['websocket', 'polling'],
+                upgrade: true,
+                rememberUpgrade: true
+            });
+
+            dashboardSocket.on('connect', () => {
+                console.log('Dashboard socket connected');
+                // Join user-specific rooms
+                dashboardSocket.emit('join-room', `student_${userId}`);
+                dashboardSocket.emit('join-room', `user_${userId}`);
+                // Join notification rooms
+                dashboardSocket.emit('join-notification-room', {
+                    userId: userId,
+                    role: 'student'
+                });
+                dashboardSocket.emit('join-user-room', {
+                    userId: userId,
+                    role: 'student',
+                    rooms: [`student_${userId}`, `user_${userId}`]
+                });
+            });
+
+            dashboardSocket.on('disconnect', (reason) => {
+                console.log('Dashboard socket disconnected:', reason);
+            });
+
+            // ============================================
+            // INSTANT CALL HANDLERS
+            // ============================================
+            dashboardSocket.on('incoming-enhanced-instant-call', (data) => {
+                console.log('Incoming enhanced instant call:', data);
+                playNotificationSound('instant_call');
+                if (window.enhancedInstantCallUI) {
+                    window.enhancedInstantCallUI.handleIncomingCall(data);
+                }
+                updateNotificationBadge(1);
+            });
+
+            dashboardSocket.on('instant-call-request', (data) => {
+                console.log('Instant call request received:', data);
+                playNotificationSound('instant_call');
+                if (window.enhancedInstantCallUI) {
+                    window.enhancedInstantCallUI.handleIncomingCall(data);
+                }
+                updateNotificationBadge(1);
+            });
+
+            // ============================================
+            // MEETING EVENT HANDLERS
+            // ============================================
+
+            // New meeting scheduled by volunteer
+            dashboardSocket.on('meeting-scheduled', (data) => {
+                console.log('New meeting scheduled:', data);
+                showNotificationToast('New Meeting Scheduled', data.message || 'A volunteer has scheduled a meeting with you!', 'success');
+                loadUpcomingMeetings();
+                updateNotificationBadge(1);
+            });
+
+            // Meeting rescheduled by volunteer
+            dashboardSocket.on('meeting-rescheduled', (data) => {
+                console.log('Meeting rescheduled:', data);
+                showNotificationToast('Meeting Rescheduled', data.message || `Your meeting has been rescheduled to ${data.newTime || 'a new time'}`, 'warning');
+                loadUpcomingMeetings();
+                loadMeetingHistory();
+                updateNotificationBadge(1);
+            });
+
+            // Meeting canceled by volunteer
+            dashboardSocket.on('meeting-canceled', (data) => {
+                console.log('Meeting canceled:', data);
+                showNotificationToast('Meeting Canceled', data.message || 'Your meeting has been canceled by the volunteer.', 'error');
+                loadUpcomingMeetings();
+                loadMeetingHistory();
+                updateNotificationBadge(1);
+            });
+
+            // Meeting force-ended by other participant
+            dashboardSocket.on('meeting-force-end', (data) => {
+                console.log('Meeting force-ended:', data);
+                showNotificationToast('Meeting Ended', data.message || 'The meeting has ended.', 'info');
+                handleMeetingEndedOnDashboard(data);
+                // Redirect to dashboard if currently in a call
+                if (window.location.pathname.includes('/call/')) {
+                    window.location.href = '/student/dashboard.html';
+                }
+            });
+
+            // Meeting terminated
+            dashboardSocket.on('meeting-terminated', (data) => {
+                console.log('Meeting terminated:', data);
+                handleMeetingEndedOnDashboard(data);
+            });
+
+            // Meeting completed
+            dashboardSocket.on('meeting-completed', (data) => {
+                console.log('Meeting completed:', data);
+                showNotificationToast('Meeting Complete', 'Your meeting has been completed successfully!', 'success');
+                handleMeetingEndedOnDashboard(data);
+            });
+
+            // Meeting reminder (30min, 10min, 5min before)
+            dashboardSocket.on('meeting-reminder', (data) => {
+                console.log('Meeting reminder:', data);
+                playNotificationSound('meeting_reminder');
+                const minutes = data.minutesBefore || 'soon';
+                showNotificationToast('Meeting Reminder', data.message || `Your meeting starts in ${minutes} minutes!`, 'warning');
+                loadUpcomingMeetings(); // Refresh to update countdown
+            });
+
+            // Meeting missed
+            dashboardSocket.on('meeting-missed', (data) => {
+                console.log('Meeting missed:', data);
+                showNotificationToast('Meeting Missed', data.message || 'A meeting was missed', 'error');
+                loadUpcomingMeetings();
+                loadMeetingHistory();
+            });
+
+            /**
+             * Handle meeting ended - clear timer and refresh meetings list
+             */
+            function handleMeetingEndedOnDashboard(data) {
+                const meetingId = data.meetingId || data.meeting_id;
+
+                // Clear the countdown timer for this meeting
+                if (meetingId && countdownIntervals.has(meetingId)) {
+                    clearInterval(countdownIntervals.get(meetingId));
+                    countdownIntervals.delete(meetingId);
+                    console.log(`⏱️ Cleared countdown timer for meeting ${meetingId}`);
+                }
+
+                // Update the countdown UI immediately
+                const countdownEl = document.getElementById(`countdown-${meetingId}`);
+                if (countdownEl) {
+                    countdownEl.textContent = 'Meeting completed';
+                    countdownEl.className = 'countdown-timer';
+                    countdownEl.style.color = '#10b981';
+                    countdownEl.style.fontWeight = '600';
+                }
+
+                // Hide join buttons
+                const joinBtn = document.getElementById(`join-btn-${meetingId}`);
+                const waitingBtn = document.getElementById(`waiting-btn-${meetingId}`);
+                if (joinBtn) joinBtn.style.display = 'none';
+                if (waitingBtn) {
+                    waitingBtn.style.display = 'inline-block';
+                    const waitingText = waitingBtn.querySelector('span');
+                    if (waitingText) waitingText.textContent = 'Completed';
+                }
+
+                // Refresh meetings list to get updated status
+                setTimeout(() => {
+                    if (typeof fetchUpcomingMeetings === 'function') {
+                        fetchUpcomingMeetings();
+                    }
+                }, 1000);
+            }
+
+            // Meeting about to start (5-minute reminder auto-launch)
+            dashboardSocket.on('meeting-auto-launch', (data) => {
+                console.log('Meeting auto-launch triggered:', data);
+                showNotificationToast('Meeting Starting Soon', 'Your meeting is about to start! Click to join.', 'success', 10000);
+                // Show prominent join notification
+                if (data.roomId) {
+                    showMeetingAutoLaunchPrompt(data);
+                }
+            });
+
+            dashboardSocket.on('meeting-ready-to-start', (data) => {
+                console.log('Meeting ready to start:', data);
+                showNotificationToast('Meeting Ready', 'Your meeting is ready. Join now!', 'success', 10000);
+            });
+
+            // ============================================
+            // SCHEDULED MEETING STARTED - VOLUNTEER JOINED
+            // ============================================
+            // When volunteer joins the call room, student sees incoming call notification
+            // Uses the same enhanced instant call UI for consistent experience
+            dashboardSocket.on('scheduled-meeting-started', (data) => {
+                console.log('📞 Scheduled meeting started - volunteer joined:', data);
+                handleScheduledMeetingStarted(data);
+            });
+
+            dashboardSocket.on('incoming-scheduled-call', (data) => {
+                console.log('📞 Incoming scheduled call:', data);
+                handleScheduledMeetingStarted(data);
+            });
+
+            // ============================================
+            // NOTIFICATION HANDLERS
+            // ============================================
+
+            // New notification from backend
+            dashboardSocket.on('new-notification', (data) => {
+                console.log('New notification received:', data);
+                const notification = data.notification || data;
+                playNotificationSound(notification.type || 'default');
+                showNotificationToast(notification.title || 'New Notification', notification.message || notification.body || '', getNotificationType(notification.type));
+                updateNotificationBadge(1);
+                // Refresh notifications tab if active
+                if (currentTab === 'notifications') {
+                    loadNotifications();
+                }
+            });
+
+            // Direct badge count update
+            dashboardSocket.on('notification-badge-update', (data) => {
+                console.log('Badge update received:', data);
+                if (data.increment) {
+                    updateNotificationBadge(data.increment);
+                } else if (data.count !== undefined) {
+                    setNotificationBadgeCount(data.count);
+                } else {
+                    updateNotificationBadge(1);
+                }
+            });
+
+            // Sound trigger from backend
+            dashboardSocket.on('notification-sound-trigger', (data) => {
+                console.log('Sound trigger received:', data);
+                playNotificationSound(data.sound_type || 'default');
+            });
+
+            // Notification marked as read
+            dashboardSocket.on('notification-marked-read', (data) => {
+                console.log('Notification marked read:', data);
+                fetchUnreadNotificationCount();
+            });
+
+            // All notifications marked as read
+            dashboardSocket.on('notifications-marked-all-read', (data) => {
+                console.log('All notifications marked read:', data);
+                setNotificationBadgeCount(0);
+            });
+
+            // ============================================
+            // INITIALIZE REALTIME NOTIFICATIONS CLASS
+            // ============================================
+            initializeRealtimeNotifications();
+
+        } catch (error) {
+            console.error('Socket error:', error);
+        }
+    }
+
+    // Initialize the RealtimeNotifications class if available
+    function initializeRealtimeNotifications() {
+        if (window.RealtimeNotifications && !window.realtimeNotifications) {
+            window.realtimeNotifications = new window.RealtimeNotifications('student');
+            window.realtimeNotifications.initialize();
+            console.log('RealtimeNotifications initialized for student');
+        }
+    }
+
+    // ============================================
+    // NOTIFICATION UI HELPERS
+    // ============================================
+
+    function showNotificationToast(title, message, type = 'info', duration = 5000) {
+        // Dedup: skip if same toast shown in last 3 seconds (prevents double-fire from multiple sockets)
+        const key = `${title}:${message}`;
+        const now = Date.now();
+        if (!window._recentToasts) window._recentToasts = {};
+        if (window._recentToasts[key] && now - window._recentToasts[key] < 3000) return;
+        window._recentToasts[key] = now;
+
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.cssText = 'position: fixed; top: 80px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px;';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Color mapping
+        const colors = {
+            success: { bg: '#ecfdf5', border: '#10b981', icon: 'fa-check-circle', iconColor: '#059669' },
+            warning: { bg: '#fffbeb', border: '#f59e0b', icon: 'fa-exclamation-triangle', iconColor: '#d97706' },
+            error: { bg: '#fef2f2', border: '#ef4444', icon: 'fa-times-circle', iconColor: '#dc2626' },
+            info: { bg: '#eff6ff', border: '#3b82f6', icon: 'fa-info-circle', iconColor: '#2563eb' }
+        };
+        const style = colors[type] || colors.info;
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            background: ${style.bg};
+            border-left: 4px solid ${style.border};
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            animation: slideIn 0.3s ease;
+            cursor: pointer;
+        `;
+        toast.innerHTML = `
+            <i class="fas ${style.icon}" style="color: ${style.iconColor}; margin-top: 2px;"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: #111827; font-size: 14px;">${title}</div>
+                <div style="color: #4b5563; font-size: 13px; margin-top: 2px;">${message}</div>
+            </div>
+            <button style="background: none; border: none; color: #9ca3af; cursor: pointer; padding: 0;">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        // Add close functionality
+        toast.querySelector('button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeToast(toast);
+        });
+        toast.addEventListener('click', () => {
+            switchTab('notifications');
+            removeToast(toast);
+        });
+
+        // Add animation styles if not exists
+        if (!document.getElementById('toast-styles')) {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'toast-styles';
+            styleEl.textContent = `
+                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+            `;
+            document.head.appendChild(styleEl);
+        }
+
+        toastContainer.appendChild(toast);
+
+        // Auto remove after duration
+        setTimeout(() => removeToast(toast), duration);
+    }
+
+    function removeToast(toast) {
+        if (toast && toast.parentNode) {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }
+
+    function getNotificationType(type) {
+        if (!type) return 'info';
+        if (type.includes('cancel') || type.includes('missed') || type.includes('error')) return 'error';
+        if (type.includes('reschedule') || type.includes('warning')) return 'warning';
+        if (type.includes('scheduled') || type.includes('complete') || type.includes('success')) return 'success';
+        return 'info';
+    }
+
+    function updateNotificationBadge(increment = 1) {
+        const badge = document.getElementById('notification-badge');
+        if (!badge) return;
+
+        let currentCount = parseInt(badge.textContent) || 0;
+        currentCount += increment;
+        setNotificationBadgeCount(currentCount);
+    }
+
+    function setNotificationBadgeCount(count) {
+        const badge = document.getElementById('notification-badge');
+        const tabDot = document.getElementById('notifications-tab-dot');
+        const tabDotMobile = document.getElementById('notifications-tab-dot-mobile');
+
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.textContent = '0';
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Show/hide tab dot indicators
+        if (tabDot) {
+            tabDot.classList.toggle('hidden', count === 0);
+        }
+        if (tabDotMobile) {
+            tabDotMobile.classList.toggle('hidden', count === 0);
+        }
+    }
+
+    function updateUpcomingBadge(count) {
+        const badge = document.getElementById('upcoming-tab-badge');
+        const badgeMobile = document.getElementById('upcoming-tab-badge-mobile');
+
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        if (badgeMobile) {
+            if (count > 0) {
+                badgeMobile.textContent = count > 9 ? '9+' : count;
+                badgeMobile.classList.remove('hidden');
+            } else {
+                badgeMobile.classList.add('hidden');
+            }
+        }
+    }
+
+    async function fetchUnreadNotificationCount() {
+        try {
+            const response = await fetch('/api/v1/students/me/notifications/unread-count', {
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setNotificationBadgeCount(data.count || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
+    }
+
+    async function fetchUnreadMessageCount() {
+        try {
+            const response = await fetch('/api/v1/students/me/messages/unread-count?_t=' + Date.now(), {
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setMessageBadgeCount(data.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching unread message count:', error);
+        }
+    }
+
+    function setMessageBadgeCount(count) {
+        const desktopBadge = document.getElementById('messages-tab-badge');
+        const mobileBadge = document.getElementById('messages-tab-badge-mobile');
+
+        [desktopBadge, mobileBadge].forEach(badge => {
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count.toString();
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    // Notification chime synth — two-note ascending triangle wave
+    let _notifAudioCtx = null;
+    const _notifSounds = {
+        'new_message':          { notes: [523, 659], dur: 0.12, gap: 0.06, vol: 0.45 },
+        'meeting_reminder':     { notes: [587, 784, 880], dur: 0.15, gap: 0.08, vol: 0.55 },
+        'meeting_scheduled':    { notes: [523, 659, 784], dur: 0.13, gap: 0.07, vol: 0.45 },
+        'instant_call':         { notes: [880, 1047], dur: 0.25, gap: 0.2, vol: 0.7 },
+        'default':              { notes: [587, 784], dur: 0.11, gap: 0.07, vol: 0.4 }
+    };
+    function playNotificationSound(soundType = 'default') {
+        try {
+            // Use full sound manager if loaded
+            if (window.talkTimeNotificationSoundManager && window.talkTimeNotificationSoundManager.initialized) {
+                window.talkTimeNotificationSoundManager.playSound(soundType);
+                return;
+            }
+            // Inline Web Audio synth
+            if (!_notifAudioCtx) _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (_notifAudioCtx.state === 'suspended') _notifAudioCtx.resume();
+            const cfg = _notifSounds[soundType] || _notifSounds['default'];
+            cfg.notes.forEach((freq, i) => {
+                const osc = _notifAudioCtx.createOscillator();
+                const gain = _notifAudioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(_notifAudioCtx.destination);
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                const t = _notifAudioCtx.currentTime + i * (cfg.dur + cfg.gap);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(cfg.vol * 0.8, t + cfg.dur * 0.3);
+                gain.gain.linearRampToValueAtTime(0, t + cfg.dur);
+                osc.start(t);
+                osc.stop(t + cfg.dur);
+            });
+        } catch (e) { /* silent fail */ }
+    }
+
+    function showMeetingAutoLaunchPrompt(data) {
+        const overlay = document.createElement('div');
+        overlay.id = 'meeting-auto-launch-overlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.3s ease;
+        `;
+        overlay.innerHTML = `
+            <div style="background: white; border-radius: 16px; padding: 24px; max-width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+                <div style="width: 64px; height: 64px; background: #ecfdf5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <i class="fas fa-video" style="font-size: 28px; color: #059669;"></i>
+                </div>
+                <h3 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">Meeting Starting</h3>
+                <p style="color: #6b7280; margin-bottom: 20px;">Your meeting with ${data.volunteerName || 'your volunteer'} is ready to begin!</p>
+                <div style="display: flex; gap: 12px;">
+                    <button id="dismiss-auto-launch" style="flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; color: #374151; font-weight: 600; cursor: pointer;">Later</button>
+                    <button id="join-auto-launch" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: #059669; color: white; font-weight: 600; cursor: pointer;">Join Now</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('dismiss-auto-launch').addEventListener('click', () => overlay.remove());
+        document.getElementById('join-auto-launch').addEventListener('click', () => {
+            window.location.href = `/call/call.html?room=${data.roomId}&role=student&volunteerId=${data.volunteerId || ''}`;
+        });
+
+        // Auto-dismiss after 30 seconds
+        setTimeout(() => {
+            if (document.getElementById('meeting-auto-launch-overlay')) {
+                overlay.remove();
+            }
+        }, 30000);
+    }
+
+    /**
+     * Handle scheduled meeting started - volunteer joined the call
+     * Uses the same enhanced instant call UI for consistency with instant calls
+     */
+    function handleScheduledMeetingStarted(data) {
+        console.log('🔔 Handling scheduled meeting started:', data);
+
+        // Format data to match the enhanced instant call UI format
+        const callData = {
+            meetingId: data.meetingId,
+            callData: {
+                roomId: data.roomId,
+                meetingId: data.meetingId,
+                callUrl: data.callUrl || `/call/call.html?room=${data.roomId}&role=student&volunteerId=${data.volunteerId || ''}`,
+                volunteerName: data.volunteerName,
+                volunteerId: data.volunteerId,
+                timeoutSeconds: 60, // Give student 60 seconds to respond
+                isScheduledCall: true // Mark as scheduled (not instant)
+            },
+            volunteer: {
+                id: data.volunteerId,
+                name: data.volunteerName || 'Your Volunteer',
+                full_name: data.volunteerName || 'Your Volunteer'
+            },
+            actions: {
+                accept: `/call/call.html?room=${data.roomId}&role=student&volunteerId=${data.volunteerId || ''}`,
+                decline: 'dismiss'
+            }
+        };
+
+        // Try to use enhanced instant call UI if available
+        if (window.enhancedInstantCallUI && typeof window.enhancedInstantCallUI.showIncomingCallUI === 'function') {
+            console.log('📞 Using enhanced instant call UI for scheduled meeting');
+            window.enhancedInstantCallUI.showIncomingCallUI(callData);
+        } else {
+            // Fallback to our custom UI if enhanced UI not available
+            console.log('📞 Using fallback incoming call UI');
+            showIncomingScheduledCall(data);
+        }
+    }
+
+    /**
+     * Show incoming scheduled call notification when volunteer joins
+     * This is the "ringing" UI that appears when volunteer starts a scheduled meeting
+     * (Fallback if enhanced instant call UI is not available)
+     */
+    function showIncomingScheduledCall(data) {
+        // Prevent duplicate overlays
+        if (document.getElementById('incoming-scheduled-call-overlay')) {
+            return;
+        }
+
+        const callUrl = data.callUrl || `/call/call.html?room=${data.roomId}&role=student&volunteerId=${data.volunteerId || ''}`;
+
+        // Create ringing overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'incoming-scheduled-call-overlay';
+        overlay.innerHTML = `
+            <style>
+                @keyframes ring {
+                    0%, 100% { transform: rotate(-15deg); }
+                    50% { transform: rotate(15deg); }
+                }
+                @keyframes pulse-ring {
+                    0% { transform: scale(1); opacity: 1; }
+                    100% { transform: scale(1.5); opacity: 0; }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .ring-animation {
+                    animation: ring 0.5s ease-in-out infinite;
+                }
+                .pulse-circle {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    background: rgba(16, 185, 129, 0.3);
+                    animation: pulse-ring 1.5s ease-out infinite;
+                }
+                .incoming-call-modal {
+                    animation: fadeInUp 0.4s ease-out;
+                }
+            </style>
+            <div style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 10001; display: flex; align-items: center; justify-content: center;">
+                <div class="incoming-call-modal" style="background: linear-gradient(135deg, #065f46, #047857); border-radius: 28px; padding: 40px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.4);">
+                    <!-- Ringing Icon -->
+                    <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 24px;">
+                        <div class="pulse-circle"></div>
+                        <div class="pulse-circle" style="animation-delay: 0.5s;"></div>
+                        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-phone-alt ring-animation" style="font-size: 42px; color: white;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Call Info -->
+                    <h2 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 8px;">Incoming Call</h2>
+                    <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-bottom: 8px;">${data.volunteerName || 'Your Volunteer'}</p>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 32px;">is waiting for you to join the meeting</p>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 16px; justify-content: center;">
+                        <!-- Decline Button -->
+                        <button id="decline-scheduled-call" style="width: 70px; height: 70px; border-radius: 50%; background: #ef4444; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s;">
+                            <i class="fas fa-phone-slash" style="font-size: 28px; color: white;"></i>
+                        </button>
+
+                        <!-- Answer Button -->
+                        <button id="answer-scheduled-call" style="width: 70px; height: 70px; border-radius: 50%; background: #22c55e; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s;">
+                            <i class="fas fa-phone" style="font-size: 28px; color: white;"></i>
+                        </button>
+                    </div>
+
+                    <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 24px;">Scheduled Meeting</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Play ringtone
+        let ringtone = null;
+        try {
+            ringtone = new Audio('/shared/sounds/ringtone.mp3');
+            ringtone.loop = true;
+            ringtone.volume = 0.6;
+            ringtone.play().catch(() => {
+                // Fallback to notification sound
+                ringtone = new Audio('/shared/sounds/notification.mp3');
+                ringtone.play().catch(() => {});
+            });
+        } catch (e) {
+            console.log('Could not play ringtone');
+        }
+
+        // Stop ringtone function
+        const stopRingtone = () => {
+            if (ringtone) {
+                ringtone.pause();
+                ringtone.currentTime = 0;
+            }
+        };
+
+        // Answer button
+        document.getElementById('answer-scheduled-call').addEventListener('click', () => {
+            stopRingtone();
+            overlay.remove();
+            window.location.href = callUrl;
+        });
+
+        // Decline button
+        document.getElementById('decline-scheduled-call').addEventListener('click', () => {
+            stopRingtone();
+            overlay.remove();
+            showNotificationToast('Call Declined', 'You can join from the Upcoming Meetings tab later.', 'info');
+        });
+
+        // Auto-dismiss after 60 seconds
+        setTimeout(() => {
+            if (document.getElementById('incoming-scheduled-call-overlay')) {
+                stopRingtone();
+                overlay.remove();
+            }
+        }, 60000);
+    }
+
+    // API Functions
+    async function loadUpcomingMeetings() {
+        const container = document.getElementById('upcomingMeetingsList');
+        try {
+            const response = await fetch('/api/v1/students/me/meetings/upcoming', {
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            const data = await response.json();
+            const meetings = data.data || [];
+
+            // Update the upcoming meetings count badge
+            updateUpcomingBadge(meetings.length);
+
+            if (meetings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-check"></i>
+                        <p class="font-medium">No upcoming meetings</p>
+                        <p class="text-sm mt-1">Your scheduled meetings will appear here</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="meetings-grid">${meetings.map(meeting => `
+                <div class="meeting-card" data-meeting-id="${meeting.id}" data-room-id="${meeting.roomId}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <span class="status-badge status-scheduled">
+                                <i class="fas fa-clock mr-1"></i>Scheduled
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="font-semibold text-gray-900">${meeting.volunteerName || 'Volunteer'}</div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${formatDateTime(meeting.scheduledTime)}
+                        </div>
+                    </div>
+
+                    <!-- Countdown Timer -->
+                    <div class="countdown-card">
+                        <div class="countdown-title">Meeting starts in:</div>
+                        <div class="countdown-timer" id="countdown-${meeting.id}" data-scheduled-time="${meeting.scheduledTime}">
+                            Calculating...
+                        </div>
+                        <div class="session-info">
+                            <i class="fas fa-info-circle mr-1"></i>40-minute session
+                        </div>
+                    </div>
+
+                    <!-- Join button (only visible within 5 minutes of meeting) -->
+                    <a href="/call/call.html?room=${meeting.roomId || meeting.id}&role=student&volunteerId=${meeting.volunteerId || ''}&volunteerName=${encodeURIComponent(meeting.volunteerName || '')}"
+                       class="join-btn"
+                       id="join-btn-${meeting.id}"
+                       style="display: none;">
+                        <i class="fas fa-video"></i>
+                        Join Meeting
+                    </a>
+
+                    <!-- Waiting message (shown when meeting is not yet joinable) -->
+                    <div class="waiting-btn" id="waiting-btn-${meeting.id}">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span id="waiting-text-${meeting.id}">Available 5 min before</span>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+
+            // Initialize countdown timers for all meetings
+            meetings.forEach(meeting => {
+                initializeMeetingCountdown(meeting.id, meeting.scheduledTime, meeting.roomId);
+            });
+        } catch (error) {
+            console.error('Error loading meetings:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                    <p>Failed to load meetings</p>
+                    <button onclick="loadUpcomingMeetings()" class="text-brand-primary text-sm mt-2">Try again</button>
+                </div>`;
+        }
+    }
+
+    // Store history data globally for filtering
+    let historyMeetings = [];
+    let currentHistoryFilter = 'all';
+
+    async function loadMeetingHistory() {
+        const container = document.getElementById('historyList');
+
+        try {
+            const response = await fetch('/api/v1/students/me/meetings/history', {
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            const data = await response.json();
+            historyMeetings = data.data || [];
+
+            renderHistoryList(currentHistoryFilter);
+            setupHistoryFilters();
+
+        } catch (error) {
+            console.error('Error loading history:', error);
+            container.innerHTML = `
+                <div class="history-empty">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Failed to load meeting history</p>
+                </div>`;
+        }
+    }
+
+    function setupHistoryFilters() {
+        document.querySelectorAll('.history-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.history-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentHistoryFilter = btn.dataset.filter;
+                renderHistoryList(currentHistoryFilter);
+            });
+        });
+    }
+
+    function renderHistoryList(filter) {
+        const container = document.getElementById('historyList');
+
+        let filtered = historyMeetings;
+        if (filter !== 'all') {
+            filtered = historyMeetings.filter(m => {
+                if (filter === 'canceled') {
+                    return m.status === 'canceled' || m.status === 'cancelled';
+                }
+                return m.status === filter;
+            });
+        }
+
+        if (filtered.length === 0) {
+            const emptyMessage = filter === 'all'
+                ? 'No meeting history yet'
+                : `No ${filter} meetings`;
+            container.innerHTML = `
+                <div class="history-empty">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>${emptyMessage}</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = filtered.map(meeting => renderHistoryItem(meeting)).join('');
+    }
+
+    function renderHistoryItem(meeting) {
+        const name = meeting.volunteerName || 'Volunteer';
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        const status = meeting.status === 'cancelled' ? 'canceled' : meeting.status;
+        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+        return `
+            <div class="history-item" data-status="${status}">
+                <div class="history-item-avatar">${initials}</div>
+                <div class="history-item-content">
+                    <div class="history-item-name">${name}</div>
+                    <div class="history-item-date">
+                        <i class="fas fa-clock"></i>
+                        ${formatDateTime(meeting.scheduledTime)}
+                    </div>
+                </div>
+                <span class="history-status ${status}">${statusLabel}</span>
+            </div>`;
+    }
+
+    async function loadInstantCalls() {
+        const container = document.getElementById('instantCallsList');
+        try {
+            const response = await fetch('/api/v1/students/me/instant-calls', {
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            const data = await response.json();
+            const calls = data.data || [];
+
+            if (calls.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bolt"></i>
+                        <p class="font-medium">No instant calls yet</p>
+                        <p class="text-sm mt-1">Volunteers can start instant calls with you anytime</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="meetings-grid">${calls.map(call => `
+                <div class="meeting-card">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-bolt text-blue-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium truncate">${call.volunteerName || 'Volunteer'}</div>
+                            <div class="text-sm text-gray-500">${formatDateTime(call.scheduledTime)}</div>
+                        </div>
+                        <span class="status-badge status-${call.status}">${call.status}</span>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        } catch (error) {
+            console.error('Error loading instant calls:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                    <p>Failed to load instant calls</p>
+                </div>`;
+        }
+    }
+
+    // Message state
+    let allStudentMessages = [];
+    let currentConversationPersonId = null;
+
+    async function loadMessages() {
+        const container = document.getElementById('messagesList');
+        try {
+            const token = window.TalkTimeAuth ? window.TalkTimeAuth.getToken() : null;
+            console.log('[Chat] Loading messages... Token:', token ? 'exists' : 'MISSING');
+
+            if (!token) {
+                console.error('[Chat] No authentication token available');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle text-red-400"></i>
+                        <p>Please log in to see messages</p>
+                    </div>`;
+                return;
+            }
+
+            const response = await fetch('/api/v1/students/me/messages?_t=' + Date.now(), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            console.log('[Chat] Messages API status:', response.status);
+
+            if (!response.ok) {
+                console.error('[Chat] Messages API error:', response.status, response.statusText);
+            }
+
+            const data = await response.json();
+            console.log('[Chat] Messages API response:', data);
+            allStudentMessages = data.data || [];
+
+            if (allStudentMessages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-envelope-open"></i>
+                        <p class="font-medium">No messages yet</p>
+                        <p class="text-sm mt-1">Messages from volunteers will appear here</p>
+                    </div>`;
+                return;
+            }
+
+            // Group messages by conversation partner
+            const conversations = {};
+            allStudentMessages.forEach(message => {
+                const otherPersonId = message.isSentByMe ? message.recipientId : message.senderId;
+                const otherPersonName = message.isSentByMe ? message.recipientName : message.senderName;
+                const otherPersonRole = message.isSentByMe ? message.recipientRole : message.senderRole;
+
+                if (!conversations[otherPersonId]) {
+                    conversations[otherPersonId] = {
+                        personId: otherPersonId,
+                        personName: otherPersonName || 'Volunteer',
+                        personRole: otherPersonRole || 'volunteer',
+                        messages: []
+                    };
+                }
+                conversations[otherPersonId].messages.push(message);
+            });
+
+            // Sort conversations by latest message
+            const sortedConversations = Object.values(conversations).sort((a, b) => {
+                const aLatest = new Date(a.messages[0].createdAt);
+                const bLatest = new Date(b.messages[0].createdAt);
+                return bLatest - aLatest;
+            });
+
+            container.innerHTML = `<div class="messages-grid">${sortedConversations.map(conv => {
+                const latestMessage = conv.messages[0];
+                const unreadCount = conv.messages.filter(m => !m.isRead && !m.isSentByMe).length;
+                const previewText = latestMessage.isSentByMe ? `You: ${latestMessage.content}` : latestMessage.content;
+
+                return `
+                <div class="message-item ${unreadCount > 0 ? 'unread' : ''}"
+                     data-person-id="${conv.personId}"
+                     data-person-name="${conv.personName}"
+                     data-person-role="${conv.personRole}"
+                     onclick="openConversation('${conv.personId}', '${conv.personName.replace(/'/g, "\\'")}', '${conv.personRole}')">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                            ${(conv.personName || 'V').charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-sm truncate">${conv.personName}</span>
+                                <span class="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded capitalize">${conv.personRole}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+                            <span class="text-xs text-gray-400">${formatDate(latestMessage.createdAt)}</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 line-clamp-1">${escapeHtml(previewText)}</p>
+                </div>
+            `}).join('')}</div>`;
+
+        } catch (error) {
+            console.error('[Chat] Error loading messages:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                    <p>Failed to load messages</p>
+                </div>`;
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatMessageTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function openConversation(personId, personName, personRole) {
+        currentConversationPersonId = personId;
+
+        const conversationModal = document.getElementById('conversation-modal');
+        const conversationMessages = document.getElementById('conversation-messages');
+        const conversationNameEl = document.getElementById('conversation-name');
+        const conversationRoleEl = document.getElementById('conversation-role');
+        const conversationAvatar = document.getElementById('conversation-avatar');
+        const messageInput = document.getElementById('message-input');
+
+        // Update header
+        conversationNameEl.textContent = personName;
+        conversationRoleEl.textContent = personRole;
+        conversationAvatar.textContent = (personName || 'V').charAt(0).toUpperCase();
+
+        // Mark messages as read
+        try {
+            await fetch('/api/v1/students/me/messages/read', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ senderId: parseInt(personId) })
+            });
+
+            // Update local state
+            allStudentMessages.forEach(m => {
+                if (m.senderId == personId && !m.isSentByMe) {
+                    m.isRead = true;
+                }
+            });
+
+            // Update badges - both message and notification badges
+            fetchUnreadMessageCount();
+            fetchUnreadNotificationCount();
+        } catch (error) {
+            console.error('[Chat] Error marking messages as read:', error);
+        }
+
+        // Filter and render messages
+        const conversationMsgs = allStudentMessages.filter(m =>
+            m.senderId == personId || m.recipientId == personId
+        ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        if (conversationMsgs.length === 0) {
+            conversationMessages.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            `;
+        } else {
+            conversationMessages.innerHTML = conversationMsgs.map(msg => `
+                <div class="message-bubble ${msg.isSentByMe ? 'sent' : 'received'}" data-msg-id="${msg.id}">
+                    <p>${escapeHtml(msg.content)}</p>
+                    <div class="message-time">${formatMessageTime(msg.createdAt)}</div>
+                </div>
+            `).join('');
+
+            // Scroll to bottom
+            setTimeout(() => {
+                conversationMessages.scrollTop = conversationMessages.scrollHeight;
+            }, 50);
+        }
+
+        // Clear input and show modal
+        messageInput.value = '';
+        updateStudentSendButton();
+        conversationModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Focus input
+        setTimeout(() => messageInput.focus(), 300);
+
+        // Reload the list to update badges
+        loadMessages();
+    }
+
+    function closeStudentConversation() {
+        const conversationModal = document.getElementById('conversation-modal');
+        conversationModal.classList.remove('active');
+        document.body.style.overflow = '';
+        currentConversationPersonId = null;
+    }
+
+    function updateStudentSendButton() {
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-message-btn');
+        const hasContent = messageInput.value.trim().length > 0;
+        sendBtn.disabled = !hasContent;
+    }
+
+    async function sendStudentMessage() {
+        const messageInput = document.getElementById('message-input');
+        const conversationMessages = document.getElementById('conversation-messages');
+        const content = messageInput.value.trim();
+
+        if (!content || !currentConversationPersonId) return;
+
+        const recipientId = parseInt(currentConversationPersonId);
+
+        // Clear input
+        messageInput.value = '';
+        updateStudentSendButton();
+
+        // Add temporary message
+        const tempMsgEl = document.createElement('div');
+        tempMsgEl.className = 'message-bubble sent sending';
+        tempMsgEl.innerHTML = `
+            <p>${escapeHtml(content)}</p>
+            <div class="message-time">${formatMessageTime(new Date().toISOString())}</div>
+        `;
+
+        const emptyState = conversationMessages.querySelector('.text-center');
+        if (emptyState) emptyState.remove();
+
+        conversationMessages.appendChild(tempMsgEl);
+        conversationMessages.scrollTop = conversationMessages.scrollHeight;
+
+        // Send via API
+        try {
+            const response = await fetch('/api/v1/messages/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    recipientId: recipientId,
+                    content: content
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    tempMsgEl.classList.remove('sending');
+                    tempMsgEl.dataset.msgId = data.message.id;
+
+                    // Add to allStudentMessages
+                    allStudentMessages.unshift({
+                        id: data.message.id,
+                        senderId: currentUser.id,
+                        recipientId: recipientId,
+                        content: data.message.content,
+                        createdAt: data.message.createdAt,
+                        isRead: false,
+                        isSentByMe: true
+                    });
+
+                    loadMessages();
+                } else {
+                    throw new Error(data.message);
+                }
+            } else {
+                throw new Error('Server error');
+            }
+        } catch (error) {
+            console.error('[Chat] Error sending message:', error);
+            tempMsgEl.classList.remove('sending');
+            tempMsgEl.classList.add('failed');
+        }
+    }
+
+    // Setup message event listeners after DOM ready
+    function setupMessageEventListeners() {
+        const closeBtn = document.getElementById('close-conversation');
+        const conversationModal = document.getElementById('conversation-modal');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-message-btn');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeStudentConversation);
+        }
+
+        if (conversationModal) {
+            conversationModal.addEventListener('click', (e) => {
+                if (e.target === conversationModal) {
+                    closeStudentConversation();
                 }
             });
         }
-        
-        // Logout event listeners
-        const logoutLink = document.getElementById('logout-link');
-        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        
-        if (logoutLink) {
-            logoutLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                handleLogout();
+
+        if (messageInput) {
+            messageInput.addEventListener('input', updateStudentSendButton);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!sendBtn.disabled) {
+                        sendStudentMessage();
+                    }
+                }
             });
         }
-        
-        if (mobileLogoutBtn) {
-            mobileLogoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                handleLogout();
-            });
+
+        if (sendBtn) {
+            sendBtn.addEventListener('click', sendStudentMessage);
         }
-        
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                handleLogout();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && conversationModal && conversationModal.classList.contains('active')) {
+                closeStudentConversation();
+            }
+        });
+
+        // Listen for new chat messages via Socket.IO
+        if (typeof io !== 'undefined') {
+            const socket = io();
+            socket.on('connect', () => {
+                console.log('[Chat] Student socket connected');
+                if (currentUser) {
+                    socket.emit('join-user-room', {
+                        userId: currentUser.id,
+                        role: 'student',
+                        rooms: [`student_${currentUser.id}`, `user_${currentUser.id}`]
+                    });
+                }
             });
-        }
-    });
-    
-    // Logout function
-    async function handleLogout() {
-        try {
-            console.log('Student logging out...');
-            
-            // Clear JWT token and user data
-            await window.TalkTimeAuth.logout();
-            
-            // Redirect to login page
-            window.location.href = '/student/login.html';
-        } catch (error) {
-            console.error('Error during student logout:', error);
-            // Still redirect to login page on error
-            window.location.href = '/student/login.html';
+
+            socket.on('new-chat-message', (data) => {
+                console.log('[Chat] New message received:', data);
+
+                // Skip if this is our own message (we already added it when sending)
+                if (data.senderId === currentUser?.id) {
+                    console.log('[Chat] Skipping own message');
+                    return;
+                }
+
+                // Add to messages
+                const newMsg = {
+                    id: data.id,
+                    senderId: data.senderId,
+                    recipientId: data.recipientId,
+                    senderName: data.senderName,
+                    senderRole: data.senderRole,
+                    content: data.content,
+                    createdAt: data.createdAt,
+                    isRead: false,
+                    isSentByMe: false
+                };
+                allStudentMessages.unshift(newMsg);
+
+                // If conversation is open with this sender, add message
+                if (currentConversationPersonId && data.senderId == currentConversationPersonId) {
+                    const conversationMessages = document.getElementById('conversation-messages');
+                    const messageEl = document.createElement('div');
+                    messageEl.className = 'message-bubble received';
+                    messageEl.innerHTML = `
+                        <p>${escapeHtml(data.content)}</p>
+                        <div class="message-time">${formatMessageTime(data.createdAt)}</div>
+                    `;
+                    conversationMessages.appendChild(messageEl);
+                    conversationMessages.scrollTop = conversationMessages.scrollHeight;
+                }
+
+                // Reload message list and update badge
+                loadMessages();
+                fetchUnreadMessageCount();
+
+                // Play notification sound for incoming messages
+                playNotificationSound('new_message');
+            });
         }
     }
-</script>
+
+    // Call setup after DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(setupMessageEventListeners, 100);
+    });
+
+    async function loadNotifications() {
+        const container = document.getElementById('notificationsList');
+        try {
+            const response = await fetch('/api/v1/students/me/notifications', {
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            const data = await response.json();
+            const notifications = data.data || [];
+
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <p class="font-medium">No notifications</p>
+                        <p class="text-sm mt-1">You're all caught up!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="notifications-grid">${notifications.map(notif => `
+                <div class="notification-item ${notif.isRead ? 'read' : 'unread'} cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors rounded-lg p-3 border ${notif.isRead ? 'border-gray-100 bg-white' : 'border-blue-200 bg-blue-50/50'}"
+                     data-notification-id="${notif.id}"
+                     onclick="markNotificationRead(${notif.id}, this)">
+                    <div class="flex items-start gap-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full ${getNotificationIconBg(notif.type)} flex items-center justify-center flex-shrink-0">
+                                <i class="${getNotificationIcon(notif.type)} text-sm"></i>
+                            </div>
+                            ${!notif.isRead ? '<span class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="font-semibold text-sm ${notif.isRead ? 'text-gray-700' : 'text-gray-900'}">${notif.title}</div>
+                                ${!notif.isRead ? '<span class="text-xs text-blue-600 font-medium px-2 py-0.5 bg-blue-100 rounded-full">New</span>' : ''}
+                            </div>
+                            <p class="text-sm ${notif.isRead ? 'text-gray-500' : 'text-gray-700'} mt-1">${notif.message}</p>
+                            <div class="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                                <i class="fas fa-clock"></i>
+                                ${formatDateTime(notif.createdAt)}
+                            </div>
+                        </div>
+                        <button class="p-1.5 hover:bg-gray-200 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                onclick="event.stopPropagation(); dismissNotification(${notif.id}, this.closest('.notification-item'))"
+                                title="Dismiss">
+                            <i class="fas fa-times text-gray-400 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                    <p>Failed to load notifications</p>
+                </div>`;
+        }
+    }
+
+    function getNotificationIcon(type) {
+        const icons = {
+            'meeting_scheduled': 'fas fa-calendar-check text-green-600',
+            'meeting_rescheduled': 'fas fa-calendar-alt text-orange-500',
+            'meeting_canceled': 'fas fa-calendar-times text-red-500',
+            'meeting_reminder_30min': 'fas fa-clock text-blue-500',
+            'meeting_reminder_10min': 'fas fa-clock text-yellow-500',
+            'meeting_reminder_5min': 'fas fa-bell text-red-500',
+            'instant_call_request': 'fas fa-phone-alt text-green-500',
+            'instant_call_received': 'fas fa-phone text-green-500',
+            'missed_call': 'fas fa-phone-slash text-amber-500',
+            'message_received': 'fas fa-envelope text-blue-500',
+            'new_message': 'fas fa-comment-dots text-blue-500',
+            'system_announcement': 'fas fa-bullhorn text-purple-500'
+        };
+        return icons[type] || 'fas fa-bell text-brand-primary';
+    }
+
+    function getNotificationIconBg(type) {
+        const bgs = {
+            'meeting_scheduled': 'bg-green-100',
+            'meeting_rescheduled': 'bg-orange-100',
+            'meeting_canceled': 'bg-red-100',
+            'meeting_reminder_30min': 'bg-blue-100',
+            'meeting_reminder_10min': 'bg-yellow-100',
+            'meeting_reminder_5min': 'bg-red-100',
+            'instant_call_request': 'bg-green-100',
+            'instant_call_received': 'bg-green-100',
+            'missed_call': 'bg-amber-100',
+            'message_received': 'bg-blue-100',
+            'new_message': 'bg-blue-100',
+            'system_announcement': 'bg-purple-100'
+        };
+        return bgs[type] || 'bg-brand-primary/10';
+    }
+
+    async function markNotificationRead(notificationId, element) {
+        try {
+            // Optimistically update UI
+            if (element) {
+                element.classList.remove('unread', 'border-blue-200', 'bg-blue-50/50');
+                element.classList.add('read', 'border-gray-100', 'bg-white');
+                // Remove the blue dot
+                const dot = element.querySelector('.bg-blue-500.rounded-full');
+                if (dot) dot.remove();
+                // Remove "New" badge
+                const newBadge = element.querySelector('.bg-blue-100');
+                if (newBadge) newBadge.remove();
+            }
+
+            await fetch(`/api/v1/students/me/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+
+            // Refresh unread count
+            fetchUnreadNotificationCount();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    }
+
+    async function dismissNotification(notificationId, element) {
+        try {
+            // Animate out
+            if (element) {
+                element.style.transition = 'all 0.3s ease';
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(20px)';
+                setTimeout(() => element.remove(), 300);
+            }
+
+            // Mark as read (dismiss = read)
+            await fetch(`/api/v1/students/me/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+
+            fetchUnreadNotificationCount();
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
+    }
+
+    async function markAllNotificationsRead() {
+        try {
+            await fetch('/api/v1/students/me/notifications/read-all', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${window.TalkTimeAuth.getToken()}` }
+            });
+            loadNotifications();
+            // Clear badge and dots after marking all as read
+            setNotificationBadgeCount(0);
+        } catch (error) {
+            console.error('Error marking notifications read:', error);
+        }
+    }
+
+    // Store active countdown intervals for cleanup
+    const countdownIntervals = new Map();
+
+    /**
+     * Initialize countdown timer for a meeting
+     * Shows time remaining and enables Join button when within 5 minutes
+     */
+    function initializeMeetingCountdown(meetingId, scheduledTime, roomId) {
+        const countdownEl = document.getElementById(`countdown-${meetingId}`);
+        const joinBtn = document.getElementById(`join-btn-${meetingId}`);
+        const waitingBtn = document.getElementById(`waiting-btn-${meetingId}`);
+        const waitingText = document.getElementById(`waiting-text-${meetingId}`);
+
+        if (!countdownEl) return;
+
+        // Clear any existing interval for this meeting
+        if (countdownIntervals.has(meetingId)) {
+            clearInterval(countdownIntervals.get(meetingId));
+        }
+
+        const meetingTime = new Date(scheduledTime).getTime();
+        const JOIN_WINDOW_MINUTES = 5; // Allow joining 5 minutes before
+
+        function updateCountdown() {
+            const now = Date.now();
+            const distance = meetingTime - now;
+            const minutesUntil = Math.floor(distance / (1000 * 60));
+
+            // Meeting has started (or is past)
+            if (distance <= 0) {
+                const minutesPast = Math.abs(minutesUntil);
+
+                if (minutesPast < 40) {
+                    // Meeting is in progress (within 40 min window)
+                    countdownEl.textContent = 'Meeting in progress!';
+                    countdownEl.className = 'countdown-timer ready';
+                    showJoinButton();
+                } else {
+                    // Meeting window has passed (40+ minutes)
+                    countdownEl.textContent = 'Meeting time passed';
+                    countdownEl.className = 'countdown-timer';
+                    hideJoinButton();
+                    if (waitingText) waitingText.textContent = 'Session expired';
+                    clearInterval(countdownIntervals.get(meetingId));
+                    countdownIntervals.delete(meetingId);
+                }
+                return;
+            }
+
+            // Calculate time components
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Build time string
+            let timeString = '';
+            if (days > 0) timeString += `${days}d `;
+            if (hours > 0 || days > 0) timeString += `${hours}h `;
+            timeString += `${minutes}m ${seconds}s`;
+
+            countdownEl.textContent = timeString;
+
+            // Set countdown styling based on urgency
+            if (minutesUntil <= 1) {
+                countdownEl.className = 'countdown-timer urgent';
+            } else if (minutesUntil <= 5) {
+                countdownEl.className = 'countdown-timer warning';
+            } else {
+                countdownEl.className = 'countdown-timer';
+            }
+
+            // Show/hide join button based on time window
+            if (minutesUntil <= JOIN_WINDOW_MINUTES) {
+                showJoinButton();
+            } else {
+                hideJoinButton();
+                if (waitingText) {
+                    if (days > 0) {
+                        waitingText.textContent = `Available in ${days}d ${hours}h`;
+                    } else if (hours > 0) {
+                        waitingText.textContent = `Available in ${hours}h ${minutes}m`;
+                    } else {
+                        waitingText.textContent = `Available in ${minutes} min`;
+                    }
+                }
+            }
+        }
+
+        function showJoinButton() {
+            if (joinBtn) {
+                joinBtn.style.display = 'inline-flex';
+                joinBtn.classList.add('visible');
+            }
+            if (waitingBtn) waitingBtn.style.display = 'none';
+        }
+
+        function hideJoinButton() {
+            if (joinBtn) {
+                joinBtn.style.display = 'none';
+                joinBtn.classList.remove('visible');
+            }
+            if (waitingBtn) waitingBtn.style.display = 'flex';
+        }
+
+        // Initial update
+        updateCountdown();
+
+        // Update every second for precise countdown
+        const intervalId = setInterval(updateCountdown, 1000);
+        countdownIntervals.set(meetingId, intervalId);
+    }
+
+    /**
+     * Cleanup countdown intervals when navigating away
+     */
+    function cleanupCountdownIntervals() {
+        countdownIntervals.forEach((intervalId) => {
+            clearInterval(intervalId);
+        });
+        countdownIntervals.clear();
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', cleanupCountdownIntervals);
+
+    // Utility functions
+    function formatDateTime(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    </script>
 </body>
 </html>

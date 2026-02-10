@@ -12,13 +12,6 @@ import * as meetingController from '../controllers/meetingController.js';
 const jwtAuth = createJWTMiddleware();
 
 /**
- * @route   GET /api/v1/meetings
- * @desc    Get all meetings
- * @access  Private (Admin only)
- */
-router.get('/', jwtAuth, meetingController.getAllMeetings);
-
-/**
  * @route   GET /api/v1/meetings/student/:studentId
  * @desc    Get meetings by student ID
  * @access  Private (Volunteers and Admins)
@@ -31,13 +24,6 @@ router.get('/student/:studentId', jwtAuth, meetingController.getMeetingsByStuden
  * @access  Private (Meeting participants and Admins)
  */
 router.get('/:id', jwtAuth, meetingController.getMeetingById);
-
-/**
- * @route   GET /api/v1/meetings/room/:roomId
- * @desc    Get meeting by room ID
- * @access  Private (Meeting participants and Admins)
- */
-router.get('/room/:roomId', jwtAuth, meetingController.getMeetingByRoomId);
 
 /**
  * @route   POST /api/v1/meetings

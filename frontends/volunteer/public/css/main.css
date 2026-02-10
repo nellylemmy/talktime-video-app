@@ -1,60 +1,134 @@
-/* Custom styles for the page */
+/* CSS files now loaded directly in HTML for parallel loading */
+/* See: responsive-framework.css, responsive-forms.css, enhanced-mobile-nav.css, volunteer-dashboard.css */
+
+/* Anti-FOUC: pages set inline body{opacity:0}, this reveals after DOMContentLoaded */
+body.page-ready {
+    opacity: 1 !important;
+    transition: opacity 0.12s ease;
+}
+
+/* Custom styles for the page - Mobile First Approach */
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--brand-body-family, 'Poppins', sans-serif);
     background-color: #f0f4ff; /* Fallback color */
     overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Fixed navigation at top */
+#nav-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+}
+
+/* Add spacing for fixed nav on pages with nav-container */
+/* Home page handles its own spacing with negative margins */
+body:has(#nav-container:not(.hidden)) {
+    padding-top: 85px;
+}
+
+/* Mobile: slightly less padding */
+@media (max-width: 768px) {
+    body:has(#nav-container:not(.hidden)) {
+        padding-top: 75px;
+    }
+}
+
+/* Home page exception - already handles its own spacing */
+body:has(#home-unauthenticated-nav) {
+    padding-top: 0 !important;
 }
 
 .font-poppins {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--brand-font-family, 'Poppins', sans-serif);
 }
 
-/* UPDATED: New light blue to light purple gradient */
+/* UPDATED: Clean professional background */
 .gradient-bg {
-    background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+    background-color: #f0f4ff;
+    /* No gradient for professional look */
 }
 
-/* Glassmorphism Effect for Feature Cards */
+/* Clean Card Design - Professional Look */
 .glass-card {
-    background: rgba(255, 255, 255, 0.3); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: all var(--transition-normal) ease;
     height: 100%;
+    padding: var(--space-md);
+    border-radius: clamp(0.5rem, 2vw, 1rem);
 }
 
-.glass-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-    background: rgba(255, 255, 255, 0.4);
+/* Desktop hover effects */
+@media (hover: hover) and (pointer: fine) {
+    .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-color: var(--brand-primary);
+    }
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .glass-card:active {
+        transform: scale(0.98);
+    }
 }
 
 .glass-bg {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #e5e7eb;
 }
 
-/* Scrolled Navbar Style with smooth transition */
+/* ============================================
+   Authenticated Nav (main-header) - Always Glass
+   No scroll effect needed, always has glass-bg class
+   ============================================ */
 #main-header {
-    transition: background-color 0.5s ease, backdrop-filter 0.5s ease, box-shadow 0.5s ease;
+    /* Glass effect is applied via .glass-bg class in HTML */
 }
 
-#main-header.scrolled {
-    background: rgba(255, 255, 255, 0.6);
+/* ============================================
+   Home Page Unauthenticated Nav - Scroll Effect
+   Transparent at top, glass background on scroll
+   ============================================ */
+#home-unauthenticated-nav {
+    background: transparent;
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+#home-unauthenticated-nav.scrolled {
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* Decorative blobs - hide on mobile for performance */
 .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: 0.5;
-    z-index: -1;
+    display: none;
+}
+
+/* Show blobs on larger screens */
+@media (min-width: 768px) {
+    .blob {
+        display: block;
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(100px);
+        opacity: 0.5;
+        z-index: -1;
+    }
 }
 
 /* Animation classes */
@@ -71,9 +145,15 @@ body {
     }
 }
 
-/* Button pulse animation */
-.pulse-zoom {
-    animation: pulseZoom 2s infinite;
+/* Button pulse animation - respect user preferences */
+@media (prefers-reduced-motion: no-preference) {
+    .pulse-zoom {
+        animation: pulseZoom 2s infinite;
+    }
+
+    .pulse-zoom-red {
+        animation: pulseZoomRed 2s infinite;
+    }
 }
 
 @keyframes pulseZoom {
@@ -87,12 +167,24 @@ body {
     }
 }
 
-/* Gradient Text */
+@keyframes pulseZoomRed {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 15px rgba(220, 38, 38, 0);
+    }
+}
+
+/* Gradient Text - Red to Light Red to Black gradient */
 .gradient-text {
-    background-image: linear-gradient(to right, #4f46e5, #a855f7);
+    background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-primary-light) 50%, #000000 100%);
     -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     background-clip: text;
-    color: transparent;
+    font-weight: 600;
 }
 
 /* Modal transition styles */
@@ -109,7 +201,7 @@ body {
     overflow-x: hidden;
 }
 
-/* Modal Styles */
+/* Modal Styles - Mobile First */
 .modal {
     position: fixed;
     inset: 0;
@@ -117,12 +209,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: var(--space-md);
     background: rgba(0,0,0,0.4);
     backdrop-filter: blur(4px);
     opacity: 0;
     transition: opacity 300ms ease-in-out;
     pointer-events: none;
+    overscroll-behavior: contain;
 }
 .modal.show {
     opacity: 1;
@@ -130,9 +223,11 @@ body {
 }
 .modal-content {
     width: 100%;
-    max-width: 400px;
-    border-radius: 1.5rem;
-    padding: 2.5rem;
+    max-width: min(90vw, 400px);
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: clamp(1rem, 3vw, 1.5rem);
+    padding: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
     transform: scale(0.95);
     transition: transform 300ms ease-in-out;
@@ -186,35 +281,205 @@ body {
     display: none !important;
 }
 
-@media (max-width: 768px) {
+/* Mobile First Video Call Styles */
+.video-participant {
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    height: 100%;
+}
+
+.participant-name {
+    font-size: var(--text-xs);
+    padding: 2px 8px;
+    bottom: 6px;
+    left: 6px;
+}
+
+.action-icon-btn {
+    width: 44px;
+    height: 44px;
+    font-size: var(--text-sm);
+    min-height: 44px;
+    min-width: 44px;
+}
+
+#call-controls {
+    flex-wrap: wrap;
+    bottom: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+}
+
+.control-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: var(--text-base);
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
     .video-participant {
-        border-radius: 0;
-        box-shadow: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .participant-name {
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        bottom: 6px;
-        left: 6px;
+        font-size: var(--text-sm);
+        padding: 4px 12px;
+        bottom: 10px;
+        left: 10px;
     }
 
     .action-icon-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 0.875rem;
+        width: 36px;
+        height: 36px;
+        font-size: var(--text-base);
     }
 
     #call-controls {
-        flex-wrap: wrap;
-        bottom: 1rem;
-        padding: 0.5rem 1rem;
-        gap: 0.5rem;
+        flex-wrap: nowrap;
+        bottom: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-md);
     }
 
     .control-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 1rem;
+        width: 56px;
+        height: 56px;
+        font-size: var(--text-lg);
+    }
+}
+
+/* Responsive typography */
+h1 {
+    font-size: var(--text-4xl);
+    line-height: 1.2;
+    margin-block: var(--space-lg);
+}
+
+h2 {
+    font-size: var(--text-3xl);
+    line-height: 1.3;
+    margin-block: var(--space-md);
+}
+
+h3 {
+    font-size: var(--text-2xl);
+    line-height: 1.4;
+    margin-block: var(--space-md);
+}
+
+p {
+    font-size: var(--text-base);
+    line-height: 1.6;
+    max-width: 75ch;
+}
+
+/* Touch-friendly buttons */
+button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Responsive containers */
+.container {
+    width: 100%;
+    padding-inline: var(--container-padding);
+    margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+    .container { max-width: 640px; }
+}
+
+@media (min-width: 768px) {
+    .container { max-width: 768px; }
+}
+
+@media (min-width: 1024px) {
+    .container { max-width: 1024px; }
+}
+
+@media (min-width: 1280px) {
+    .container { max-width: 1280px; }
+}
+
+/* ============================================
+   Progressive Image Loading with Skeleton
+   ============================================ */
+
+/* Image wrapper for lazy loading effect */
+.lazy-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+}
+
+/* Skeleton shimmer animation */
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Lazy loaded image - hidden until loaded */
+.lazy-image {
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out, filter 0.4s ease-in-out;
+    filter: blur(10px);
+}
+
+/* Image fully loaded state */
+.lazy-image.loaded {
+    opacity: 1;
+    filter: blur(0);
+}
+
+/* Circular image skeleton (for profile photos) */
+.lazy-image-wrapper.rounded-full {
+    border-radius: 9999px;
+}
+
+/* Hero/cover image skeleton */
+.lazy-image-wrapper.cover {
+    width: 100%;
+    height: 100%;
+}
+
+/* Stop skeleton animation once loaded */
+.lazy-image-wrapper.loaded {
+    animation: none;
+    background: transparent;
+}
+
+/* Decorative image skeleton (low opacity backgrounds) */
+.lazy-image-wrapper.decorative {
+    background: transparent;
+    animation: none;
+}
+
+.lazy-image-wrapper.decorative .lazy-image {
+    filter: blur(5px);
+    transition: opacity 0.6s ease-in-out, filter 0.6s ease-in-out;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .lazy-image-wrapper {
+        animation: none;
+        background: #f0f0f0;
+    }
+
+    .lazy-image {
+        transition: opacity 0.1s;
+        filter: none;
+    }
+
+    .lazy-image.loaded {
+        filter: none;
     }
 }

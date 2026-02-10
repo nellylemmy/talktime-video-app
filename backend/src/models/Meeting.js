@@ -42,20 +42,26 @@ class Meeting {
     }
 
     // Method to find upcoming meetings for a specific volunteer
+    // Handles both cases: student_id referencing users.id OR students.id
     static async findUpcomingByVolunteerId(volunteerId) {
         const query = `
-            SELECT 
-                m.id, 
-                m.student_id as studentId, 
-                su.full_name as name, 
-                su.username as admissionNumber,
-                COALESCE(su.profile_image, '/images/placeholder-student.jpg') as "profileImage",
-                m.scheduled_time as time, 
+            SELECT
+                m.id,
+                m.student_id as studentId,
+                COALESCE(s.full_name, su.full_name, s_user.full_name) as name,
+                COALESCE(s.admission_number, su.username, s_user.username) as "admissionNumber",
+                COALESCE(s.photo_url, su.profile_image, s_user.profile_image) as "profileImage",
+                m.scheduled_time as time,
                 m.room_id as roomId,
                 m.status
             FROM meetings m
-            JOIN users su ON m.student_id = su.id AND su.role = 'student'
-            WHERE m.volunteer_id = $1 AND m.scheduled_time >= NOW() AND m.status = 'scheduled'
+            LEFT JOIN users su ON m.student_id = su.id AND su.role = 'student'
+            LEFT JOIN students s ON (m.student_id = s.id OR m.student_id = s.user_id)
+            LEFT JOIN users s_user ON s.user_id = s_user.id
+            WHERE m.volunteer_id = $1
+              AND m.scheduled_time >= NOW()
+              AND m.status = 'scheduled'
+              AND (su.id IS NOT NULL OR s.id IS NOT NULL)
             ORDER BY m.scheduled_time ASC;
         `;
         try {
@@ -72,19 +78,24 @@ class Meeting {
     }
 
     // Method to find past meetings for a specific volunteer
+    // Handles both cases: student_id referencing users.id OR students.id
     static async findPastByVolunteerId(volunteerId) {
         const query = `
-            SELECT 
-                m.id, 
-                m.student_id as studentId, 
-                su.full_name as name, 
-                COALESCE(su.profile_image, '/images/placeholder-student.jpg') as "profileImage",
-                m.scheduled_time as time, 
+            SELECT
+                m.id,
+                m.student_id as studentId,
+                COALESCE(s.full_name, su.full_name, s_user.full_name) as name,
+                COALESCE(s.photo_url, su.profile_image, s_user.profile_image) as "profileImage",
+                m.scheduled_time as time,
                 m.room_id as roomId,
                 m.status
             FROM meetings m
-            JOIN users su ON m.student_id = su.id AND su.role = 'student'
-            WHERE m.volunteer_id = $1 AND m.scheduled_time < NOW()
+            LEFT JOIN users su ON m.student_id = su.id AND su.role = 'student'
+            LEFT JOIN students s ON (m.student_id = s.id OR m.student_id = s.user_id)
+            LEFT JOIN users s_user ON s.user_id = s_user.id
+            WHERE m.volunteer_id = $1
+              AND m.scheduled_time < NOW()
+              AND (su.id IS NOT NULL OR s.id IS NOT NULL)
             ORDER BY m.scheduled_time DESC;
         `;
         try {

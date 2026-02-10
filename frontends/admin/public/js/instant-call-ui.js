@@ -386,9 +386,9 @@ class InstantCallUI {
                 this.hideCall();
                 this.showToast('Joining call...', 'success');
                 
-                // Redirect to call room
+                // Redirect to call room with role parameter
                 setTimeout(() => {
-                    window.location.href = `/call.html?room=${this.currentCall.roomId}`;
+                    window.location.href = `/call/call.html?room=${this.currentCall.roomId}&role=admin`;
                 }, 1000);
             } else {
                 this.showToast(data.message || 'Failed to accept call', 'error');

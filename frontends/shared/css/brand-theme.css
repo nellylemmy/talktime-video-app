@@ -1,0 +1,297 @@
+/**
+ * TalkTime Brand Theme System
+ * ============================
+ * Centralized branding configuration for the entire TalkTime application
+ * Change the CSS custom properties below to rebrand the entire app
+ *
+ * HOW TO USE:
+ * 1. Import this file in all HTML pages: <link rel="stylesheet" href="/shared/css/brand-theme.css">
+ * 2. Use the CSS variables in your styles: background: var(--brand-primary);
+ * 3. To rebrand, simply change the values below
+ */
+
+/* Fonts loaded locally from /shared/fonts/google/fonts.css */
+
+:root {
+  /* ===== TYPOGRAPHY ===== */
+  /* Font families - Poppins as primary font */
+  --brand-font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --brand-heading-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --brand-body-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* ===== PRIMARY BRAND COLORS ===== */
+  /* Main brand colors - change these to rebrand the entire app */
+  --brand-primary: #D10100; 
+  --brand-secondary: #3867FF; 
+  --brand-primary-dark: #7d0000;  
+  --brand-secondary-dark: #001d7d; 
+  --brand-primary-light: #ff3d3d; 
+  --brand-secondary-light: #7d9cff; 
+
+  /* ===== GRADIENT DEFINITIONS ===== */
+  /* Pre-defined gradients using brand colors */
+  --brand-gradient-primary: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  --brand-gradient-secondary: linear-gradient(135deg, var(--brand-primary-light), var(--brand-secondary-light));
+  --brand-gradient-dark: linear-gradient(135deg, var(--brand-primary-dark), var(--brand-secondary-dark));
+  --brand-gradient-subtle: linear-gradient(135deg, #f5f3ff, #fdf2f8);  /* Clean subtle gradient like students page */
+
+  /* ===== CLEAN PROFESSIONAL BACKGROUNDS ===== */
+  --bg-clean: #f0f4ff;  /* Clean light background from students page */
+  --bg-clean-gradient: linear-gradient(135deg, #f5f3ff, #fdf2f8);  /* Very subtle gradient */
+  --bg-white-glass: rgba(255, 255, 255, 0.4);  /* Glass effect background */
+
+  /* ===== SEMANTIC COLORS ===== */
+  /* Functional colors that adapt to the brand */
+  --color-success: #116C00;          /* Green - Success states */
+  --color-success-light: #0d5200;    /* Light success - hover states */
+  --color-success-dark: #094000;     /* Dark success - pressed states */
+  --color-warning: #FFE006;          /* Amber - Warning states */
+  --color-error: #7d0000;            /* Red - Error states */
+  --color-info: var(--brand-primary); /* Info uses primary brand color */
+
+  /* ===== SEMANTIC GRADIENTS ===== */
+  --gradient-success: linear-gradient(135deg, var(--color-success), var(--color-success-light));
+  --gradient-success-hover: linear-gradient(135deg, var(--color-success-light), var(--color-success-dark));
+  --gradient-error: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+  --gradient-info: linear-gradient(135deg, var(--brand-secondary), var(--brand-secondary-dark));
+
+  /* ===== BACKGROUND COLORS ===== */
+  --bg-primary: #ffffff;              /* Main background */
+  --bg-secondary: #f9fafb;            /* Secondary background */
+  --bg-dark: #1a1a1a;                 /* Dark mode background */
+  --bg-overlay: rgba(0, 0, 0, 0.5);   /* Modal overlays */
+  --bg-glass: rgba(255, 255, 255, 0.1); /* Glassmorphism effect */
+
+  /* ===== TEXT COLORS ===== */
+  --text-primary: #111827;            /* Main text color */
+  --text-secondary: #6b7280;          /* Secondary text */
+  --text-light: #9ca3af;              /* Light text */
+  --text-white: #ffffff;              /* White text */
+  --text-brand: var(--brand-primary); /* Brand colored text */
+
+  /* ===== BORDER COLORS ===== */
+  --border-light: rgba(255, 255, 255, 0.2);
+  --border-default: #e5e7eb;
+  --border-brand: var(--brand-primary);
+  --border-brand-alpha: rgba(var(--brand-secondary-rgb), 0.3);
+
+  /* ===== BUTTON STYLES ===== */
+  --btn-primary-bg: var(--brand-gradient-primary);
+  --btn-primary-hover: var(--brand-gradient-dark);
+  --btn-secondary-bg: var(--brand-gradient-subtle);
+  --btn-secondary-hover: linear-gradient(135deg, rgba(var(--brand-primary-rgb), 0.2), rgba(var(--brand-secondary-rgb), 0.2));
+  --btn-danger-bg: var(--color-error);
+  --btn-danger-hover: #dc2626;
+
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-brand: 0 10px 30px rgba(var(--brand-primary-rgb), 0.3);
+
+  /* ===== ANIMATION SPEEDS ===== */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+/* ===== GLOBAL FONT APPLICATION ===== */
+/* Apply Poppins font to all elements */
+* {
+  font-family: var(--brand-font-family);
+}
+
+body {
+  font-family: var(--brand-body-family);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--brand-heading-family);
+  font-weight: 600;
+}
+
+button, input, textarea, select {
+  font-family: var(--brand-font-family);
+}
+
+/* ===== UTILITY CLASSES ===== */
+/* Pre-built classes that automatically use the brand colors */
+
+/* Backgrounds */
+.bg-brand-primary { background: var(--brand-primary) !important; }
+.bg-brand-secondary { background: var(--brand-secondary) !important; }
+.bg-brand-gradient { background: var(--brand-gradient-primary) !important; }
+.bg-brand-gradient-subtle { background: var(--brand-gradient-subtle) !important; }
+
+/* Text Colors */
+.text-brand-primary { color: var(--brand-primary) !important; }
+.text-brand-secondary { color: var(--brand-secondary) !important; }
+.text-brand-gradient {
+  background: var(--brand-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Borders */
+.border-brand { border-color: var(--border-brand) !important; }
+.border-brand-alpha { border-color: var(--border-brand-alpha) !important; }
+
+/* Buttons */
+.btn-brand {
+  background: var(--btn-primary-bg);
+  color: var(--text-white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+}
+
+.btn-brand:hover {
+  background: var(--btn-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-brand);
+}
+
+.btn-brand-outline {
+  background: transparent;
+  color: var(--brand-primary);
+  border: 2px solid var(--brand-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+}
+
+.btn-brand-outline:hover {
+  background: var(--brand-gradient-subtle);
+}
+
+/* Glass Effect */
+.glass-brand {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-light);
+}
+
+/* Pulse Animation with Brand Color - uses CSS variables */
+@keyframes pulse-brand {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--brand-primary);
+    opacity: 0.7;
+  }
+  50% {
+    box-shadow: 0 0 0 10px var(--brand-primary); 
+    opacity: 0;
+  }
+}
+
+.pulse-brand {
+  animation: pulse-brand 2s infinite;
+}
+
+/* Loading Spinner with Brand Colors */
+.spinner-brand {
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--brand-secondary);
+  border-left-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Status Indicators */
+.status-online { background: var(--color-success); }
+.status-away { background: var(--color-warning); }
+.status-busy { background: var(--color-error); }
+.status-offline { background: var(--text-secondary); }
+
+/* ===== DARK MODE SUPPORT ===== */
+/* Automatically adjust colors for dark mode if needed */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-default: #404040;
+  }
+}
+
+/* ===== RESPONSIVE FONT SIZES ===== */
+:root {
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+}
+
+/* ===== Z-INDEX SYSTEM ===== */
+:root {
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ===== ANTI-FOUC (Flash of Unstyled Content) SYSTEM ===== */
+/* Prevents brief flash of wrong navigation during auth state detection */
+
+/* Initially hidden state - applied via anti-fouc.js before page renders */
+.nav-auth-pending {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+/* Authenticated state - show authenticated nav */
+body.auth-confirmed .nav-authenticated {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.auth-confirmed .nav-unauthenticated {
+  display: none !important;
+}
+
+/* Unauthenticated state - show unauthenticated nav */
+body.unauth-confirmed .nav-unauthenticated {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.unauth-confirmed .nav-authenticated {
+  display: none !important;
+}
+
+/* Fallback: if anti-fouc.js doesn't load, show content after 500ms */
+@keyframes fouc-fallback {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+body:not(.auth-confirmed):not(.unauth-confirmed) .nav-auth-pending {
+  animation: fouc-fallback 0.3s ease 0.5s forwards;
+}

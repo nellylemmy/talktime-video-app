@@ -133,14 +133,13 @@ export const sendNotification = async (notificationData, channels = ['in-app', '
         // Create notification record in database with persistence settings
         const insertQuery = `
             INSERT INTO notifications (
-                recipient_id, 
-                recipient_role, 
-                title, 
-                message, 
-                type, 
-                priority, 
-                metadata, 
-                expires_at,
+                recipient_id,
+                recipient_role,
+                title,
+                message,
+                type,
+                priority,
+                metadata,
                 is_persistent,
                 auto_delete_after,
                 require_interaction,
@@ -149,7 +148,7 @@ export const sendNotification = async (notificationData, channels = ['in-app', '
                 badge_url,
                 tag,
                 created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
             RETURNING *
         `;
 
@@ -161,9 +160,8 @@ export const sendNotification = async (notificationData, channels = ['in-app', '
             type,
             priority,
             JSON.stringify(metadata),
-            expires_at,
             persistent,
-            auto_delete_after ? new Date(Date.now() + auto_delete_after * 60000).toISOString() : null,
+            auto_delete_after || null,
             require_interaction,
             action_url,
             icon_url,
@@ -291,18 +289,14 @@ export const sendNotification = async (notificationData, channels = ['in-app', '
         
         // Update delivery status
         await pool.query(
-            `UPDATE notifications SET 
-             channels_sent = $1, 
-             delivery_status = $2,
+            `UPDATE notifications SET
+             channels_sent = $1,
+             is_sent = true,
+             sent_at = NOW(),
              updated_at = NOW()
-             WHERE id = $3`,
+             WHERE id = $2`,
             [
                 channels,
-                JSON.stringify({ 
-                    sent_at: new Date().toISOString(),
-                    channels_attempted: channels.length,
-                    status: 'delivered'
-                }),
                 createdNotification.id
             ]
         );

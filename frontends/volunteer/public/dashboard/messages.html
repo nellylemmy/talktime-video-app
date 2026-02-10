@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>TalkTime - Messages | Volunteer Dashboard</title>
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <meta name="description" content="View your message history with students on TalkTime.">
+    <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/dashboard/messages">
+    <meta name="robots" content="index, follow">
+
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-framework.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-forms.css">
+    <link rel="stylesheet" href="/volunteer/css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
+
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="/volunteer/partials/nav-loader.js"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js"></script>
+    <script defer src="/volunteer/js/modal-utils.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+
+    <style>
+        /* Mobile-first message styles - Clean, professional look */
+
+        /* Message conversation card */
+        .message-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message-card:hover {
+            border-color: var(--brand-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-card:active {
+            transform: scale(0.99);
+        }
+
+        /* Avatar styles - flat color */
+        .message-avatar {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+            background-color: var(--brand-primary);
+        }
+
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        /* Unread badge */
+        .unread-badge {
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--brand-primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Message preview text */
+        .message-preview {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        /* Conversation modal */
+        .conversation-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .conversation-modal.active {
+            display: flex;
+        }
+
+        .conversation-panel {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            height: 85vh;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .conversation-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .conversation-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f9fafb;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message-bubble.sent {
+            background: var(--brand-primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background: white;
+            color: #111827;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .message-bubble.sent .message-time {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+        }
+
+        /* Message input area */
+        .message-input-area {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            border-radius: 24px;
+            padding: 4px 4px 4px 16px;
+        }
+
+        .input-wrapper input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            padding: 10px 0;
+            outline: none;
+            color: #111827;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #9ca3af;
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--brand-primary);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--brand-primary-dark, #b00000);
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .send-btn i {
+            font-size: 14px;
+        }
+
+        /* Sending indicator */
+        .message-bubble.sending {
+            opacity: 0.7;
+        }
+
+        .message-bubble.sending::after {
+            content: ' ...';
+        }
+
+        .message-bubble.failed {
+            border: 2px solid #dc2626;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+        }
+
+        @media (min-width: 640px) {
+            .empty-state {
+                padding: 48px 24px;
+            }
+        }
+
+        .empty-state-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-state-icon i {
+            font-size: 28px;
+            color: #9ca3af;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Role badge */
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 4px;
+            text-transform: capitalize;
+        }
+
+        /* Tablet+ adjustments */
+        @media (min-width: 768px) {
+            .message-card {
+                padding: 20px;
+            }
+
+            .message-avatar {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                font-size: 18px;
+            }
+
+            .conversation-panel {
+                height: 75vh;
+                border-radius: 16px;
+                margin: auto;
+            }
+
+            .conversation-modal {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body class="dashboard-page" style="opacity:0">
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="section-header">
+            <i class="fas fa-envelope text-brand-primary"></i>
+            Messages
+        </div>
+
+        <!-- Info text -->
+        <p class="text-gray-500 text-sm mb-4">Messages exchanged during video calls with students.</p>
+
+        <!-- Messages List -->
+        <div id="messages-list">
+            <!-- Loading skeleton -->
+            <div class="message-card">
+                <div class="flex items-center gap-3">
+                    <div class="skeleton w-11 h-11 flex-shrink-0 rounded-full"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="skeleton h-4 w-2/5 max-w-32 mb-2"></div>
+                        <div class="skeleton h-3 w-4/5 max-w-48"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="message-card">
+                <div class="flex items-center gap-3">
+                    <div class="skeleton w-11 h-11 flex-shrink-0 rounded-full"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="skeleton h-4 w-1/3 max-w-28 mb-2"></div>
+                        <div class="skeleton h-3 w-3/5 max-w-40"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Conversation Modal (Read-only) -->
+    <div id="conversation-modal" class="conversation-modal">
+        <div class="conversation-panel">
+            <div class="conversation-header">
+                <button id="close-conversation" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-arrow-left text-gray-600"></i>
+                </button>
+                <div class="message-avatar" id="conversation-avatar">S</div>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-gray-900" id="conversation-name">Student Name</h3>
+                    <span class="role-badge" id="conversation-role">Student</span>
+                </div>
+            </div>
+            <div class="conversation-messages" id="conversation-messages">
+                <!-- Messages will be loaded here -->
+            </div>
+            <!-- Message Input Area -->
+            <div class="message-input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="message-input" placeholder="Type a message..." maxlength="2000" autocomplete="off">
+                    <button id="send-message-btn" class="send-btn" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-20 left-4 right-4 md:bottom-5 md:right-5 md:left-auto md:w-auto bg-success text-white px-6 py-3 rounded-lg shadow-lg z-50"></div>
+
+    <script>
+    (function() {
+        // --- DOM Elements ---
+        const messagesList = document.getElementById('messages-list');
+        const notificationEl = document.getElementById('notification');
+        const conversationModal = document.getElementById('conversation-modal');
+        const conversationMessages = document.getElementById('conversation-messages');
+        const conversationName = document.getElementById('conversation-name');
+        const conversationRole = document.getElementById('conversation-role');
+        const conversationAvatar = document.getElementById('conversation-avatar');
+        const closeConversationBtn = document.getElementById('close-conversation');
+        const messageInput = document.getElementById('message-input');
+        const sendMessageBtn = document.getElementById('send-message-btn');
+
+        // State
+        let allMessages = [];
+        let isInitialized = false;
+        let isLoading = false;
+        let currentConversationPersonId = null;
+        let currentConversationPersonRole = null;
+        let socket = null;
+        let currentUserId = null;
+
+        // --- Initialize TalkTime Auth ---
+        function initializeApp() {
+            if (typeof TalkTimeJWTAuth === 'undefined') {
+                setTimeout(initializeApp, 50);
+                return;
+            }
+
+            if (!window.TalkTimeAuth) {
+                window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+            }
+
+            isInitialized = true;
+
+            // Get current user ID
+            const user = window.TalkTimeAuth.getUser();
+            if (user) {
+                currentUserId = user.id;
+            }
+
+            loadMessages();
+            initializeSocket();
+            updateMessageBadge();
+        }
+
+        // Update message badge in header
+        async function updateMessageBadge() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/me/messages/unread-count?_t=' + Date.now());
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.unreadCount || 0;
+                    const badge = document.getElementById('message-badge');
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count > 99 ? '99+' : count.toString();
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating message badge:', error);
+            }
+        }
+
+        // Update notification badge in header (for when message notifications are auto-read)
+        async function updateNotificationBadge() {
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/unread-count');
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.unreadCount || 0;
+                    const badge = document.getElementById('notification-badge');
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count > 99 ? '99+' : count.toString();
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating notification badge:', error);
+            }
+        }
+
+        // --- Initialize Socket.IO ---
+        function initializeSocket() {
+            if (typeof io === 'undefined') {
+                console.log('Socket.IO not loaded yet, retrying...');
+                setTimeout(initializeSocket, 100);
+                return;
+            }
+
+            socket = io({
+                transports: ['websocket', 'polling'],
+                upgrade: true
+            });
+
+            socket.on('connect', () => {
+                console.log('[Chat] Socket connected:', socket.id);
+                const user = window.TalkTimeAuth.getUser();
+                if (user) {
+                    socket.emit('join-user-room', {
+                        userId: user.id,
+                        role: 'volunteer',
+                        rooms: [`volunteer_${user.id}`, `user_${user.id}`]
+                    });
+                }
+            });
+
+            // Listen for new chat messages
+            socket.on('new-chat-message', (data) => {
+                console.log('[Chat] New message received:', data);
+
+                // Skip if this is our own message (we already added it when sending)
+                if (data.senderId === currentUserId) {
+                    console.log('[Chat] Skipping own message');
+                    return;
+                }
+
+                // Add to allMessages
+                const newMsg = {
+                    id: data.id,
+                    senderId: data.senderId,
+                    recipientId: data.recipientId,
+                    content: data.content,
+                    createdAt: data.createdAt,
+                    isRead: false,
+                    isSentByMe: false,
+                    otherPersonName: data.senderName,
+                    otherPersonRole: data.senderRole
+                };
+
+                allMessages.unshift(newMsg);
+
+                // If conversation is open with this person, add message to view
+                if (currentConversationPersonId && data.senderId == currentConversationPersonId) {
+                    appendMessageToConversation(newMsg);
+                }
+
+                // Re-render conversation list
+                renderConversations(allMessages);
+
+                // Show notification and play sound
+                showNotification(`New message from ${data.senderName}`, 'success');
+
+                // Sound is handled globally by realtime-notifications.js
+
+                // Update message badge in header
+                updateMessageBadge();
+            });
+
+            // Listen for sent confirmation
+            socket.on('chat-message-sent', (data) => {
+                console.log('[Chat] Message sent confirmed:', data);
+                // Update the temporary message with real data
+                const tempMsg = document.querySelector('.message-bubble.sending');
+                if (tempMsg) {
+                    tempMsg.classList.remove('sending');
+                }
+            });
+
+            // Listen for errors
+            socket.on('chat-message-error', (data) => {
+                console.error('[Chat] Message error:', data);
+                showNotification('Failed to send message', 'error');
+                const tempMsg = document.querySelector('.message-bubble.sending');
+                if (tempMsg) {
+                    tempMsg.classList.remove('sending');
+                    tempMsg.classList.add('failed');
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log('[Chat] Socket disconnected');
+            });
+        }
+
+        // Handle page show (including bfcache restoration)
+        window.addEventListener('pageshow', function(event) {
+            console.log('pageshow event, persisted:', event.persisted);
+            if (event.persisted) {
+                // Page was restored from bfcache - reload messages
+                if (isInitialized && !isLoading) {
+                    loadMessages();
+                }
+            }
+        });
+
+        // Handle visibility change (tab switching)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && isInitialized && !isLoading) {
+                // Tab became visible - reload messages
+                loadMessages();
+            }
+        });
+
+        // Start initialization immediately (DOM should be ready since script is at bottom)
+        initializeApp();
+
+        // --- Utility Functions ---
+        function showNotification(message, type = 'success') {
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-20 left-4 right-4 md:bottom-5 md:right-5 md:left-auto md:w-auto px-6 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-success text-white' : 'bg-error text-white'}`;
+            notificationEl.classList.remove('hidden');
+
+            setTimeout(() => {
+                notificationEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays === 1) {
+                return 'Yesterday';
+            } else if (diffDays < 7) {
+                return date.toLocaleDateString([], { weekday: 'short' });
+            } else {
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+        }
+
+        function formatMessageTime(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // --- Load Messages ---
+        async function loadMessages() {
+            if (isLoading) return;
+
+            if (!window.TalkTimeAuth || !window.TalkTimeAuth.isAuthenticated()) {
+                console.error('Volunteer not authenticated');
+                showNotification('Please log in to view messages.', 'error');
+                window.location.href = '/volunteer/login';
+                return;
+            }
+
+            isLoading = true;
+            console.log('Loading messages...');
+
+            try {
+                // Add timestamp to bust any cache
+                const url = '/api/v1/volunteers/me/messages?_t=' + Date.now();
+                const response = await window.TalkTimeAuth.authenticatedRequest(url, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.success && data.data) {
+                        allMessages = data.data;
+                        renderConversations(data.data);
+
+                        // Check for openConversation URL parameter (from message modal link)
+                        handleOpenConversationParam();
+                    } else {
+                        renderConversations([]);
+                    }
+                } else {
+                    console.error('Failed to fetch messages, status:', response.status);
+                    renderConversations([]);
+                }
+            } catch (error) {
+                console.error('Network error fetching messages:', error);
+                renderConversations([]);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // --- Handle openConversation URL parameter ---
+        let openConversationHandled = false;
+        function handleOpenConversationParam() {
+            // Only handle once per page load
+            if (openConversationHandled) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const openConversationId = urlParams.get('openConversation');
+
+            if (!openConversationId) return;
+
+            openConversationHandled = true;
+            console.log('[Messages] Auto-opening conversation with user:', openConversationId);
+
+            // Find the person's info from messages
+            let personName = 'Unknown';
+            let personRole = 'student';
+
+            // Look through messages to find this person's name
+            for (const msg of allMessages) {
+                if (msg.senderId == openConversationId) {
+                    personName = msg.otherPersonName || 'Student';
+                    personRole = msg.otherPersonRole || 'student';
+                    break;
+                }
+                if (msg.recipientId == openConversationId && msg.isSentByMe) {
+                    personName = msg.otherPersonName || 'Student';
+                    personRole = msg.otherPersonRole || 'student';
+                    break;
+                }
+            }
+
+            // Clean up URL without reloading (remove the parameter)
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+
+            // Open the conversation
+            setTimeout(() => {
+                openConversation(openConversationId, personName, personRole);
+            }, 100);
+        }
+
+        // --- Render Conversations List ---
+        function renderConversations(messages) {
+            if (!messages || messages.length === 0) {
+                messagesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">No messages yet</h3>
+                        <p class="text-gray-500 mb-6">Start a conversation with students here.</p>
+                        <a href="/volunteer/dashboard/students" class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 bg-brand-primary text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+                            <i class="fas fa-users"></i>
+                            Browse Students
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group messages by conversation partner
+            const conversations = {};
+            messages.forEach(message => {
+                const otherPersonId = message.isSentByMe ? message.recipientId : message.senderId;
+                const otherPersonName = message.otherPersonName || `User ${otherPersonId}`;
+
+                if (!conversations[otherPersonId]) {
+                    conversations[otherPersonId] = {
+                        personId: otherPersonId,
+                        personName: otherPersonName,
+                        personRole: message.otherPersonRole || 'Student',
+                        messages: []
+                    };
+                }
+                conversations[otherPersonId].messages.push(message);
+            });
+
+            // Sort conversations by latest message
+            const sortedConversations = Object.values(conversations).sort((a, b) => {
+                const aLatest = new Date(a.messages[0].createdAt);
+                const bLatest = new Date(b.messages[0].createdAt);
+                return bLatest - aLatest;
+            });
+
+            const conversationsHtml = sortedConversations.map(conv => {
+                const latestMessage = conv.messages[0];
+                const unreadCount = conv.messages.filter(m => !m.isRead && !m.isSentByMe).length;
+                const initial = conv.personName.charAt(0).toUpperCase();
+                const previewText = latestMessage.isSentByMe ? `You: ${latestMessage.content}` : latestMessage.content;
+
+                return `
+                    <div class="message-card" data-person-id="${conv.personId}" data-person-name="${conv.personName}" data-person-role="${conv.personRole}">
+                        <div class="flex items-start gap-3">
+                            <div class="message-avatar flex-shrink-0">${initial}</div>
+                            <div class="flex-1 min-w-0 overflow-hidden">
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <h4 class="font-semibold text-gray-900 truncate">${conv.personName}</h4>
+                                        <span class="role-badge flex-shrink-0">${conv.personRole}</span>
+                                    </div>
+                                    <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">${formatTime(latestMessage.createdAt)}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="message-preview flex-1 min-w-0">${previewText}</p>
+                                    ${unreadCount > 0 ? `<span class="unread-badge flex-shrink-0">${unreadCount}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            messagesList.innerHTML = conversationsHtml;
+
+            // Add click handlers
+            document.querySelectorAll('.message-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const personId = card.dataset.personId;
+                    const personName = card.dataset.personName;
+                    const personRole = card.dataset.personRole;
+                    openConversation(personId, personName, personRole);
+                });
+            });
+        }
+
+        // --- Open Conversation ---
+        async function openConversation(personId, personName, personRole) {
+            currentConversationPersonId = personId;
+            currentConversationPersonRole = personRole;
+
+            // Update header
+            conversationName.textContent = personName;
+            conversationRole.textContent = personRole;
+            conversationAvatar.textContent = personName.charAt(0).toUpperCase();
+
+            // Mark messages from this person as read
+            try {
+                await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/me/messages/read', {
+                    method: 'PATCH',
+                    cache: 'no-store',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify({ senderId: parseInt(personId) })
+                });
+
+                // Update local state - mark messages as read
+                allMessages.forEach(m => {
+                    if (m.senderId == personId && !m.isSentByMe) {
+                        m.isRead = true;
+                    }
+                });
+
+                // Re-render the conversation list to update badge
+                renderConversations(allMessages);
+
+                // Update header badges - both message and notification
+                updateMessageBadge();
+                updateNotificationBadge();
+            } catch (error) {
+                console.error('Error marking messages as read:', error);
+            }
+
+            // Filter messages for this conversation
+            const conversationMsgs = allMessages.filter(m =>
+                m.senderId == personId || m.recipientId == personId
+            ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            // Render messages
+            if (conversationMsgs.length === 0) {
+                conversationMessages.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                `;
+            } else {
+                conversationMessages.innerHTML = conversationMsgs.map(msg => `
+                    <div class="message-bubble ${msg.isSentByMe ? 'sent' : 'received'}" data-msg-id="${msg.id}">
+                        <p>${escapeHtml(msg.content)}</p>
+                        <div class="message-time">${formatMessageTime(msg.createdAt)}</div>
+                    </div>
+                `).join('');
+
+                // Scroll to bottom
+                setTimeout(() => {
+                    conversationMessages.scrollTop = conversationMessages.scrollHeight;
+                }, 50);
+            }
+
+            // Clear input
+            messageInput.value = '';
+            updateSendButton();
+
+            // Show modal
+            conversationModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Focus input
+            setTimeout(() => messageInput.focus(), 300);
+        }
+
+        // --- Append message to conversation view ---
+        function appendMessageToConversation(msg) {
+            const emptyState = conversationMessages.querySelector('.text-center');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const messageEl = document.createElement('div');
+            messageEl.className = `message-bubble ${msg.isSentByMe ? 'sent' : 'received'}`;
+            messageEl.dataset.msgId = msg.id;
+            messageEl.innerHTML = `
+                <p>${escapeHtml(msg.content)}</p>
+                <div class="message-time">${formatMessageTime(msg.createdAt)}</div>
+            `;
+
+            conversationMessages.appendChild(messageEl);
+
+            // Scroll to bottom
+            conversationMessages.scrollTop = conversationMessages.scrollHeight;
+        }
+
+        // --- Send Message ---
+        async function sendMessage() {
+            const content = messageInput.value.trim();
+            if (!content || !currentConversationPersonId) return;
+
+            const recipientId = parseInt(currentConversationPersonId);
+
+            // Clear input immediately
+            messageInput.value = '';
+            updateSendButton();
+
+            // Create temporary message display
+            const tempMsg = {
+                id: 'temp-' + Date.now(),
+                senderId: currentUserId,
+                recipientId: recipientId,
+                content: content,
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                isSentByMe: true
+            };
+
+            // Add to conversation view with sending state
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message-bubble sent sending';
+            messageEl.innerHTML = `
+                <p>${escapeHtml(content)}</p>
+                <div class="message-time">${formatMessageTime(tempMsg.createdAt)}</div>
+            `;
+
+            const emptyState = conversationMessages.querySelector('.text-center');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            conversationMessages.appendChild(messageEl);
+            conversationMessages.scrollTop = conversationMessages.scrollHeight;
+
+            // Send via REST API (more reliable than Socket.IO for persistence)
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/messages/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipientId: recipientId,
+                        content: content
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Update temp message with real data
+                        messageEl.classList.remove('sending');
+                        messageEl.dataset.msgId = data.message.id;
+
+                        // Add to allMessages
+                        const realMsg = {
+                            id: data.message.id,
+                            senderId: currentUserId,
+                            recipientId: recipientId,
+                            content: data.message.content,
+                            createdAt: data.message.createdAt,
+                            isRead: false,
+                            isSentByMe: true,
+                            otherPersonName: conversationName.textContent,
+                            otherPersonRole: conversationRole.textContent
+                        };
+                        allMessages.unshift(realMsg);
+                        renderConversations(allMessages);
+                    } else {
+                        throw new Error(data.message || 'Failed to send');
+                    }
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                messageEl.classList.remove('sending');
+                messageEl.classList.add('failed');
+                showNotification('Failed to send message', 'error');
+            }
+        }
+
+        // --- Update Send Button State ---
+        function updateSendButton() {
+            const hasContent = messageInput.value.trim().length > 0;
+            sendMessageBtn.disabled = !hasContent;
+        }
+
+        // --- Escape HTML ---
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // --- Close Conversation ---
+        function closeConversation() {
+            conversationModal.classList.remove('active');
+            document.body.style.overflow = '';
+            currentConversationPersonId = null;
+            currentConversationPersonRole = null;
+        }
+
+        // --- Event Listeners ---
+        closeConversationBtn.addEventListener('click', closeConversation);
+
+        conversationModal.addEventListener('click', (e) => {
+            if (e.target === conversationModal) {
+                closeConversation();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && conversationModal.classList.contains('active')) {
+                closeConversation();
+            }
+        });
+
+        // Message input events
+        messageInput.addEventListener('input', updateSendButton);
+
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!sendMessageBtn.disabled) {
+                    sendMessage();
+                }
+            }
+        });
+
+        sendMessageBtn.addEventListener('click', sendMessage);
+
+    })();
+    </script>
+
+    <!-- Initialize Navigation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            document.body.classList.add('page-ready');
+            // Initialize navigation with authentication requirement
+            await VolunteerNavLoader.init(true);
+        });
+    </script>
+</body>
+</html>

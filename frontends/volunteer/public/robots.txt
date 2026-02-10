@@ -1,0 +1,17 @@
+# TalkTime Robots.txt
+# https://talktime.adeafoundation.org
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://talktime.adeafoundation.org/sitemap.xml
+
+# Disallow admin and API paths
+Disallow: /admin/
+Disallow: /api/
+Disallow: /socket.io/
+
+# Allow volunteer and student portals
+Allow: /volunteer/
+Allow: /student/

@@ -5,8 +5,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
                     <defs>
                         <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:#4f46e5;" />
-                            <stop offset="100%" style="stop-color:#a855f7;" />
+                            <stop offset="0%" style="stop-color:var(--brand-primary);" />
+                            <stop offset="100%" style="stop-color:var(--brand-secondary);" />
                         </linearGradient>
                     </defs>
                     <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -14,25 +14,27 @@
                 </svg>
                 <span class="gradient-text">TALK TIME</span>
             </a>
-            <div class="flex items-center gap-2 mt-0.5">
-                <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-xs leading-none text-gray-600 hover:text-indigo-600 transition-colors">
-                    Powered by ADEA Foundation
-                </a>
-                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+            <div class="flex items-center gap-2">
+                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-5 h-5 rounded-full object-cover border border-gray-200 self-center" />
+                <span class="text-xs text-gray-600 self-center">
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="hover:text-brand-primary transition-colors">
+                        Powered by ADEA Foundation
+                    </a>
+                </span>
             </div>
         </div>
 
         <!-- Navigation Links for Non-authenticated Users -->
         <div class="hidden md:flex items-center space-x-4">
-            <a href="/" class="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors flex items-center">
+            <a href="/" class="px-4 py-2 text-gray-700 hover:text-brand-primary transition-colors flex items-center">
                 <i class="fas fa-home mr-2"></i>
                 Home
             </a>
-            <a href="/volunteer/signup" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+            <a href="/volunteer/signup" class="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary transition-colors flex items-center">
                 <i class="fas fa-user-plus mr-2"></i>
                 Sign Up
             </a>
-            <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors flex items-center">
+            <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-brand-primary transition-colors flex items-center">
                 <i class="fas fa-sign-in-alt mr-2"></i>
                 Login
             </a>
@@ -53,15 +55,15 @@
     <!-- Mobile Menu -->
     <div id="mobile-menu" class="md:hidden hidden mt-4 p-4 glass-bg rounded-lg">
         <div class="flex flex-col space-y-3">
-            <a href="/" class="text-gray-700 hover:text-indigo-600 transition-colors font-medium flex items-center py-2">
+            <a href="/" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
                 <i class="fas fa-home mr-2"></i>
                 Home
             </a>
-            <a href="/volunteer/signup" class="text-gray-700 hover:text-indigo-600 transition-colors font-medium flex items-center py-2">
+            <a href="/volunteer/signup" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
                 <i class="fas fa-user-plus mr-2"></i>
                 Sign Up
             </a>
-            <a href="/volunteer/login" class="text-gray-700 hover:text-indigo-600 transition-colors font-medium flex items-center py-2">
+            <a href="/volunteer/login" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
                 <i class="fas fa-sign-in-alt mr-2"></i>
                 Login
             </a>
@@ -88,7 +90,7 @@
         
         navLinks.forEach(link => {
             if (link.getAttribute('href') === currentPath) {
-                link.classList.add('text-indigo-600', 'font-bold');
+                link.classList.add('text-brand-primary', 'font-bold');
                 link.classList.remove('text-gray-700');
             }
         });

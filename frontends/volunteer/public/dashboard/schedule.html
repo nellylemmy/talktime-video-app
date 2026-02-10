@@ -2,215 +2,377 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>TalkTime - Schedule Meeting | Volunteer Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <meta name="description" content="Schedule or reschedule an English practice session with a Maasai student. Choose a date, time, and timezone for your TalkTime conversation.">
     <link rel="canonical" id="canonical-link" href="">
     <meta name="robots" content="index, follow">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
-    <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
-    
-    <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
-    
-    <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
-    
-    <!-- Real-time Notifications -->
-    <script src="/shared/js/realtime-notifications.js"></script>
-    
+
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-framework.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-forms.css">
+    <link rel="stylesheet" href="/volunteer/css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
+
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js"></script>
+    <script defer src="/volunteer/partials/nav-loader.js"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js"></script>
+    <script defer src="/volunteer/js/modal-utils.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js"></script>
+    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/shared/js/realtime-notifications.js"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0f4ff; }
-        .font-poppins { font-family: 'Poppins', sans-serif; }
-        .glass-bg {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .gradient-text {
-            background-image: linear-gradient(to right, #4f46e5, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .blob {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.3;
-            z-index: -1;
-        }
+        /* Page-specific styles - Calendar and time slot styling */
+        /* Brand-consistent styling with clean, minimal design */
+
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 12px;
         }
+
         .calendar-day {
             aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.5rem;
-            font-weight: 500;
+            border-radius: 10px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+            min-height: 40px;
+            font-size: 13px;
+            color: #374151;
+            background: white;
         }
+
         .calendar-day:hover:not(.day-disabled):not(.day-selected) {
-            background-color: rgba(255, 255, 255, 0.7);
+            background-color: #f3f4f6;
+            transform: scale(1.05);
         }
+
         .day-disabled {
             color: #d1d5db;
             cursor: not-allowed;
+            background: transparent;
         }
+
         .day-selected {
-            background-color: #4f46e5;
-            color: white;
+            background: var(--brand-primary) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(209, 1, 0, 0.3);
         }
+
         .day-today {
-            border: 2px solid #4f46e5;
+            border: 2px solid var(--brand-primary);
+            background: rgba(209, 1, 0, 0.05);
         }
+
+        /* Time slots - full width layout */
         .time-input {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
         }
+
         .time-slot {
-            padding: 0.5rem;
-            border-radius: 0.5rem;
+            padding: 12px 8px;
+            border-radius: 10px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: rgba(255, 255, 255, 0.5);
+            transition: all 0.15s ease;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            min-height: 44px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
         }
-        .time-slot:hover:not(.time-disabled) {
-            background-color: rgba(255, 255, 255, 0.8);
+
+        .time-slot:hover:not(.time-disabled):not(.time-selected) {
+            background: #f3f4f6;
+            border-color: var(--brand-primary);
+            transform: scale(1.02);
         }
+
         .time-slot.time-selected {
-            background-color: #4f46e5;
+            background: var(--brand-primary);
             color: white;
+            border-color: var(--brand-primary);
+            box-shadow: 0 4px 12px rgba(209, 1, 0, 0.3);
         }
+
         .time-disabled {
             color: #d1d5db;
             cursor: not-allowed;
+            background: #f9fafb;
+            border-color: transparent;
+        }
+
+        /* 4 columns at 400px+ for time slots */
+        @media (min-width: 400px) {
+            .time-input {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .calendar {
+                gap: 6px;
+                padding: 16px;
+            }
+
+            .calendar-day {
+                min-height: 44px;
+                font-size: 14px;
+                border-radius: 12px;
+            }
+
+            .time-slot {
+                padding: 14px 10px;
+                font-size: 14px;
+            }
+        }
+
+        /* Calendar day header styling */
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .calendar-header-day {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #9ca3af;
+            padding: 4px 0;
+            text-transform: uppercase;
+        }
+
+        @media (min-width: 400px) {
+            .calendar-header {
+                gap: 6px;
+            }
+
+            .calendar-header-day {
+                font-size: 11px;
+            }
         }
     </style>
 </head>
-<body>
-    <!-- Background Blobs -->
-    <div class="blob bg-blue-300 w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
-    <div class="blob bg-purple-300 w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
-    
-    <!-- Navigation Container -->
-    <div id="nav-container">
-        <!-- Navigation will be loaded dynamically -->
-    </div>
+<body class="dashboard-page" style="opacity:0">
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
 
-    <main class="container mx-auto px-4 py-20">
-        <!-- Back Navigation -->
-        <div class="mb-8 flex items-center" id="back-link-container">
-            <!-- Back link will be inserted here -->
-        </div>
-        
-        <!-- Schedule Page -->
-        <div id="page-scheduler" class="w-full">
-            <div class="max-w-3xl mx-auto">
-                <div class="glass-bg rounded-xl p-6 mb-6">
-                    <h2 id="schedule-title" class="text-2xl font-bold mb-4 text-center">Schedule a Meeting</h2>
-                    <div class="flex items-center mb-6">
-                        <img id="student-image" src="/volunteer/images/default-profile.svg" alt="Student" class="w-16 h-16 rounded-full object-cover mr-4">
-                        <div>
-                            <h3 id="student-name" class="font-semibold text-lg">Student Name</h3>
-                            <p id="student-details" class="text-sm text-gray-600">Age: 14 | Female</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Timezone Display -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Your Timezone</label>
-                        <div class="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-gray-700">
-                            <div class="flex items-center justify-between">
-                                <span id="volunteer-timezone-display" class="font-medium">Loading timezone...</span>
-                                <div class="flex gap-2">
-                                    <button id="detect-timezone-btn" class="text-blue-600 hover:text-blue-800 text-sm underline" onclick="autoDetectTimezone()">
-                                        <i class="fas fa-location-dot mr-1"></i>Auto-detect
-                                    </button>
-                                    <a href="/volunteer/settings" class="text-indigo-600 hover:text-indigo-800 text-sm underline">Edit in Settings</a>
-                                </div>
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <!-- No Student Selected State - shown when accessed without URL params -->
+        <div id="no-student-state" class="hidden w-full">
+            <div class="bg-white rounded-2xl p-6 sm:p-8 text-center shadow-lg border border-gray-100">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background: linear-gradient(135deg, rgba(209,1,0,0.1), rgba(56,103,255,0.1));">
+                    <i class="fas fa-calendar-plus text-2xl" style="color: var(--brand-primary);"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Schedule a Meeting</h2>
+                <p class="text-gray-600 mb-6 max-w-sm mx-auto text-sm sm:text-base">
+                    Select a student from the Students tab to schedule a conversation session.
+                </p>
+                <a href="/volunteer/dashboard/students" class="inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:shadow-lg" style="background: var(--brand-primary);">
+                    <i class="fas fa-users"></i>
+                    Browse Students
+                </a>
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <div class="grid gap-4 text-left max-w-xs mx-auto">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: rgba(17,108,0,0.1);">
+                                <i class="fas fa-clock text-sm" style="color: #116C00;"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">40-minute sessions</p>
+                                <p class="text-xs text-gray-500">Standard call duration</p>
                             </div>
                         </div>
-                    </div>                    <!-- Calendar -->
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <button id="prev-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-left"></i></button>
-                            <h4 id="calendar-month" class="font-semibold">July 2025</h4>
-                            <button id="next-month" class="text-gray-600 hover:text-gray-900"><i class="fas fa-chevron-right"></i></button>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: rgba(56,103,255,0.1);">
+                                <i class="fas fa-users text-sm" style="color: var(--brand-secondary);"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">3 meetings max</p>
+                                <p class="text-xs text-gray-500">Per volunteer-student pair</p>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Navigation - hidden when no student selected -->
+        <div class="mb-4 hidden" id="back-link-container">
+            <a href="/volunteer/dashboard/students" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                Back to Student Profile
+            </a>
+        </div>
+
+        <!-- Schedule Page - hidden when no student selected -->
+        <div id="page-scheduler" class="w-full hidden">
+            <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-lg border border-gray-100">
+                <!-- Header with student info -->
+                <div class="flex gap-3 mb-3" style="align-items:center;">
+                    <img id="student-image" src="/volunteer/images/default-profile.svg" alt="Student" class="w-12 h-12 rounded-full object-cover flex-shrink-0" style="border: 2px solid var(--brand-primary);">
+                    <div class="min-w-0 flex-1">
+                        <span id="schedule-title" class="block text-sm font-bold text-gray-900" style="line-height:1.2;">Schedule Meeting with</span>
+                        <span id="student-name" class="block font-semibold text-sm truncate" style="color:var(--brand-primary);line-height:1.2;margin-top:1px;"></span>
+                        <p id="student-details" class="text-xs text-gray-400" style="margin-top:1px;line-height:1.2;"></p>
+                    </div>
+                </div>
+                <hr style="border:none;border-top:1px solid #f3f4f6;margin-bottom:10px;">
+
+                <!-- Meeting limit (populated by JS) -->
+                <div id="meeting-limit-status" class="mb-4">
+                    <p class="text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>Checking availability...</p>
+                </div>
+
+                <!-- Timezone Display -->
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex-1 min-w-0 mr-3">
+                        <span class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Timezone</span>
+                        <p id="volunteer-timezone-display" class="text-sm font-medium text-gray-800 truncate">Loading...</p>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button id="detect-timezone-btn" onclick="autoDetectTimezone()" class="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition-colors" style="background:#D10100;color:#fff;">
+                            <i class="fas fa-location-dot mr-1"></i>Auto-detect
+                        </button>
+                        <a href="/volunteer/settings" class="inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition-colors" style="background:#374151;color:#fff;">
+                            <i class="fas fa-cog mr-1"></i>Settings
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="mb-6">
+                    <hr style="border:none;border-top:1px solid #f3f4f6;margin-bottom:12px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <button id="prev-month" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"><i class="fas fa-chevron-left text-sm"></i></button>
+                        <h4 id="calendar-month" class="font-bold text-gray-900">July 2025</h4>
+                        <button id="next-month" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"><i class="fas fa-chevron-right text-sm"></i></button>
+                    </div>
                         <div class="calendar mb-2">
-                            <div class="text-center text-gray-500 text-xs font-medium">Sunday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Monday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Tuesday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Wednesday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Thursday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Friday</div>
-                            <div class="text-center text-gray-500 text-xs font-medium">Saturday</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Sun</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Mon</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Tue</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Wed</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Thu</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Fri</div>
+                            <div class="text-center text-gray-500 text-xs font-medium">Sat</div>
                         </div>
                         <div id="calendar-days" class="calendar">
                             <!-- Calendar days will be inserted here -->
                         </div>
                     </div>
                     
-                    <!-- Time Selection -->
-                    <div id="time-selection" class="mb-6 hidden">
-                        <h4 class="font-semibold mb-3">Select a Time <span id="selected-date-display" class="text-gray-500 font-normal">(July 16, 2025)</span></h4>
-                        <div id="time-slots" class="time-input">
-                            <!-- Time slots will be inserted here -->
-                        </div>
+                <!-- Time Selection -->
+                <div id="time-selection" class="mb-6 hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
+                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Time</label>
+                        <span id="selected-date-display" class="text-xs font-medium" style="color: var(--brand-primary);">(July 16, 2025)</span>
                     </div>
+                    <div id="time-slots" class="time-input">
+                        <!-- Time slots will be inserted here -->
+                    </div>
+                </div>
                     
-                    <!-- Confirm Button -->
-                    <div id="confirm-container" class="text-center hidden">
-                        <button id="confirm-btn" class="bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors">
-                            Confirm Meeting
-                        </button>
-                    </div>
+                <!-- Confirm Button -->
+                <div id="confirm-container" class="hidden pt-4 border-t border-gray-100">
+                    <button id="confirm-btn" class="w-full text-white py-3.5 px-6 rounded-xl font-semibold transition-all hover:shadow-lg text-base" style="background: var(--brand-primary);">
+                        <i class="fas fa-check mr-2"></i>Confirm Meeting
+                    </button>
                 </div>
             </div>
         </div>
     </main>
-    
+
     <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold mb-4">Confirm Your Meeting</h3>
-            <p class="mb-4">You're about to schedule a meeting with <span id="modal-student-name" class="font-semibold">Student Name</span>.</p>
-            <div class="p-4 bg-blue-50 rounded-lg mb-4">
-                <p><i class="far fa-calendar mr-2 text-blue-600"></i><span id="modal-date">July 16, 2025</span></p>
-                <p><i class="far fa-clock mr-2 text-blue-600"></i><span id="modal-time">3:00 PM</span> (Your local time)</p>
-                <p><i class="far fa-clock mr-2 text-blue-600"></i><span id="modal-time-eat"></span> (Kenya time - EAT)</p>
+    <div id="confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background: rgba(17,108,0,0.1);">
+                    <i class="fas fa-calendar-check text-xl" style="color: #116C00;"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Confirm Meeting</h3>
+                <p class="text-sm text-gray-600">with <span id="modal-student-name" class="font-semibold" style="color: var(--brand-primary);">Student Name</span></p>
             </div>
-            <div class="flex justify-end gap-3">
-                <button id="modal-cancel" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
-                <button id="modal-confirm" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Confirm</button>
+            <div class="p-4 bg-gray-50 rounded-xl mb-5 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: rgba(209,1,0,0.1);">
+                        <i class="far fa-calendar text-sm" style="color: var(--brand-primary);"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Date</p>
+                        <p id="modal-date" class="text-sm font-semibold text-gray-900">July 16, 2025</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: rgba(56,103,255,0.1);">
+                        <i class="far fa-clock text-sm" style="color: var(--brand-secondary);"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Your Time</p>
+                        <p id="modal-time" class="text-sm font-semibold text-gray-900">3:00 PM</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: rgba(17,108,0,0.1);">
+                        <i class="fas fa-globe-africa text-sm" style="color: #116C00;"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Kenya Time (EAT)</p>
+                        <p id="modal-time-eat" class="text-sm font-semibold text-gray-900">6:00 PM</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="modal-cancel" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700">
+                    Cancel
+                </button>
+                <button id="modal-confirm" class="flex-1 px-4 py-3 text-white rounded-xl transition-all hover:shadow-lg text-sm font-semibold" style="background: var(--brand-primary);">
+                    Confirm
+                </button>
             </div>
         </div>
     </div>
-    
+
     <!-- Notification Toast -->
-    <div id="notification" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"></div>
+    <div id="notification" class="hidden"></div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('page-ready');
         // --- DOM Elements ---
-        const profileBtn = document.getElementById('profile-btn');
-        const profileDropdown = document.getElementById('profile-dropdown');
         const backLinkContainer = document.getElementById('back-link-container');
         const scheduleTitle = document.getElementById('schedule-title');
         const studentImage = document.getElementById('student-image');
@@ -248,7 +410,24 @@
         // --- Utility Functions ---
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
-            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            // Use explicit colors for visibility
+            const bgColor = type === 'success' ? '#116C00' : '#D10100';
+            const textColor = '#FFFFFF';
+            notificationEl.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 16px 24px;
+                border-radius: 12px;
+                background-color: ${bgColor};
+                color: ${textColor};
+                font-weight: 500;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                word-wrap: break-word;
+            `;
+            notificationEl.className = '';
             notificationEl.classList.remove('hidden');
             
             setTimeout(() => {
@@ -382,8 +561,7 @@
                 };
             }
             
-            // If query parameters are missing, return null
-            console.error('Missing required URL parameters for schedule page:', { id, admission, name });
+            // If query parameters are missing, return null (user accessed page directly from navigation)
             return null;
         }
         
@@ -480,6 +658,21 @@
             // with 15-minute intervals (00, 15, 30, 45)
             const slots = generateTimeSlotsForDate(selectedDate, timezone);
             
+            // Show message if no slots available (all passed for today)
+            if (slots.length === 0) {
+                const today = new Date();
+                const isToday = selectedDate.toDateString() === today.toDateString();
+                const msg = document.createElement('div');
+                msg.className = 'text-center py-6 col-span-full';
+                msg.innerHTML = isToday
+                    ? `<p class="text-xs text-gray-400"><i class="fas fa-clock mr-1"></i>All available time slots for today have passed.</p>
+                       <p class="text-xs text-gray-300 mt-1">Students are available 9:00 AM – 5:00 PM EAT. Please select another date.</p>`
+                    : `<p class="text-xs text-gray-400"><i class="fas fa-clock mr-1"></i>No available time slots for this date.</p>`;
+                timeSlots.appendChild(msg);
+                confirmContainer.classList.add('hidden');
+                return;
+            }
+
             // Add time slots to the UI
             slots.forEach(slot => {
                 const timeSlot = document.createElement('div');
@@ -515,16 +708,32 @@
         // --- Data Loading ---
         function loadStudentData() {
             const params = getUrlParams();
-            
+
             if (!params) {
-                showNotification('Invalid URL', 'error');
+                // No student selected - show the "select student" state
+                const noStudentState = document.getElementById('no-student-state');
+                const pageScheduler = document.getElementById('page-scheduler');
+                const backLinkContainer = document.getElementById('back-link-container');
+
+                if (noStudentState) noStudentState.classList.remove('hidden');
+                if (pageScheduler) pageScheduler.classList.add('hidden');
+                if (backLinkContainer) backLinkContainer.classList.add('hidden');
                 return;
             }
+
+            // Student selected - show the scheduler
+            const noStudentState = document.getElementById('no-student-state');
+            const pageScheduler = document.getElementById('page-scheduler');
+            const backLinkContainer = document.getElementById('back-link-container');
+
+            if (noStudentState) noStudentState.classList.add('hidden');
+            if (pageScheduler) pageScheduler.classList.remove('hidden');
+            if (backLinkContainer) backLinkContainer.classList.remove('hidden');
             
             // Check if this is a reschedule
             isRescheduling = params.action === 'update';
             if (isRescheduling) {
-                scheduleTitle.textContent = 'Reschedule Meeting';
+                scheduleTitle.textContent = 'Reschedule Meeting with';
                 meetingId = params.meetingId;
                 
                 // Update page title for reschedule
@@ -540,7 +749,7 @@
             
             // Update back link
             backLinkContainer.innerHTML = `
-                <a href="/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <a href="/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" class="text-brand-primary hover:text-brand-primary flex items-center">
                     <i class="fas fa-arrow-left mr-2"></i>
                     Back to Student Profile
                 </a>
@@ -563,8 +772,15 @@
                     console.log('Received student data with numeric ID:', studentData.id);
                     
                     // Update student info - using correct property names from API response
-                    studentName.textContent = studentData.full_name;
-                    studentDetails.textContent = `Age: ${studentData.age} | ${studentData.gender}`;
+                    studentName.textContent = studentData.full_name || studentData.name || params.studentName;
+                    // Format age/gender: "14 years · Girl"
+                    const ageParts = [];
+                    if (studentData.age) ageParts.push(studentData.age + ' years');
+                    if (studentData.gender) {
+                        const g = studentData.gender.toLowerCase();
+                        ageParts.push(g === 'f' || g === 'female' ? 'Girl' : g === 'm' || g === 'male' ? 'Boy' : studentData.gender);
+                    }
+                    studentDetails.textContent = ageParts.join(' \u00B7 ');
                     
                     // Update profile image with fallback
                     const profileImageSrc = studentData.profileImage || '/images/placeholder-student.jpg';
@@ -577,7 +793,7 @@
                     };
                     
                     // Update modal student name
-                    modalStudentName.textContent = studentData.full_name;
+                    modalStudentName.textContent = studentData.full_name || studentData.name || params.studentName;
                     
                     // If rescheduling, fetch meeting details
                     if (isRescheduling && meetingId) {
@@ -660,39 +876,22 @@
                     const limit = meetingStats.meetingLimit || 3;
                     const canScheduleMore = meetingStats.canScheduleMore !== false;
                     
-                    // Add meeting status display after student info
-                    const studentDetails = document.getElementById('student-details');
-                    const studentContainer = studentDetails.parentElement;
-                    
-                    // Remove any existing status display
-                    const existingStatus = document.getElementById('meeting-limit-status');
-                    if (existingStatus) {
-                        existingStatus.remove();
+                    // Update meeting limit placeholder with simple text
+                    const statusEl = document.getElementById('meeting-limit-status');
+                    const sFirstName = (studentName.textContent || '').trim().split(' ')[0] || 'this student';
+                    if (statusEl) {
+                        statusEl.innerHTML = `
+                            <p class="text-xs font-medium ${canScheduleMore ? 'text-gray-500' : 'text-red-600'}">
+                                <i class="fas ${canScheduleMore ? 'fa-check-circle text-green-500' : 'fa-exclamation-triangle text-red-500'} mr-1"></i>
+                                Meeting Limit: ${meetingCount}/${limit} meetings with ${sFirstName}
+                            </p>
+                            <p class="text-xs ${canScheduleMore ? 'text-gray-400' : 'text-red-400'}" style="margin-top:2px;padding-left:18px;">
+                                ${canScheduleMore
+                                    ? `You can schedule ${limit - meetingCount} more meeting${limit - meetingCount === 1 ? '' : 's'}.`
+                                    : 'Limit reached. Ensures equal opportunities for all students.'}
+                            </p>
+                        `;
                     }
-                    
-                    // Create status display
-                    const statusEl = document.createElement('div');
-                    statusEl.id = 'meeting-limit-status';
-                    statusEl.className = `p-3 rounded-lg border mb-4 ${canScheduleMore ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`;
-                    
-                    statusEl.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <i class="fas ${canScheduleMore ? 'fa-check-circle text-green-600' : 'fa-exclamation-triangle text-red-600'}"></i>
-                            <div>
-                                <h4 class="font-semibold text-sm ${canScheduleMore ? 'text-green-800' : 'text-red-800'}">
-                                    Meeting Limit: ${meetingCount}/${limit} meetings with this student
-                                </h4>
-                                <p class="text-xs ${canScheduleMore ? 'text-green-700' : 'text-red-700'}">
-                                    ${canScheduleMore 
-                                        ? `You can schedule ${limit - meetingCount} more meeting${limit - meetingCount === 1 ? '' : 's'}.`
-                                        : 'You have reached the limit. This ensures all students get equal opportunities.'}
-                                </p>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Insert after student info container
-                    studentContainer.appendChild(statusEl);
                     
                     // If limit reached, disable scheduling interface
                     if (!canScheduleMore && !isRescheduling) {
@@ -742,7 +941,7 @@
         
         function loadVolunteerTimezone() {
             // Fetch volunteer's profile to get their saved timezone
-            TalkTimeAuth.authenticatedRequest('/api/v1/volunteer/profile', {
+            TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/profile', {
                 method: 'GET'
             })
                 .then(response => {
@@ -847,7 +1046,13 @@
                 showNotification('Please select a date and time', 'error');
                 return;
             }
-            
+
+            // Ensure student data is loaded before showing confirmation
+            if (!studentData || !studentData.id) {
+                showNotification('Loading student data... Please wait.', 'warning');
+                return;
+            }
+
             // Set the selected date and time for the meeting
             const meetingDate = new Date(selectedDate);
             meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
@@ -867,35 +1072,51 @@
         modalConfirm.addEventListener('click', () => {
             // Hide modal
             confirmModal.classList.add('hidden');
-            
+
             // Get student ID from URL
             const params = getUrlParams();
             if (!params) return;
-            
+
+            // Ensure student data is loaded
+            if (!studentData || !studentData.id) {
+                showNotification('Student data not loaded yet. Please wait and try again.', 'error');
+                return;
+            }
+
             // Set the selected date and time for the meeting
             const meetingDate = new Date(selectedDate);
             meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
-            
+
             // Use volunteer's saved timezone
             const timezone = volunteerTimezone;
-            
-            // Prepare meeting data
+
+            // Format date as YYYY-MM-DD and time as HH:MM for the volunteer endpoint
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            const timeStr = `${String(selectedTimeSlot.hour).padStart(2, '0')}:${String(selectedTimeSlot.minute).padStart(2, '0')}`;
+
+            // Prepare meeting data for volunteer endpoint
             const meetingData = {
                 studentId: studentData.id, // Use the numeric ID from the API response
-                scheduledTime: meetingDate.toISOString(),
+                date: dateStr,
+                time: timeStr,
                 timezone: timezone,
+                scheduledTime: meetingDate.toISOString(), // Also include ISO format for compatibility
                 eatTime: {
                     hour: selectedTimeSlot.eatHour,
                     minute: selectedTimeSlot.eatMinute
                 }
             };
-            
+
             console.log('Sending meeting data with numeric studentId:', meetingData.studentId);
-            
-            // API endpoint and method
-            let endpoint = '/api/v1/meetings';
+            console.log('Meeting date:', dateStr, 'time:', timeStr);
+
+            // API endpoint and method - use volunteer endpoint which handles students table IDs
+            let endpoint = '/api/v1/volunteers/meetings';
             let method = 'POST';
-            
+
             // If rescheduling, update the endpoint and method
             if (isRescheduling && meetingId) {
                 endpoint = `/api/v1/meetings/${meetingId}`;
@@ -914,14 +1135,18 @@
                     if (!response.ok) {
                         // Handle different error status codes
                         return response.json().then(errorData => {
+                            console.log('Server error response:', errorData);
                             if (response.status === 403) {
                                 if (errorData.error && errorData.error.includes('3-meeting limit')) {
                                     throw new Error(`You have reached the 3-meeting limit with this student (${errorData.meetingCount}/${errorData.limit}). This ensures all students get equal opportunities to practice with different volunteers.`);
+                                } else if (errorData.error && errorData.error.includes('restricted')) {
+                                    throw new Error(errorData.message || errorData.error);
                                 } else {
-                                    throw new Error('Not authorized: This student already has an active meeting scheduled. Please cancel the existing meeting before scheduling a new one.');
+                                    // Show actual server error instead of generic message
+                                    throw new Error(errorData.message || errorData.error || 'Access denied');
                                 }
                             } else if (response.status === 409) {
-                                throw new Error('This student already has a meeting scheduled for this date. Please choose a different date.');
+                                throw new Error(errorData.error || 'This student already has a meeting scheduled for this date. Please choose a different date.');
                             } else {
                                 throw new Error(errorData.error || 'Failed to schedule meeting');
                             }
@@ -995,36 +1220,6 @@
                 });
         });
         
-        // Profile dropdown toggle
-        document.addEventListener('click', e => {
-            if (profileBtn && profileBtn.contains(e.target)) {
-                console.log('Profile button clicked');
-                e.stopPropagation();
-                
-                const isHidden = profileDropdown.classList.contains('hidden');
-                console.log('Dropdown is currently hidden:', isHidden);
-                
-                if (isHidden) {
-                    // Show dropdown
-                    profileDropdown.classList.remove('hidden');
-                    profileDropdown.classList.remove('opacity-0');
-                    profileDropdown.classList.remove('-translate-y-2');
-                    console.log('Showing dropdown');
-                } else {
-                    // Hide dropdown
-                    profileDropdown.classList.add('hidden');
-                    profileDropdown.classList.add('opacity-0');
-                    profileDropdown.classList.add('-translate-y-2');
-                    console.log('Hiding dropdown');
-                }
-            } else if (profileDropdown && !profileDropdown.contains(e.target) && !profileDropdown.classList.contains('hidden')) {
-                console.log('Clicking outside, closing dropdown');
-                profileDropdown.classList.add('hidden');
-                profileDropdown.classList.add('opacity-0');
-                profileDropdown.classList.add('-translate-y-2');
-            }
-        });
-        
         // --- Initialize Authentication ---
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
         
@@ -1072,6 +1267,15 @@
         // --- Initialization ---
         loadStudentData();
         renderCalendar();
+
+        // Auto-select today's date
+        const todayDate = new Date();
+        const todayCell = document.querySelector('.day-today:not(.day-disabled)');
+        if (todayCell) {
+            todayCell.classList.add('day-selected');
+            selectedDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+            showTimeSelection();
+        }
     });
     </script>
 
@@ -1122,10 +1326,10 @@
             const notification = document.getElementById('notification');
             if (notification) {
                 notification.textContent = 'Timezone auto-detected and updated!';
-                notification.className = 'fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+                notification.className = 'fixed bottom-5 right-5 bg-success text-white px-6 py-3 rounded-lg shadow-lg';
                 
                 setTimeout(() => {
-                    notification.className = 'hidden fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+                    notification.className = 'hidden fixed bottom-5 right-5 bg-success text-white px-6 py-3 rounded-lg shadow-lg';
                 }, 3000);
             }
             

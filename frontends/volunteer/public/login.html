@@ -2,193 +2,476 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TalkTime - Login</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts: Inter & Poppins -->
+    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    
     <!-- JWT Authentication Utilities -->
     <script src="/volunteer/js/jwt-auth.js"></script>
-    
-    <!-- Modal Utilities -->
     <script src="/volunteer/js/modal-utils.js"></script>
-    
-    <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     <script src="/shared/js/realtime-notifications.js"></script>
-    <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
 
     <style>
-        /* Base styles from the brand identity */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4ff; /* Fallback */
-            overflow-x: hidden;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .font-poppins {
-            font-family: 'Poppins', sans-serif;
+        /* Main container - mobile first */
+        .login-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            width: 100%;
         }
 
-        .gradient-bg {
-            background: linear-gradient(to bottom right, #c7d2fe, #d8b4fe);
+        /* Logo section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
         }
 
-        /* Glassmorphism Effect for the login card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.4); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 8px;
         }
 
-        /* Animated Blobs for background texture */
-        .blob {
-            position: absolute;
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--brand-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .powered-by img {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.5;
-            z-index: -1;
-            animation: move 20s infinite alternate;
+            object-fit: cover;
         }
 
-        .blob-1 {
-             width: 24rem;
-             height: 24rem;
-             top: -5rem;
-             left: -10rem;
-             background-color: #a855f7;
+        .powered-by span,
+        .powered-by a {
+            font-size: 12px;
+            color: #6b7280;
+            text-decoration: none;
         }
 
-        .blob-2 {
-            width: 20rem;
-            height: 20rem;
-            bottom: -5rem;
-            right: -8rem;
-            background-color: #4f46e5;
-            animation-delay: -10s;
-        }
-        
-        /* Gradient Text for the logo */
-        .gradient-text {
-            background-image: linear-gradient(to right, #4f46e5, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        .powered-by a:hover {
+            color: var(--brand-primary);
         }
 
-        /* Keyframe animation for blobs */
-        @keyframes move {
-            from {
-                transform: translate(0, 0) scale(1);
+        /* Login card */
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .card-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .card-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Form styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            color: var(--brand-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px 0 44px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #111827;
+            background: #ffffff;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(209, 1, 0, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 16px;
+        }
+
+        .password-toggle:hover {
+            color: #6b7280;
+        }
+
+        /* Submit button */
+        .submit-btn {
+            width: 100%;
+            height: 48px;
+            margin-top: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffffff;
+            background-color: var(--brand-primary);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--brand-primary-dark);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Sign up link */
+        .signup-section {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .signup-section p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .signup-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--brand-primary);
+            text-decoration: none;
+        }
+
+        .signup-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            padding: 20px 16px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        /* Tablet and up */
+        @media (min-width: 640px) {
+            .login-container {
+                padding: 40px 24px;
             }
-            to {
-                transform: translate(50px, 100px) scale(1.2);
+
+            .logo-icon {
+                width: 40px;
+                height: 40px;
             }
+
+            .logo-text {
+                font-size: 28px;
+            }
+
+            .login-card {
+                padding: 40px 32px;
+            }
+
+            .card-header h1 {
+                font-size: 28px;
+            }
+
+            .card-header p {
+                font-size: 15px;
+            }
+        }
+
+        /* Modal System Styles (required for modal-utils.js) */
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-end { justify-content: flex-end; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .pt-0 { padding-top: 0; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .mt-4 { margin-top: 1rem; }
+        .space-x-3 > * + * { margin-left: 0.75rem; }
+        .bg-black { background-color: #000; }
+        .bg-opacity-0 { background-color: rgba(0, 0, 0, 0); }
+        .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
+        .bg-white { background-color: #fff; }
+        .bg-green-100 { background-color: #dcfce7; }
+        .bg-red-100 { background-color: #fee2e2; }
+        .bg-yellow-100 { background-color: #fef9c3; }
+        .bg-blue-100 { background-color: #dbeafe; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-green-600 { background-color: #16a34a; }
+        .bg-red-600 { background-color: #dc2626; }
+        .text-white { color: #fff; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-900 { color: #111827; }
+        .text-green-600 { color: #16a34a; }
+        .text-red-600 { color: #dc2626; }
+        .text-yellow-600 { color: #ca8a04; }
+        .text-blue-600 { color: #2563eb; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        .leading-relaxed { line-height: 1.625; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border-width: 1px; }
+        .border-b { border-bottom-width: 1px; }
+        .border-gray-100 { border-color: #f3f4f6; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .backdrop-blur-sm { backdrop-filter: blur(4px); }
+        .transition-opacity { transition-property: opacity; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .transition-colors { transition-property: color, background-color, border-color; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .transition-all { transition-property: all; transition-timing-function: ease-in-out; transition-duration: 150ms; }
+        .duration-200 { transition-duration: 200ms; }
+        .duration-300 { transition-duration: 300ms; }
+        .transform { transform: translateZ(0); }
+        .scale-95 { transform: scale(0.95); }
+        .scale-100 { transform: scale(1); }
+        .opacity-0 { opacity: 0; }
+        .opacity-100 { opacity: 1; }
+        .max-w-md { max-width: 28rem; }
+        .w-full { width: 100%; }
+        .w-8 { width: 2rem; }
+        .h-8 { height: 2rem; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-green-700:hover { background-color: #15803d; }
+        .hover\:bg-red-700:hover { background-color: #b91c1c; }
+        .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
+        .hover\:text-gray-600:hover { color: #4b5563; }
+        .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .focus\:border-blue-500:focus { border-color: #3b82f6; }
+
+        /* Modal input field override */
+        #talktime-modal-container input[type="text"],
+        #talktime-modal-container input[type="email"],
+        #talktime-modal-container input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            margin-top: 12px;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #talktime-modal-container input:focus {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(209, 1, 0, 0.1);
         }
     </style>
 </head>
-<body class="gradient-bg">
-    <!-- Background Blobs -->
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
-    <!-- Main Container -->
-    <div class="relative min-h-screen w-full flex flex-col items-center justify-center p-4">
-
-        <!-- Login Card -->
-        <div class="w-full max-w-md">
-            <!-- Logo -->
-             <div class="text-center mb-8">
-                <div class="flex flex-col items-center justify-center">
-                    <a href="/" class="flex items-center text-2xl font-bold justify-center" aria-label="TalkTime Home">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                            <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
-                            <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-                        </svg>
-                        <span class="gradient-text">TALK TIME</span>
-                    </a>
-                    <div class="flex items-center justify-center gap-2 mt-0.5">
-                        <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
-                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
-                            Powered by ADEA Foundation
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-card rounded-2xl shadow-xl p-6 md:p-10">
-                <div class="text-center mb-8">
-                    <h1 class="font-poppins text-3xl font-bold text-gray-800">Welcome Back</h1>
-                    <p class="text-gray-600 mt-2">Login to continue your journey with us.</p>
-                </div>
-
-                <!-- Login Form -->
-                <form class="space-y-6" id="login-form">
-                    <!-- Email Input -->
-                    <div>
-                        <label for="email" class="text-sm font-medium text-gray-700">Email Address</label>
-                        <div class="relative mt-1">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fas fa-envelope text-gray-400"></i>
-                            </span>
-                            <input type="email" name="email" id="email" required class="w-full pl-10 pr-4 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="you@example.com">
-                        </div>
-                    </div>
-
-                    <!-- Password Input -->
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <label for="password" class="text-sm font-medium text-gray-700">Password</label>
-                            <a href="/volunteer/forgot-password.html" class="text-sm text-indigo-600 hover:underline">Forgot?</a>
-                        </div>
-                        <div class="relative mt-1">
-                             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </span>
-                            <input type="password" name="password" id="password" required class="w-full pl-10 pr-10 py-3 bg-white/50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Enter your password">
-                             <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Login Button -->
-                    <div class="pt-4">
-                        <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-transform transform hover:scale-105">
-                            Login
-                        </button>
-                    </div>
-                </form>
-                
-                <!-- Sign up Links -->
-                <div class="text-center mt-8 space-y-2">
-                    <p class="text-sm text-gray-600">Don't have an account? Create one as a:</p>
-                    <div class="flex justify-center items-center space-x-4">
-                        <a href="/volunteer/signup" class="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline">Volunteer</a>
-                       </div>
-                </div>
+<body>
+    <div class="login-container">
+        <!-- Logo -->
+        <div class="logo-section">
+            <a href="/" class="logo-link" aria-label="TalkTime Home">
+                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <path stroke="var(--brand-primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="logo-text">TALK TIME</span>
+            </a>
+            <div class="powered-by">
+                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
             </div>
         </div>
-        
-        <!-- Footer -->
-        <footer class="absolute bottom-0 w-full text-center p-6 text-gray-700/80 text-sm">
-            <p>© 2025 TalkTime by ADEA Foundation. Empowering Through Conversation.</p>
-        </footer>
+
+        <!-- Login Card -->
+        <div class="login-card">
+            <div class="card-header">
+                <h1>Welcome Back</h1>
+                <p>Sign in to continue your journey</p>
+            </div>
+
+            <form id="login-form">
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <div class="label-row">
+                        <label for="password" class="form-label">Password</label>
+                        <a href="/volunteer/forgot-password.html" class="forgot-link">Forgot?</a>
+                    </div>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 44px;">
+                        <button type="button" id="toggle-password" class="password-toggle" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+
+            <!-- Sign up -->
+            <div class="signup-section">
+                <p>Don't have an account?</p>
+                <a href="/volunteer/signup" class="signup-link">Create a Volunteer Account</a>
+            </div>
+        </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="login-footer">
+        <p>&copy; 2025 TalkTime by ADEA Foundation. Empowering Through Conversation.</p>
+    </footer>
+
+    <!-- All JavaScript logic preserved exactly as before -->
     <script>
         // Script to toggle password visibility
         const togglePassword = document.getElementById('toggle-password');
@@ -199,36 +482,36 @@
             // Toggle the type attribute
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
-            
+
             // Toggle the eye icon
             togglePassword.querySelector('i').classList.toggle('fa-eye');
             togglePassword.querySelector('i').classList.toggle('fa-eye-slash');
         });
-        
+
         // Initialize TalkTime Auth for volunteers
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-        
+
         // Handle login form submission with JWT
         loginForm.addEventListener('submit', async (e) => {
             // Prevent default form submission immediately
             e.preventDefault();
             console.log('Volunteer JWT Login form submitted via JS handler');
-            
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
+
             // Disable submit button during login
             const submitButton = loginForm.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = 'Logging in...';
-            
+
             try {
                 const result = await window.TalkTimeAuth.login({
                     email: email,
                     password: password
                 }, '/api/v1/jwt-auth/volunteer/login');
-                
+
                 if (result.success) {
                     // Show success message
                     if (window.showNotification) {
@@ -237,7 +520,7 @@
                             duration: 2000
                         });
                     }
-                    
+
                     // Redirect after brief delay
                     setTimeout(() => {
                         // Check for redirect URL from sessionStorage
@@ -280,11 +563,34 @@
     <!-- Auto-detect authentication and redirect if already logged in -->
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            // SECURITY: Check for ANY logged-in user and redirect to their appropriate dashboard
+            // This prevents users from seeing login page when already authenticated
+
+            // Check for student token first (students should NEVER see volunteer login)
+            const studentToken = localStorage.getItem('student_talktime_access_token');
+            if (studentToken) {
+                try {
+                    const studentAuth = new TalkTimeJWTAuth('student');
+                    const isValid = await studentAuth.verifyToken();
+                    if (isValid) {
+                        console.log('[TalkTime] Student already authenticated, redirecting to student dashboard');
+                        window.location.href = '/student/dashboard.html';
+                        return;
+                    }
+                } catch (error) {
+                    console.log('[TalkTime] Student token verification failed, clearing token');
+                    localStorage.removeItem('student_talktime_access_token');
+                    localStorage.removeItem('student_talktime_refresh_token');
+                    localStorage.removeItem('student_talktime_user');
+                }
+            }
+
+            // Check for volunteer token
             // Initialize TalkTime Auth for volunteers if not already done
             if (!window.TalkTimeAuth) {
                 window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
             }
-            
+
             // Simple authentication check - only verify if token exists and is valid
             if (window.TalkTimeAuth.isAuthenticated()) {
                 try {
@@ -295,18 +601,36 @@
                         const user = window.TalkTimeAuth.getUser();
                         if (user && user.role === 'volunteer') {
                             // Volunteer is already authenticated, redirect to dashboard
-                            console.log('Volunteer already authenticated, redirecting to dashboard');
+                            console.log('[TalkTime] Volunteer already authenticated, redirecting to dashboard');
                             window.location.href = '/volunteer/dashboard/students.html';
                             return;
                         }
                     }
                 } catch (error) {
-                    console.log('Volunteer token verification failed, continuing with login page');
+                    console.log('[TalkTime] Volunteer token verification failed, continuing with login page');
                     // Clear invalid volunteer tokens
                     window.TalkTimeAuth.clearAuth();
                 }
             }
-            
+
+            // Check for admin token
+            const adminToken = localStorage.getItem('admin_talktime_access_token');
+            if (adminToken) {
+                try {
+                    const adminAuth = new TalkTimeJWTAuth('admin');
+                    const isValid = await adminAuth.verifyToken();
+                    if (isValid) {
+                        console.log('[TalkTime] Admin already authenticated, redirecting to admin dashboard');
+                        window.location.href = '/admin/dashboard.html';
+                        return;
+                    }
+                } catch (error) {
+                    console.log('[TalkTime] Admin token verification failed, clearing token');
+                    localStorage.removeItem('admin_talktime_access_token');
+                    localStorage.removeItem('admin_talktime_refresh_token');
+                    localStorage.removeItem('admin_talktime_user');
+                }
+            }
         });
     </script>
 </body>

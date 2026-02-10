@@ -2,12 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TalkTime - Empowering Through Conversation</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <!-- Anti-FOUC: Must load before any rendering to prevent navigation flash -->
+    <script src="/shared/js/anti-fouc.js"></script>
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    backdropBlur: {
+                        'xs': '2px',
+                    }
+                }
+            }
+        }
+    </script>
 
     <!-- Google Fonts: Inter & Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,19 +31,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
     
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Main Styles -->
     <link rel="stylesheet" href="css/main.css" />
     <!-- JWT Authentication Utility -->
     <script src="/shared/js/jwt-auth-utils.js"></script>
     <script src="/shared/js/realtime-notifications.js"></script>
+    <!-- Navigation Loader - shared navigation component for all authenticated volunteer pages -->
+    <script src="/volunteer/partials/nav-loader.js"></script>
+    <!-- Modal Utilities for logout confirmation -->
+    <script src="/volunteer/js/modal-utils.js"></script>
     <!-- Notification System -->
     <script src="/shared/js/notification-permission-modal.js"></script>
     <script src="/shared/js/notification-enforcer.js"></script>
     <!-- Newsletter Widget -->
     <script src="/shared/js/newsletter-widget.js"></script>
     <style>
-        #mobile-menu-toggle:focus {
+        #home-mobile-menu-toggle:focus {
           outline: none;
         }
         html, body {
@@ -37,6 +57,9 @@
         max-width: 100vw;
         box-sizing: border-box;
         justify-content: center;
+    }
+    *, *::before, *::after {
+      box-sizing: inherit;
     }
     body {
       width: 100%;
@@ -51,281 +74,441 @@
     }
 
     .blob {
-        position: absolute;
+        position: fixed;
         border-radius: 50%;
         z-index: -1;
-        overflow: hidden;
-        max-width: 100vw;
+        pointer-events: none;
+        overflow: clip;
+        max-width: none;
+        contain: layout paint size;
     }
 
-    main, section, .container {
+    main, section {
         max-width: 100vw;
         box-sizing: border-box;
         padding-left: 1rem;
         padding-right: 1rem;
+    }
+    .container {
+        max-width: 100vw;
+        box-sizing: border-box;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    header, nav, main, section, footer {
+        overflow-x: clip;
+        max-width: 100vw;
+    }
+    .page-wrapper, .relative.min-h-screen {
+        overflow-x: clip;
+        width: 100%;
+    }
+    img, svg, video, canvas {
+        max-width: 100%;
+        height: auto;
     }
     @media (max-width: 768px) {
         .blob {
             display: none;
         }
     }
-    
       </style>
 </head>
-<body class="gradient-bg text-gray-800">
-    <!-- Background Blobs -->
-    <div class="blob w-96 h-96 bg-purple-300 top-[-10rem] left-[-10rem]"></div>
-    <div class="blob w-96 h-96 bg-blue-300 bottom-[-5rem] right-[-10rem]"></div>
-    <div class="blob w-72 h-72 bg-pink-300 top-[10rem] right-[-5rem] md:right-[10rem]"></div>
+<body class="text-gray-800" style="opacity:0;background-color: #f0f4ff;">
+    <!-- Removed background blobs for cleaner professional look -->
 
-    <!-- Header -->
-    <header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
+    <!-- Navigation Container - populated by nav-loader when authenticated -->
+    <!-- This provides consistent navigation across ALL authenticated volunteer pages -->
+    <div id="nav-container" class="hidden nav-authenticated nav-auth-pending">
+        <!-- Will be populated by nav-loader.js with shared/partials/nav-authenticated.html -->
+    </div>
+
+    <!-- Home Page Unauthenticated Navigation (minimal design - shown only when not logged in) -->
+    <!-- This is intentionally different from other pages - no auth buttons since hero has CTA -->
+    <!-- Transparent initially, gains glass background on scroll -->
+    <header id="home-unauthenticated-nav" class="fixed top-0 left-0 right-0 p-6 z-50 transition-all duration-300 nav-unauthenticated nav-auth-pending">
         <nav class="container mx-auto flex items-center justify-between relative">
             <div class="flex flex-col">
                 <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                        <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#4f46e5;"></stop><stop offset="100%" style="stop-color:#a855f7;"></stop></linearGradient></defs>
+                        <defs><linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:var(--brand-primary);"></stop><stop offset="100%" style="stop-color:var(--brand-secondary);"></stop></linearGradient></defs>
                         <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
                     </svg>
-                    <span class="gradient-text">TALK TIME</span>
+                    <span class="gradient-text" style="color: var(--brand-primary); font-weight: 700;">TALK TIME</span>
                 </a>
-                <div class="flex items-center gap-2 mt-0.5">
-                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-7 h-7 rounded-full object-cover border border-gray-200">
-                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="text-sm leading-none text-gray-600 hover:text-indigo-600 transition-colors">
-                        Powered by ADEA Foundation
-                    </a>
+                <div class="flex items-center gap-2">
+                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-6 h-6 rounded-full object-cover border border-gray-200 self-center">
+                    <span class="text-sm text-gray-600 self-center">
+                        <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="hover:text-brand-primary transition-colors">
+                            Powered by ADEA Foundation
+                        </a>
+                    </span>
                 </div>
             </div>
-          
+
             <!-- Desktop Navigation Menu -->
             <div class="hidden md:flex items-center space-x-6">
-                <a href="/" class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors font-medium">
-                    <i class="fas fa-home mr-2"></i>Home
-                </a>
-                <a href="/volunteer/who-we-are.html" class="px-4 py-2 text-gray-700 hover:text-purple-600 transition-colors font-medium">
-                    <i class="fas fa-heart mr-2"></i>Who We Are
+                <a href="https://adeafoundation.org" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-gray-700 hover:text-brand-primary transition-colors font-medium underline underline-offset-4 decoration-1">
+                    <i class="fas fa-external-link-alt mr-2"></i>Visit ADEA Foundation
                 </a>
             </div>
-            
-            <!-- Auth buttons - shown when logged out -->
-            <div id="nav-auth-buttons" class="flex items-center space-x-4">
-                <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-orange-500 transition-colors">Login</a>
-                <a href="/volunteer/signup" class="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition-all">Sign Up</a>
-            </div>
-            
-            <!-- Profile Section - shown when logged in -->
-            <div id="nav-profile-section" class="hidden items-center space-x-4">
-                <!-- Notification Bell -->
-                <div class="relative">
-                    <a href="/volunteer/notifications.html" class="relative p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 rounded-lg hover:bg-gray-100">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Bell body -->
-                            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            
-                            <!-- Bell clapper -->
-                            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
-                        <span id="notification-badge" class="absolute -top-1 -right-1 hidden bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"></span>
-                    </a>
-                </div>
-                <div class="relative">
-                    <button id="profile-btn" class="flex items-center gap-2 focus:outline-none">
-                        <span id="volunteer-greeting" class="font-semibold sm:inline">Welcome,</span>
-                        <div class="relative">
-                            <img id="nav-profile-image" src="" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hidden">
-                            <div id="volunteer-initial" class="w-10 h-10 rounded-full flex items-center justify-center text-indigo-600 font-bold" style="background-color: rgb(250, 244, 255) !important;">N</div>
-                        </div>
-                        <svg class="w-4 h-4 text-gray-600 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 transform transition-all duration-200 ease-in-out z-[9999] hidden opacity-0 -translate-y-2">
-                        <a href="/volunteer/who-we-are.html" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 hover:text-purple-600 rounded mx-2 my-1 transition-colors">
-                            <i class="fas fa-heart mr-2"></i>Who We Are
-                        </a>
-                        <a href="/volunteer/profile.html" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
-                            <i class="fas fa-user mr-2"></i>My Profile
-                        </a>
-                        <a href="/volunteer/settings" class="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded mx-2 my-1 transition-colors">
-                            <i class="fas fa-cog mr-2"></i>Settings
-                        </a>
-                        <hr class="my-2 border-gray-200">
-                        <a href="#" id="logout-link" class="block px-4 py-2 text-gray-800 hover:bg-red-50 hover:text-red-600 rounded mx-2 my-1 transition-colors">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-          
+
             <!-- Mobile Menu Button -->
             <div class="md:hidden">
-                <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
+                <button id="home-mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                     </svg>
                 </button>
             </div>
-          
-            <!-- Mobile Menu -->
-            <div id="mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
-                <a href="/" class="block py-2 px-4 text-gray-800 hover:text-green-600">
-                    <i class="fas fa-home mr-2"></i>Home
+
+            <!-- Mobile Menu for Unauthenticated Home Page -->
+            <div id="home-mobile-menu" class="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg hidden flex-col p-4 space-y-2 md:hidden z-50">
+                <a href="https://adeafoundation.org" target="_blank" rel="noopener noreferrer" class="block py-2 px-4 text-gray-800 hover:text-brand-primary underline underline-offset-4 decoration-1">
+                    <i class="fas fa-external-link-alt mr-2"></i>Visit ADEA Foundation
                 </a>
-                <a href="/volunteer/who-we-are.html" class="block py-2 px-4 text-gray-800 hover:text-purple-600">
-                    <i class="fas fa-heart mr-2"></i>Who We Are
+                <a href="/volunteer/login" class="block py-2 px-4 text-gray-800 hover:text-brand-primary">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
                 </a>
-                <a href="/volunteer/notifications.html" class="block py-2 px-4 text-gray-800 hover:text-blue-600 font-semibold">
-                    <i class="fas fa-bell mr-2"></i>Notifications
-                </a>
-                <a href="/volunteer/profile" class="block py-2 px-4 text-gray-800 hover:text-purple-600 font-semibold">
-                    <i class="fas fa-user mr-2"></i>My Profile
-                </a>
-                <a href="#" id="mobile-logout-btn" class="block py-2 px-4 text-gray-800 hover:text-red-600">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                <a href="/volunteer/signup" class="block py-2 px-4 text-gray-800 hover:text-brand-primary">
+                    <i class="fas fa-user-plus mr-2"></i>Sign Up
                 </a>
             </div>
         </nav>
     </header>
 
-    <div class="relative min-h-screen w-full flex flex-col items-center justify-center px-4 z-10 pt-24">
-        <main class="w-full max-w-6xl mx-auto text-center py-20">
-            <!-- Hero Section -->
-            <section class="flex flex-col md:flex-col-reverse items-center gap-8 md:gap-4">
-                <!-- Action Buttons Group -->
-                <div class="w-full fade-in-up" style="animation-delay: 0.3s;">
-                    <div id="volunteer-types-section" class="flex flex-col sm:flex-row items-stretch justify-center gap-6 w-full max-w-4xl mx-auto">
-                        <!-- Regular Volunteer Card -->
-                        <div class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl px-6 py-6 text-center shadow-lg">
-                            <div class="mb-4">
-                                <i class="fas fa-hands-helping text-3xl text-white mb-3"></i>
-                                <h3 class="text-xl font-bold text-white mb-2">Regular Volunteer</h3>
-                            </div>
-                            <p class="text-sm text-blue-100 leading-relaxed">
-                                Professionals, retirees, and community members who want to help Maasai students practice English conversation. Perfect for anyone with time to spare and a heart to serve.
-                            </p>
-                        </div>
-                        
-                        <!-- Student Volunteer Card -->
-                        <div class="flex-1 text-gray-800 bg-white/50 rounded-2xl px-6 py-6 text-center shadow-md">
-                            <div class="mb-4">
-                                <i class="fas fa-user-graduate text-3xl text-gray-800 mb-3"></i>
-                                <h3 class="text-xl font-bold text-gray-800 mb-2">Student Volunteer</h3>
-                            </div>
-                            <p class="text-sm text-gray-600 leading-relaxed">
-                                Students studying abroad who want to connect with their peers in Rombo, Kenya. A meaningful way to give back while building cross-cultural friendships.
-                            </p>
-                        </div>
-                    </div>
-                    <div id="login-cta" class="mt-6 text-center" style="animation-delay: 0.4s;">
-                    <a href="/volunteer/login" class="inline-block glass-bg text-gray-800 font-semibold px-6 py-2 rounded-lg hover:shadow-lg transition-shadow">
-                        Have an account? <span class="text-orange-600">Login</span>
-                    </a>
-                </div>
-                
-                <!-- Dashboard CTA (shown when logged in) -->
-                <div id="dashboard-cta" class="mt-8 text-center hidden" style="animation-delay: 0.4s;">
-                    <a href="/volunteer/dashboard/students.html" class="inline-block bg-white bg-opacity-30 backdrop-blur-md border-2 text-green-600 font-bold text-xl px-12 py-5 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105" style="border-image: linear-gradient(to right, #f472b6, #f97316) 1; border-radius: 10px;">
-                        <i class="fas fa-rocket mr-3"></i>Start Your Journey
-                    </a>
-                </div>
-                </div>
-            
-                <!-- Title Group -->
-                <div class="text-center fade-in-up mb-9" style="animation-delay: 0.1s;">
-                    <h1 class="font-poppins text-5xl md:text-7xl font-extrabold leading-tight fade-in-up bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent" style="animation-delay: 0.1s;">
+    <!-- Hero Section with Kilimanjaro Background -->
+    <!-- Color Palette from ADEA Design:
+         Red: #DC0000 or bg-red-600
+         Green: #2D8B2D or bg-green-700
+         Blue: #4169E1 or bg-blue-600
+         Hero Overlay Blue: #4B7BBF with 85% opacity
+    -->
+    <div class="relative w-full overflow-hidden" style="min-height: 90vh; margin-top: -80px; padding-top: 80px;">
+        <!-- Background image with bottom-aligned positioning -->
+        <div class="absolute inset-0" style="margin-top: 80px; background-color: #87CEEB;">
+            <div class="lazy-image-wrapper cover w-full h-full">
+                <img src="/volunteer/kilimanjaro.webp" alt="Mount Kilimanjaro" loading="eager" class="lazy-image w-full h-full object-cover" style="object-position: center 70%;" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+            </div>
+        </div>
+        <!-- Glassmorphism overlay using brand-secondary-dark with darker overlay -->
+        <div class="absolute inset-0 backdrop-blur-xs" style="background: linear-gradient(to bottom, rgba(0, 29, 125, 0.45), rgba(0, 29, 125, 0.55)); margin-top: 80px;"></div>
+
+        <main class="relative w-full text-center z-10">
+            <!-- Hero Content -->
+            <section class="min-h-[600px] flex flex-col items-center justify-center px-4 py-20">
+                <div class="max-w-4xl mx-auto">
+                    <h1 class="text-5xl md:text-7xl font-bold text-white mb-6">
                         TalkTime
                     </h1>
-                    <p class="mt-4 text-lg md:text-xl text-gray-700 max-w-2xl" style="animation-delay: 0.2s;">
-                        TalkTime connects global volunteers with Maasai students in Rombo, Kenya, for free English practice chats. Powered by the ADEA Foundation, it builds confidence and skills through one-on-one conversations, opening doors to brighter futures. We have two types of volunteers
+                    <p class="text-xl md:text-2xl text-white/95 max-w-3xl mx-auto mb-8">
+                        TalkTime connects global volunteers with Maasai students<br>
+                        in Rombo, Kenya, for free English practice chats.<br>
+                        Building confidence through conversation.
                     </p>
-                </div>
-            </section>
-            
-
-            <!-- Features Section -->
-            <section class="mt-20 w-full fade-in-up" style="animation-delay: 0.5s;">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                    <!-- Card 1: The Mission -->
-                    <div class="glass-card rounded-2xl p-6 md:p-8">
-                        <div class="mx-auto bg-blue-100/50 rounded-full h-16 w-16 flex items-center justify-center">
-                           <i class="fas fa-heart text-3xl text-blue-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Our Mission</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">To bridge the gap between volunteers and Maasai students, fostering connections that build English fluency and open doors to new opportunities.</p>
-                    </div>
-                    <!-- Card 2: One-on-One Calls -->
-                    <div class="glass-card rounded-2xl p-6 md:p-8">
-                        <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center">
-                            <i class="fas fa-user-friends text-3xl text-purple-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Focused Conversations</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">Enjoy simple, one-on-one 40-minute video calls. Our platform pairs one volunteer with one student for a personal and impactful conversation.</p>
-                    </div>
-                    <!-- Card 3: Two Volunteer Paths -->
-                    <div class="glass-card rounded-2xl p-6 md:p-8">
-                        <div class="mx-auto bg-green-100/50 rounded-full h-16 w-16 flex items-center justify-center">
-                           <i class="fas fa-users text-3xl text-green-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Two Ways to Help</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">Sign up as a General Volunteer or as a Student Volunteer if you're studying abroad. Both roles offer the same rewarding experience.</p>
-                    </div>
-                    <!-- Card 4: Simple & Free -->
-                     <div class="glass-card rounded-2xl p-6 md:p-8">
-                        <div class="mx-auto bg-yellow-100/50 rounded-full h-16 w-16 flex items-center justify-center">
-                           <i class="fas fa-magic text-3xl text-yellow-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Simple & Free</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">Our platform makes scheduling and joining calls a breeze. TalkTime is completely free for both volunteers and students, forever.</p>
-                    </div>
-                    <!-- Card 5: Be a Mentor -->
-                    <div class="glass-card rounded-2xl p-8">
-                        <div class="mx-auto bg-teal-100/50 rounded-full h-16 w-16 flex items-center justify-center">
-                           <i class="fas fa-lightbulb text-3xl text-teal-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Be a Mentor</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">Be patient, encouraging, and ask open-ended questions. Your positive support is key to helping students feel valued and confident.</p>
-                    </div>
-                     <!-- Card 6: Powered By ADEA -->
-                    <div class="glass-card rounded-2xl p-8">
-                        <div class="mx-auto bg-white rounded-full h-16 w-16 flex items-center justify-center overflow-hidden">
-                           <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation Logo" class="w-full h-full object-cover">
-                        </div>
-                        <h3 class="text-xl font-bold mt-6 text-gray-900">Powered by ADEA</h3>
-                        <p class="mt-2 text-base leading-relaxed text-gray-700">TalkTime is a proud initiative of the ADEA Foundation, supporting the <a href="https://adeafoundation.org" target="_blank" rel="noopener noreferrer" class="font-semibold text-orange-600 hover:underline">KKIS Program</a> to keep students in school.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a id="hero-cta-btn" href="/volunteer/login" class="pulse-zoom-red inline-flex items-center bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
+                            <i class="fas fa-headset mr-3"></i><span>Get Started Today</span>
+                        </a>
                     </div>
                 </div>
             </section>
-            
-            <!-- Final CTA - Dynamic based on auth status -->
-            <section class="mt-20 fade-in-up" style="animation-delay: 0.6s;">
-                <a id="get-started-btn" href="/volunteer/login" class="pulse-zoom inline-flex items-center bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Get Started Today
-                </a>
-            </section>
+        </main>
 
-            <!-- Partners Section -->
-            <section class="mt-16 w-full fade-in-up" style="animation-delay: 0.9s;">
-                <h3 class="text-sm font-semibold text-gray-600 tracking-wider uppercase">Our Valued Partners</h3>
-                <div class="mt-4 flex justify-center items-center gap-8">
-                    <a href="index" class="flex items-center gap-2 text-lg font-bold text-gray-700 hover:text-blue-600 transition-colors">
-                        <img 
-                            src="https://adeafoundation.org/wp-content/uploads/pmd-logo.jpg" 
-                            alt="PMD-Rombo Logo" 
-                            class="h-6 w-auto object-contain" 
-                        />
-                        <span>PMD-Rombo</span>
+        <!-- Wave Overlay at Bottom -->
+        <div class="absolute bottom-0 left-0 right-0 w-full pointer-events-none z-30">
+            <!-- Inner Shadow Layer for Hole Effect - Fading Upwards -->
+            <div class="absolute bottom-8 left-0 right-0 w-full h-48 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
+            <!-- Wave Shape with Shadow -->
+            <svg class="relative w-full h-32" preserveAspectRatio="none" viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg">
+                <!-- Wave with solid brand-primary color -->
+                <path d="M0,20
+                         C150,65 250,75 350,55
+                         C450,35 500,45 600,25
+                         C700,5 750,35 850,45
+                         C950,55 1050,35 1200,20
+                         L1200,120 L0,120 Z"
+                      fill="white"
+                      style="filter: drop-shadow(0 -8px 12px rgba(0,0,0,0.15)) drop-shadow(0 -4px 6px rgba(0,0,0,0.1))">
+                </path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="relative w-full py-16 overflow-hidden" style="background: white;">
+        <!-- Background Image - Bottom Left of Screen -->
+        <div class="absolute pointer-events-none opacity-10 z-0" style="bottom: -150px; left: -150px; transform: rotate(-180deg); transform-origin: center center;">
+            <div class="lazy-image-wrapper decorative">
+                <img src="/volunteer/shanga.webp" alt="" loading="lazy" class="lazy-image h-[600px] w-auto object-contain" style="filter: grayscale(100%);" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+            </div>
+        </div>
+
+        <main class="w-full max-w-6xl mx-auto px-4 relative z-10">
+            <!-- Volunteer Types Section -->
+            <section class="relative">
+                <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Two Ways to Volunteer</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <!-- Regular Volunteer Card -->
+                    <div class="bg-blue-600 py-8 px-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-hands-helping text-4xl text-white mb-3"></i>
+                            <h3 class="text-xl font-bold text-white">Regular Volunteer</h3>
+                        </div>
+                        <p class="text-white/80 text-center font-thin text-sm">
+                            Professionals, retirees, and community members who want to help Maasai students practice English conversation. Perfect for anyone with time to spare and a heart to serve.
+                        </p>
+                    </div>
+
+                    <!-- Student Volunteer Card -->
+                    <div class="bg-red-600 py-8 px-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-user-graduate text-4xl text-white mb-3"></i>
+                            <h3 class="text-xl font-bold text-white">Student Volunteer</h3>
+                        </div>
+                        <p class="text-white/80 text-center font-thin text-sm">
+                            Students studying abroad who want to connect with their peers in Rombo, Kenya. A meaningful way to give back while building cross-cultural friendships.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Horizontal Divider -->
+    <hr class="border-gray-300 my-0">
+
+    <!-- Impact Section - Content & Video with darker background -->
+    <section class="w-full bg-gray-100">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                <!-- Left Content -->
+                <div class="order-2 lg:order-1 py-16 px-4 lg:pl-0 lg:pr-8 flex flex-col justify-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                        We're ADEA Foundation
+                    </h2>
+                    <p class="text-xl text-gray-700 font-medium mb-6 italic bold-underline underline-offset-4 decoration-2">
+                        Rooted in Community. Built for Impact.
+                    </p>
+                    <p class="text-gray-600 text-lg leading-relaxed mb-6">
+                        ADEA Foundation began with one question: How do we support the Rombo community while equipping young people to be the Maasai of the 21st century, grounded in tradition and prepared for progress?
+                    </p>
+                    <p class="text-gray-600 text-lg leading-relaxed mb-6">
+                        Since 2003, we've partnered with Maasai leaders to respond to shifting realities: loss of land, devastating droughts, economic pressures, and cultural transition. Together, we've built schools, trained youth, mentored leaders, and responded to hunger with dignity and innovation.
+                    </p>
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all transform hover:scale-105 w-fit">
+                        <span>Learn More About ADEA</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
                     </a>
-                    <!-- More partner logos or names can be added here -->
                 </div>
+
+                <!-- Right Image -->
+                <div class="order-1 lg:order-2 relative h-full min-h-[400px]">
+                    <div class="lazy-image-wrapper cover absolute inset-0">
+                        <img src="/volunteer/kids-in-school.webp" alt="ADEA Community Impact" loading="lazy" class="lazy-image w-full h-full object-cover" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Success Stories Section -->
+    <section class="w-full py-16 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">Our Success Stories</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Story 1 - Patrick -->
+                <div class="text-center">
+                    <div class="mb-4">
+                        <div class="lazy-image-wrapper rounded-full w-32 h-32 mx-auto border-4 border-brand-primary">
+                            <img src="/volunteer/partrick.webp" alt="Patrick's Success Story" loading="lazy" class="lazy-image w-full h-full rounded-full object-cover" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Patrick</h3>
+                    <a href="https://youtu.be/T07wpzaY1fY" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 transition-colors">
+                        <i class="fab fa-youtube mr-2"></i>
+                        Watch on YouTube
+                    </a>
+                </div>
+                <!-- Story 2 - Jacinta -->
+                <div class="text-center">
+                    <div class="mb-4">
+                        <div class="lazy-image-wrapper rounded-full w-32 h-32 mx-auto border-4 border-brand-primary">
+                            <img src="/volunteer/jacinta.webp" alt="Jacinta's Success Story" loading="lazy" class="lazy-image w-full h-full rounded-full object-cover" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Jacinta</h3>
+                    <a href="https://youtu.be/66rLweG1uvA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 transition-colors">
+                        <i class="fab fa-youtube mr-2"></i>
+                        Watch on YouTube
+                    </a>
+                </div>
+                <!-- Story 3 - Keteko -->
+                <div class="text-center">
+                    <div class="mb-4">
+                        <div class="lazy-image-wrapper rounded-full w-32 h-32 mx-auto border-4 border-brand-primary">
+                            <img src="/volunteer/keteko.webp" alt="Keteko's Success Story" loading="lazy" class="lazy-image w-full h-full rounded-full object-cover" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Keteko</h3>
+                    <a href="https://youtu.be/hYLexBhyDKU" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 transition-colors">
+                        <i class="fab fa-youtube mr-2"></i>
+                        Watch on YouTube
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="w-full py-16 bg-gray-50 relative overflow-hidden">
+        <!-- Background Image - Bottom Right of Screen -->
+        <div class="absolute pointer-events-none opacity-20 z-0" style="bottom: 0; right: -90px;">
+            <div class="lazy-image-wrapper decorative">
+                <img src="/volunteer/shanga2.webp" alt="" loading="lazy" class="lazy-image h-[350px] w-auto object-contain" style="filter: grayscale(100%);" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto px-4 relative z-10">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">Newsletter</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">Stay connected to the latest milestones and moments from our work alongside the community.</p>
+
+            <!-- Newsletter Carousel Container -->
+            <div class="relative">
+                <!-- Navigation Buttons -->
+                <button id="newsletter-prev" class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-20 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-chevron-left text-gray-700 text-2xl"></i>
+                </button>
+                <button id="newsletter-next" class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-20 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-chevron-right text-gray-700 text-2xl"></i>
+                </button>
+
+                <!-- Carousel Wrapper -->
+                <div class="overflow-hidden">
+                    <div id="newsletter-carousel" class="flex transition-transform duration-300 ease-in-out gap-6">
+                        <!-- Newsletters will be dynamically loaded here -->
+                        <div class="flex-none w-full text-center py-12">
+                            <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-500">Loading newsletters...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscribe Button -->
+            <div class="text-center mt-12">
+                <button class="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold transition-all transform hover:scale-105">
+                    Subscribe to Our Newsletter
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Newsletter carousel is now handled by newsletter-display.js
+    </script>
+
+    <!-- Horizontal Divider -->
+    <hr class="border-gray-300 my-0">
+
+    <!-- How TalkTime Works Section -->
+    <div class="relative w-full bg-white py-16 pb-32">
+        <main class="w-full max-w-6xl mx-auto px-4">
+
+            <section class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">How TalkTime Works</h2>
+                <p class="text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
+                    TalkTime bridges the gap between volunteers and Maasai students through simple, free 40-minute one-on-one video calls that build English fluency and confidence. Our platform, powered by ADEA Foundation and PMD-Rombo, offers two volunteer paths—General and Student Volunteers—both providing the same meaningful mentorship experience. As a mentor, your patience, encouragement, and open-ended questions help students feel valued while opening doors to new opportunities through focused conversations that support the KKIS Program's mission to keep students in school.
+                </p>
             </section>
 
         </main>
-        
-        <!-- Footer -->
-        <footer class="w-full text-center p-6 text-gray-600 fade-in-up" style="animation-delay: 0.7s;">
-            <p class="text-base">Built by Your Friends at ADEA Foundation for Maasai Students © 2025 TalkTime</p>
-            <p class="text-base">Empowering Through Conversation</p>
+
+        <!-- Wave Overlay at Bottom -->
+        <div class="absolute bottom-0 left-0 right-0 w-full pointer-events-none z-30">
+            <!-- Inner Shadow Layer for Hole Effect - Fading Upwards -->
+            <div class="absolute bottom-8 left-0 right-0 w-full h-48 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
+            <!-- Wave Shape with Shadow -->
+            <svg class="relative w-full h-32" preserveAspectRatio="none" viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg">
+                <!-- Wave with solid brand-primary color -->
+                <path d="M0,20
+                         C150,65 250,75 350,55
+                         C450,35 500,45 600,25
+                         C700,5 750,35 850,45
+                         C950,55 1050,35 1200,20
+                         L1200,120 L0,120 Z"
+                      fill="var(--brand-primary)"
+                      style="filter: drop-shadow(0 -8px 12px rgba(0,0,0,0.15)) drop-shadow(0 -4px 6px rgba(0,0,0,0.1))">
+                </path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full p-12 text-white relative overflow-hidden" style="background-color: var(--brand-primary);">
+        <!-- Background Image - Bottom Left of Footer -->
+        <div class="absolute pointer-events-none opacity-10 z-0" style="bottom: -50px; left: -50px;">
+            <div class="lazy-image-wrapper decorative">
+                <img src="/volunteer/old-maasai.webp" alt="" loading="lazy" class="lazy-image h-[250px] w-auto object-contain" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+            </div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Left Column - TALKTIME Branding -->
+                <div class="text-left">
+                    <h3 class="text-2xl font-bold mb-3">TALKTIME</h3>
+                    <p class="text-sm text-white/90 mb-1">Built by Your Friends at ADEA Foundation</p>
+                    <p class="text-sm text-white/90 mb-1">for Maasai Students © 2025 TalkTime</p>
+                    <p class="text-sm text-white/90 mb-4">Empowering Through Conversation</p>
+
+                    <!-- Social Media Icons -->
+                    <div class="flex gap-4">
+                        <a href="#" class="text-white hover:text-white/80 transition-colors">
+                            <i class="fab fa-facebook-f text-xl"></i>
+                        </a>
+                        <a href="#" class="text-white hover:text-white/80 transition-colors">
+                            <i class="fab fa-youtube text-xl"></i>
+                        </a>
+                        <a href="#" class="text-white hover:text-white/80 transition-colors">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Center Column - Contact Info -->
+                <div class="text-center">
+                    <h4 class="text-lg font-semibold mb-3">Contact Us</h4>
+                    <p class="text-sm text-white/90 mb-1">douglas@adeafoundation.org</p>
+                    <p class="text-sm text-white/90 mb-1">ADEA Foundation - PO Box 45751</p>
+                    <p class="text-sm text-white/90 mb-1">Seattle, WA 98145 USA</p>
+                    <p class="text-sm text-white/90">Phone/WhatsApp: +1 206.227.0082</p>
+                </div>
+
+                <!-- Right Column - Newsletter Subscription -->
+                <div class="text-left">
+                    <h4 class="text-lg font-semibold mb-3">STAY CONNECTED TO THE JOURNEY</h4>
+                    <p class="text-sm text-white/90 mb-4">
+                        Get updates from the ground. Hear stories of youth rising, communities leading, and what's next on the journey we're building together.
+                    </p>
+
+                    <!-- Email Subscription Form -->
+                    <form class="flex gap-2">
+                        <input
+                            type="email"
+                            placeholder="Your email"
+                            class="flex-1 px-3 py-2 text-gray-900 placeholder-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                        >
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-white text-red-600 font-semibold hover:bg-gray-100 transition-colors"
+                        >
+                            Subscribe
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
         </footer>
     </div>
     
@@ -333,14 +516,14 @@
     <div id="coming-soon-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm opacity-0">
         <div class="modal-content modal-glass-bg w-full max-w-sm rounded-2xl p-8 text-center transform scale-95">
             <!-- Icon -->
-            <div class="mx-auto bg-purple-100/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
-                <svg class="h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="mx-auto bg-brand-light-secondary/50 rounded-full h-16 w-16 flex items-center justify-center mb-6">
+                <svg class="h-8 w-8 text-brand-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
             <!-- Content -->
             <h3 class="text-2xl font-bold mb-2 text-gray-900">Coming Soon!</h3>
             <p class="mb-6 text-base leading-relaxed text-gray-700">We're working hard to bring this feature to life. Please check back later!</p>
             <!-- Close Button -->
-            <button id="close-modal-btn" class="bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold px-8 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+            <button id="close-modal-btn" class="text-white font-semibold px-8 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105" style="background:#D10100;">
                 OK
             </button>
         </div>
@@ -348,380 +531,115 @@
 
     <!-- Index Page Scripts -->
     <script src="js/index.js" defer></script>
+    <script src="js/newsletter-display.js" defer></script>
     
-    <!-- Authentication Detection Script -->
+    <!--
+        Navigation & Authentication Script
+        Uses shared nav-loader.js for authenticated navigation (consistent across ALL volunteer pages)
+        Home page keeps its custom minimal unauthenticated navigation
+    -->
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            document.body.classList.add('page-ready');
             // Initialize JWT auth for volunteers
             window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-            
+
             // Initialize real-time notifications
             window.realtimeNotifications = new RealtimeNotifications('volunteer');
-            
-            // Check auth state on page load and update UI accordingly
-            const loginCta = document.getElementById('login-cta');
-            const dashboardCta = document.getElementById('dashboard-cta');
-            const navAuthButtons = document.getElementById('nav-auth-buttons');
-            const navProfileSection = document.getElementById('nav-profile-section');
-            const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
-            const mobileProfileSection = document.getElementById('mobile-profile-section');
-            const getStartedBtn = document.getElementById('get-started-btn');
-            
-            // Force update UI with current auth state
-            function updateAuthenticatedUI(userData) {
-                console.log('Updating UI with user data:', userData);
-                
-                // Main content area
-                if (loginCta) loginCta.classList.add('hidden');
-                if (dashboardCta) dashboardCta.classList.remove('hidden');
-                
-                // Navigation bar - desktop
-                if (navAuthButtons) navAuthButtons.classList.add('hidden');
-                if (navProfileSection) {
-                    navProfileSection.classList.remove('hidden');
-                    navProfileSection.classList.add('flex');
-                }
-                
-                // Update profile information
-                const volunteerGreeting = document.getElementById('volunteer-greeting');
-                const volunteerInitial = document.getElementById('volunteer-initial');
-                
-                if (volunteerGreeting && userData) {
-                    let displayName = userData.username || userData.name || userData.full_name || userData.fullName || userData.email || 'Volunteer';
-                    
-                    if (!userData.username && displayName.includes(' ')) {
-                        displayName = displayName.split(' ')[0];
-                    } else if (displayName.includes('@')) {
-                        displayName = displayName.split('@')[0];
+
+            // Element references
+            const navContainer = document.getElementById('nav-container');
+            const homeUnauthNav = document.getElementById('home-unauthenticated-nav');
+            const heroCTABtn = document.getElementById('hero-cta-btn');
+            const homeMobileMenuToggle = document.getElementById('home-mobile-menu-toggle');
+            const homeMobileMenu = document.getElementById('home-mobile-menu');
+
+            // Use nav-loader with skipUnauthenticated option
+            // This loads the shared authenticated navigation ONLY when user is logged in
+            // When not logged in, we keep showing the custom home page minimal nav
+            const result = await VolunteerNavLoader.init(false, {
+                skipUnauthenticated: true,
+                onAuthenticated: function(userData) {
+                    console.log('Home page: User is authenticated, using shared navigation', userData);
+
+                    // Show the shared navigation container, hide the home-specific unauthenticated nav
+                    if (navContainer) {
+                        navContainer.classList.remove('hidden');
+                        console.log('Home page: nav-container shown');
                     }
-                    
-                    volunteerGreeting.textContent = `Welcome, ${displayName}!`;
-                    console.log('Updated greeting to:', volunteerGreeting.textContent);
-                }
-                
-                if (volunteerInitial && userData) {
-                    const name = userData.username || userData.name || userData.full_name || userData.fullName || userData.email || 'V';
-                    const initial = name.charAt(0).toUpperCase();
-                    volunteerInitial.textContent = initial;
-                    console.log('Updated avatar initial to:', initial);
-                }
-                
-                // Setup profile dropdown (ensure it's called)
-                setTimeout(() => setupProfileDropdown(), 100);
-                
-                // Update Get Started button
-                if (getStartedBtn) {
-                    getStartedBtn.href = '/volunteer/dashboard/students.html';
-                    getStartedBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Go to Dashboard`;
-                }
-            }
-            
-            // Always update UI immediately if authenticated
-            if (window.TalkTimeAuth.isAuthenticated()) {
-                const cachedUser = window.TalkTimeAuth.getUser();
-                if (cachedUser) {
-                    console.log('Immediately updating UI with cached user:', cachedUser);
-                    updateAuthenticatedUI(cachedUser);
-                }
-                
-                // Also setup dropdown immediately
-                setupProfileDropdown();
-                
-                try {
-                    // Verify token is still valid
-                    const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/jwt-auth/verify', {
-                        method: 'GET'
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.user) {
-                            console.log('Refreshing UI with server user data:', data.user);
-                            updateAuthenticatedUI(data.user);
-                            // Update avatar - prioritize profile image over letter
-                            if (data.user.profile_image) {
-                                // Show profile image if available
-                                if (profileImage) {
-                                    profileImage.src = `/api/v1/volunteer/profile/image/${data.user.profile_image}`;
-                                    profileImage.classList.remove('hidden');
-                                }
-                                if (letterAvatar) {
-                                    letterAvatar.classList.add('hidden');
-                                }
-                            } else {
-                                // Show avatar letter
-                                if (profileImage) {
-                                    profileImage.classList.add('hidden');
-                                }
-                                if (letterAvatar) {
-                                    const userName = data.user.username || data.user.name || data.user.full_name || data.user.nickname || 'V';
-                                    const avatarLetter = userName.charAt(0).toUpperCase();
-                                    letterAvatar.textContent = avatarLetter;
-                                    letterAvatar.style.backgroundColor = '#8B5CF6'; // Purple background
-                                    letterAvatar.classList.remove('hidden');
-                                    console.log('Avatar letter set to:', avatarLetter, 'from userName:', userName, 'user data:', data.user);
-                                }
-                            }
-                            
-                            // Update dashboard button text with personalized message
-                            if (dashboardCta) {
-                                const dashboardLink = dashboardCta.querySelector('a');
-                                if (dashboardLink) {
-                                    dashboardLink.innerHTML = `<i class="fas fa-tachometer-alt mr-3"></i>Go to Dashboard`;
-                                }
-                            }
-                            
-                            // Update page title to show welcome message
-                            const titleElement = document.querySelector('h1');
-                            if (titleElement && !document.querySelector('.welcome-back-message')) {
-                                const welcomeText = document.createElement('p');
-                                welcomeText.className = 'mt-4 text-lg md:text-xl text-gray-700 font-medium fade-in-up welcome-back-message';
-                                welcomeText.style.animationDelay = '0.15s';
-                                // Prioritize username for nickname display, fallback to first name from full name
-                                let welcomeDisplayName = data.user.username || data.user.full_name || data.user.fullName || 'Volunteer';
-                                
-                                // If using full name and it has spaces, use just the first name
-                                if (!data.user.username && welcomeDisplayName.includes(' ')) {
-                                    welcomeDisplayName = welcomeDisplayName.split(' ')[0]; // Use first name only
-                                } else if (welcomeDisplayName.includes('@')) {
-                                    // If it's an email, use the part before @
-                                    welcomeDisplayName = welcomeDisplayName.split('@')[0];
-                                }
-                                
-                                welcomeText.textContent = `Welcome back, ${welcomeDisplayName}!`;
-                                titleElement.parentNode.insertBefore(welcomeText, titleElement.nextSibling);
-                            }
-                            
-                            return;
-                        }
+                    if (homeUnauthNav) {
+                        homeUnauthNav.classList.add('hidden');
+                        console.log('Home page: home-unauthenticated-nav hidden');
                     }
-                } catch (error) {
-                    console.log('Token verification failed:', error.message);
-                    // Don't automatically logout on index page - user might just have network issues
-                    // Only clear tokens if they're definitively invalid (not network errors)
-                    if (error.message && error.message.includes('malformed')) {
-                        console.log('Token is malformed, clearing auth');
-                        window.TalkTimeAuth?.logout();
+
+                    // Update hero CTA button to go to dashboard
+                    if (heroCTABtn) {
+                        heroCTABtn.href = '/volunteer/dashboard/students.html';
+                        heroCTABtn.innerHTML = `<i class="fas fa-tachometer-alt mr-3"></i><span>Go to Dashboard</span>`;
+                        console.log('Home page: CTA button updated to dashboard');
                     } else {
-                        console.log('Network or temporary error, keeping user logged in');
-                        // Use cached user data from localStorage as fallback
-                        const cachedUser = window.TalkTimeAuth?.getUser();
-                        if (cachedUser) {
-                            console.log('Using cached user data:', cachedUser);
-                            
-                            // Update authentication state
-                            updateAuthenticatedUI(cachedUser);
-                            
-                            // Load notification count
-                            loadNotificationCount();
-                            
-                            // Initialize real-time notifications
-                            initializeRealtimeNotifications();
-                            
-                            // Update avatar using cached data
-                            const profileImage = document.getElementById('nav-profile-image');
-                            const letterAvatar = document.getElementById('volunteer-initial');
-                            
-                            if (cachedUser.profile_image || cachedUser.profileImage) {
-                                if (profileImage) {
-                                    profileImage.src = `/api/v1/volunteer/profile/image/${cachedUser.profile_image || cachedUser.profileImage}`;
-                                    profileImage.classList.remove('hidden');
-                                }
-                                if (letterAvatar) {
-                                    letterAvatar.classList.add('hidden');
-                                }
-                            } else {
-                                if (profileImage) {
-                                    profileImage.classList.add('hidden');
-                                }
-                                if (letterAvatar) {
-                                    const userName = cachedUser.username || cachedUser.full_name || cachedUser.name || 'V';
-                                    const avatarLetter = userName.charAt(0).toUpperCase();
-                                    letterAvatar.textContent = avatarLetter;
-                                    letterAvatar.style.backgroundColor = '#8B5CF6'; // Purple background
-                                    letterAvatar.classList.remove('hidden');
-                                    console.log('Cached avatar letter set to:', avatarLetter, 'from userName:', userName, 'cachedUser:', cachedUser);
-                                }
+                        console.warn('Home page: hero-cta-btn not found');
+                    }
+
+                    // Add welcome message under hero title (only if userData available)
+                    if (userData) {
+                        const titleElement = document.querySelector('h1');
+                        if (titleElement && !document.querySelector('.welcome-back-message')) {
+                            let displayName = userData.username || userData.full_name || userData.fullName || userData.name || 'Volunteer';
+
+                            // Use first name only
+                            if (!userData.username && displayName.includes(' ')) {
+                                displayName = displayName.split(' ')[0];
+                            } else if (displayName.includes('@')) {
+                                displayName = displayName.split('@')[0];
                             }
-                            
-                            setupProfileDropdown();
-                            return; // Exit early to prevent showing logged-out UI
+
+                            const welcomeText = document.createElement('p');
+                            welcomeText.className = 'mt-4 text-lg md:text-xl text-white/90 font-medium welcome-back-message';
+                            welcomeText.textContent = `Welcome back, ${displayName}!`;
+                            titleElement.parentNode.insertBefore(welcomeText, titleElement.nextSibling);
                         }
                     }
                 }
-            }
-            
-            // User is not authenticated - show login elements and hide profile elements
-            if (loginCta) loginCta.classList.remove('hidden');
-            if (dashboardCta) dashboardCta.classList.add('hidden');
-            if (navAuthButtons) navAuthButtons.classList.remove('hidden');
-            if (navProfileSection) navProfileSection.classList.add('hidden');
-            if (mobileAuthButtons) mobileAuthButtons.classList.remove('hidden');
-            if (mobileProfileSection) mobileProfileSection.classList.add('hidden');
-            
-            // Reset "Get Started" button to login for unauthenticated users
-            if (getStartedBtn) {
-                getStartedBtn.href = '/volunteer/login';
-                getStartedBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Get Started Today`;
+            });
+
+            // If user is not authenticated, set up the home page mobile menu and scroll handler
+            if (!result.authenticated) {
+                console.log('Home page: User not authenticated, showing minimal navigation');
+
+                // Mobile menu toggle for unauthenticated home page
+                if (homeMobileMenuToggle && homeMobileMenu) {
+                    homeMobileMenuToggle.addEventListener('click', () => {
+                        homeMobileMenu.classList.toggle('hidden');
+                    });
+                }
+
+                // Scroll handler for transparent -> glass nav effect
+                const handleScroll = () => {
+                    if (window.scrollY > 50) {
+                        homeUnauthNav.classList.add('scrolled');
+                    } else {
+                        homeUnauthNav.classList.remove('scrolled');
+                    }
+                };
+
+                // Run once on load and add scroll listener
+                handleScroll();
+                window.addEventListener('scroll', handleScroll, { passive: true });
             }
         });
-        
-        // Profile dropdown functionality
-        function setupProfileDropdown() {
-            const profileBtn = document.getElementById('profile-btn');
-            const profileDropdown = document.getElementById('profile-dropdown');
-            
-            console.log('Setting up profile dropdown...', { profileBtn: !!profileBtn, profileDropdown: !!profileDropdown });
-            
-            if (profileBtn && profileDropdown) {
-                // Clear any existing handlers
-                const newBtn = profileBtn.cloneNode(true);
-                profileBtn.parentNode.replaceChild(newBtn, profileBtn);
-                
-                // Add fresh click event listener
-                newBtn.addEventListener('click', function(e) {
-                    console.log('Profile button clicked - homepage');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const dropdown = document.getElementById('profile-dropdown');
-                    const isHidden = dropdown.classList.contains('hidden');
-                    console.log('Dropdown is currently hidden:', isHidden);
-                    
-                    if (isHidden) {
-                        // Show dropdown
-                        dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
-                        console.log('Showing dropdown - homepage');
-                    } else {
-                        // Hide dropdown
-                        dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2', 'scale-95');
-                        console.log('Hiding dropdown - homepage');
-                    }
-                });
-                
-                // Close dropdown when clicking outside (only add if not already added)
-                if (!document.dropdownClickListenerAdded) {
-                    document.addEventListener('click', function(e) {
-                        if (!profileDropdown.classList.contains('hidden') && 
-                            !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
-                            console.log('Clicking outside, closing dropdown');
-                            profileDropdown.classList.add('hidden');
-                            profileDropdown.classList.add('opacity-0');
-                            profileDropdown.classList.add('-translate-y-2');
-                            profileDropdown.classList.add('scale-95');
-                            profileDropdown.classList.remove('opacity-100');
-                            profileDropdown.classList.remove('translate-y-0');
-                            profileDropdown.classList.remove('scale-100');
-                        }
-                    });
-                    document.dropdownClickListenerAdded = true;
-                }
-                
-                // Prevent dropdown from closing when clicking inside it
-                profileDropdown.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-                
-                console.log('✅ Profile dropdown setup complete');
-            } else {
-                console.log('❌ Profile button or dropdown not found');
-            }
-            
-            // Logout functionality - desktop dropdown
-            const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Clear JWT tokens
-                    window.TalkTimeAuth?.logout();
-                    
-                    // Redirect to home page (which will show login/signup options)
-                    window.location.href = '/volunteer/';
-                });
-            }
-            
-            // Logout functionality - mobile menu
-            const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-            if (mobileLogoutBtn) {
-                mobileLogoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Clear JWT tokens
-                    window.TalkTimeAuth?.logout();
-                    
-                    // Redirect to home page (which will show login/signup options)
-                    window.location.href = '/volunteer/';
-                });
-            }
-        }
-        
-        // Load notification count and update badge
-        async function loadNotificationCount() {
-            try {
-                if (!window.TalkTimeAuth || !await window.TalkTimeAuth.verifyToken()) {
-                    return;
-                }
+    </script>
 
-                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/unread-count');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    updateNotificationBadge(data.unread_count);
-                }
-            } catch (error) {
-                console.error('Error loading notification count:', error);
-            }
-        }
-
-        // Initialize real-time notifications for authenticated users
-        async function initializeRealtimeNotifications() {
-            try {
-                if (!window.TalkTimeAuth || !await window.TalkTimeAuth.verifyToken()) {
-                    return;
-                }
-
-                await window.realtimeNotifications.initialize();
-                
-                // Set up real-time notification handlers
-                window.realtimeNotifications.on('newNotification', (data) => {
-                    loadNotificationCount();
-                });
-                
-                window.realtimeNotifications.on('notificationRead', (data) => {
-                    loadNotificationCount();
-                });
-                
-                window.realtimeNotifications.on('allNotificationsRead', (data) => {
-                    loadNotificationCount();
-                });
-                
-            } catch (error) {
-                console.error('Error initializing real-time notifications:', error);
-            }
-        }
-
-        function updateNotificationBadge(count) {
-            const badge = document.getElementById('notification-badge');
-            if (badge) {
-                if (count > 0) {
-                    badge.textContent = count > 99 ? '99+' : count.toString();
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
+    <!-- Handle cached images that skip onload -->
+    <script>
+        document.querySelectorAll('.lazy-image').forEach(img => {
+            if (img.complete && img.naturalHeight !== 0) {
+                img.classList.add('loaded');
+                if (img.parentElement.classList.contains('lazy-image-wrapper')) {
+                    img.parentElement.classList.add('loaded');
                 }
             }
-        }
-
-        // Mobile menu toggle
-        const menuToggle = document.getElementById('mobile-menu-toggle');
-        const mobileMenu = document.getElementById('mobile-menu');
-      
-        if (menuToggle && mobileMenu) {
-            menuToggle.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-            });
-        }
+        });
     </script>
 </body>
 </html>
