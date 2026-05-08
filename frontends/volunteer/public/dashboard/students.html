@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>TalkTime - Student Profiles | Volunteer Dashboard</title>
+    <title>TalkTime - My Students | Volunteer Dashboard</title>
     <!-- Early auth redirect - prevents FOUC on protected pages -->
     <script>
         if (!localStorage.getItem('volunteer_talktime_access_token')) {
@@ -16,7 +16,7 @@
     <!-- Brand Theme System -->
     <link rel="stylesheet" href="/shared/css/brand-theme.css">
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
-    <meta name="description" content="Browse Maasai student profiles, learn their stories, and schedule English language practice sessions as a TalkTime volunteer.">
+    <meta name="description" content="View your assigned Maasai students and upcoming meetings. Schedule new sessions with auto-assigned students.">
     <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/dashboard/students">
     <meta name="robots" content="index, follow">
 
@@ -39,6 +39,7 @@
     <script defer src="/volunteer/components/approval-status.js"></script>
     <script defer src="/shared/js/jwt-auth-utils.js"></script>
     <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/shared/js/notification-permission-modal.js"></script>
     <script defer src="/shared/js/notification-enforcer.js"></script>
     <script defer src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
 
@@ -228,39 +229,27 @@
             border-color: #22c55e !important;
         }
         
-        /* Newsletter Widget Protection - Preserve Original Styling */
-        #newsletter-widget,
-        #newsletter-minimized,
-        #newsletter-expanded,
-        .newsletter-widget,
-        .newsletter-minimized,
-        .newsletter-expanded {
-            /* Reset any conflicts and preserve original newsletter styling */
-            background: revert !important;
-            color: revert !important;
-            border: revert !important;
-            box-shadow: revert !important;
-            animation: revert !important;
+        /* Floating widget stack — prevents overlap between newsletter + upcoming FAB */
+        #floating-widgets-stack {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.75rem;
+            pointer-events: none;
         }
-        
-        /* Ensure newsletter minimized button keeps its gradient and styling */
-        #newsletter-minimized .pulse-zoom {
-            background: var(--brand-gradient-primary) !important;
-            color: white !important;
-            border-radius: 9999px !important;
-            padding: 1rem !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            transform: translateZ(0) !important;
+        #floating-widgets-stack > * {
+            position: relative !important;
+            bottom: auto !important;
+            right: auto !important;
+            left: auto !important;
+            top: auto !important;
+            pointer-events: auto;
         }
-        
-        #newsletter-minimized .pulse-zoom:hover {
-            background: linear-gradient(to right, #2563eb, #4338ca) !important;
-            color: white !important;
-            transform: scale(1.05) translateZ(0) !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
-        }
-        
+
         /* Newsletter expanded popup styling */
         #newsletter-expanded .glass-card {
             background: rgba(255, 255, 255, 0.95) !important;
@@ -273,14 +262,14 @@
             max-width: 24rem !important;
         }
         
-        /* Preserve newsletter button gradients */
+        /* Newsletter submit button — flat brand color, no gradient */
         #newsletter-submit {
-            background: linear-gradient(to right, #f97316, #ea580c) !important;
+            background: #D10100 !important;
             color: white !important;
         }
-        
+
         #newsletter-submit:hover {
-            background: linear-gradient(to right, #ea580c, #dc2626) !important;
+            background: #7d0000 !important;
             color: white !important;
         }
         
@@ -794,43 +783,7 @@
 
     <main class="content-area">
         
-        <!-- Notification Permission Warning Banner -->
-        <div id="notification-permission-warning" class="notification-warning-banner" style="display: none;">
-            <div class="warning-content">
-                <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0">
-                        <div class="notification-icon">
-                            <i class="fas fa-bell text-white text-2xl"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-white font-bold text-lg mb-2">
-                            🚨 Enable Browser Notifications for TalkTime
-                        </h3>
-                        <p class="text-white/90 text-sm mb-4 leading-relaxed">
-                            Stay connected with your students! Enable browser notifications to receive:
-                            <br>• Meeting reminders (1 hour, 30 minutes, and 5 minutes before)
-                            <br>• Instant call notifications from students
-                            <br>• Important meeting updates and reschedule alerts
-                        </p>
-                        <div class="flex flex-wrap gap-3">
-                            <button onclick="requestNotificationPermission()" class="enable-btn">
-                                <i class="fas fa-bell mr-2"></i>Enable Notifications
-                            </button>
-                            <button onclick="hideNotificationWarning()" class="dismiss-btn">
-                                <i class="fas fa-times mr-2"></i>Dismiss
-                            </button>
-                            <button onclick="showNotificationInfo()" class="info-btn">
-                                <i class="fas fa-info-circle mr-2"></i>Why This Matters
-                            </button>
-                        </div>
-                    </div>
-                    <button onclick="hideNotificationWarning()" class="close-btn">
-                        <i class="fas fa-times text-white text-xl hover:text-red-200 transition-colors"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Notification permission is handled by the shared NotificationPermissionModal via notification-enforcer.js -->
 
         <!-- Dashboard Page -->
         <div id="page-dashboard" class="page w-full">
@@ -844,7 +797,7 @@
                         <span class="text-base md:text-lg font-semibold text-gray-800">Scheduling Tips</span>
                     </div>
                     <div id="rotating-tip" class="text-gray-600 text-xs md:text-sm leading-tight pl-9 md:pl-10 -mt-0.5">
-                        Click on any student card to view their profile and schedule a meeting
+                        Schedule a meeting and a student will be automatically assigned to you
                     </div>
 
                     <!-- Dual Timezone Display -->
@@ -906,39 +859,23 @@
             <div class="max-w-6xl mx-auto">
                 <!-- Sticky tabs are rendered in #page-nav-sticky -->
                 <div id="dashboard-students" class="tab-pane">
-                    <!-- Date Selection Section removed per request -->
-                    
-                    <!-- Students Grid -->
-                    <div class="space-y-8">
-                        <!-- Available Students Section -->
-                        <section class="mb-8 md:mb-12">
-                            <div class="flex items-center justify-between gap-3 sm:gap-4 mb-4 md:mb-6">
-                                <h2 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold section-heading whitespace-nowrap flex-shrink-0">Available Students</h2>
-                                <div class="flex items-center gap-2 sm:gap-3 flex-shrink min-w-0">
-                                    <!-- Native Date Filter - Click anywhere to open picker -->
-                                    <input
-                                        id="sticky-student-date"
-                                        type="date"
-                                        onclick="this.showPicker()"
-                                        class="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary cursor-pointer date-input-no-select"
-                                    />
-                                </div>
-                            </div>
-                            <div id="student-list-available" class="student-list mt-3 sm:mt-4 w-full">
-                                <!-- Cards injected by JS -->
-                            </div>
-                        </section>
-
-                        <!-- Unavailable/Scheduled Students Section -->
-                        <section class="mb-8 md:mb-12">
-                            <div class="flex items-center justify-between mb-4 md:mb-6">
-                                <h2 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800">Scheduled / Unavailable</h2>
-                            </div>
-                            <div id="student-list-unavailable" class="student-list mt-2 w-full">
-                                <!-- Cards injected by JS -->
-                            </div>
-                        </section>
-                    </div>
+                    <!-- My Students Section -->
+                    <section class="mb-8 md:mb-12">
+                        <div class="flex items-center justify-between gap-3 sm:gap-4 mb-4 md:mb-6">
+                            <h2 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold section-heading whitespace-nowrap flex-shrink-0">My Students</h2>
+                        </div>
+                        <div id="student-list-available" class="student-list mt-3 sm:mt-4 w-full">
+                            <!-- Cards injected by JS -->
+                        </div>
+                        <!-- Schedule New Meeting CTA — hidden by default, shown only when students exist -->
+                        <div id="schedule-new-cta" class="mt-6 text-center hidden">
+                            <a href="/volunteer/dashboard/schedule.html" class="inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:shadow-lg text-sm" style="background: var(--brand-primary);">
+                                <i class="fas fa-calendar-plus"></i>
+                                Schedule New Meeting
+                            </a>
+                            <p class="text-xs text-gray-400 mt-2">A student will be assigned to you automatically</p>
+                        </div>
+                    </section>
                 </div>
 
             </div>
@@ -1099,12 +1036,10 @@
         // --- DOM Elements ---
         const pageDashboard = document.getElementById('page-dashboard');
         const availableStudentsContainer = document.getElementById('student-list-available');
-        const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
         const notificationEl = document.getElementById('notification');
 
         // --- Global Variables ---
         let students = [];
-        let selectedStudent = null;
 
         // --- Notification Functions ---
         
@@ -1119,63 +1054,36 @@
                 console.log(`✅ Notifications enabled - allowing ${actionName}`);
                 return true;
             } else {
-                console.log(`🚫 Notifications not enabled - blocking ${actionName}`);
-                // Force show the notification banner if it's hidden
-                const warningBanner = document.getElementById('notification-permission-warning');
-                if (warningBanner) {
-                    warningBanner.style.display = 'block';
-                }
+                console.log(`[TalkTime] Notifications not enabled - blocking ${actionName}`);
                 return false;
             }
         }
 
-        // Show message that notifications are required for critical actions
+        // Show notification permission modal when critical actions require notifications
         function showNotificationRequiredMessage() {
+            // Remove any leftover toast
             const existingMessage = document.getElementById('notification-required-message');
-            if (existingMessage) {
-                existingMessage.remove();
+            if (existingMessage) existingMessage.remove();
+
+            // Trigger the browser-specific notification permission modal
+            if (typeof NotificationPermissionModal !== 'undefined') {
+                const modal = new NotificationPermissionModal({
+                    title: 'Enable Notifications to Continue',
+                    message: 'Notifications must be enabled to schedule meetings and access critical features.',
+                    mandatory: false,
+                    allowButtonText: 'Enable Notifications Now',
+                    onAllow: function(permission) {
+                        hideNotificationWarning();
+                        setupNotificationEventListeners();
+                    },
+                    onDeny: function() {
+                        // User dismissed — they can try again on next critical action
+                    }
+                });
+                modal.show();
             }
-
-            const message = document.createElement('div');
-            message.id = 'notification-required-message';
-            message.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-error text-white px-6 py-3 rounded-lg shadow-lg z-50';
-            message.innerHTML = '⚠️ Notifications must be enabled for scheduling and critical actions';
-            document.body.appendChild(message);
-
-            setTimeout(() => {
-                if (message && message.parentNode) {
-                    message.remove();
-                }
-            }, 4000);
         }
         let bookedSlots = {};
-
-        // --- Native Date Filter Initialization ---
-        const stickyDateEl = document.getElementById('sticky-student-date');
-
-        // Calculate date range (today to 3 months ahead)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const maxDate = new Date(today);
-        maxDate.setMonth(today.getMonth() + 3);
-
-        // Format as YYYY-MM-DD for native date input
-        const formatISO = (date) => date.toISOString().split('T')[0];
-
-        if (stickyDateEl) {
-            // Set min/max constraints and default to today
-            stickyDateEl.min = formatISO(today);
-            stickyDateEl.max = formatISO(maxDate);
-            stickyDateEl.value = formatISO(today);
-
-            // Handle date change - load data when user selects a date
-            stickyDateEl.addEventListener('change', function() {
-                const selectedDate = this.value;
-                if (selectedDate) {
-                    loadDashboardData(selectedDate);
-                }
-            });
-        }
 
         // --- Event Listeners ---
         document.addEventListener('click', e => {
@@ -1183,81 +1091,22 @@
             if (e.target.closest('.student-card')) {
                 const studentCard = e.target.closest('.student-card');
 
-                // CRITICAL: Block clicks on unavailable/scheduled students
-                if (studentCard.classList.contains('student-unavailable')) {
-                    console.log('[TalkTime] Student is unavailable - already scheduled for today');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return; // Do nothing - student is not available
-                }
-
                 const studentId = studentCard.dataset.studentId;
                 const studentAdmission = studentCard.dataset.studentAdmission;
                 const studentName = studentCard.dataset.studentName || 'Student';
 
-                // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
+                // CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
                 if (!checkNotificationPermissionForCriticalAction('scheduling a meeting')) {
-                    console.log('🚫 Blocking student detail navigation - notifications not enabled');
                     showNotificationRequiredMessage();
-                    return; // Prevent navigation
+                    return;
                 }
 
                 // Navigate to student detail page with parameters
                 window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
             }
-            
-            // Date filter button click
-            if (e.target.closest('#apply-date-filter')) {
-                const dateSelector = document.getElementById('student-date-selector');
-                const selectedDate = dateSelector ? dateSelector.value : '';
-                if (selectedDate) {
-                    loadDashboardData(selectedDate);
-                    showNotification(`Showing students for ${new Date(selectedDate).toLocaleDateString()}`, 'success');
-                } else {
-                    // Fallback to sticky date if present
-                    const stickyEl = document.getElementById('sticky-student-date');
-                    const fallbackDate = stickyEl ? stickyEl.value : '';
-                    if (fallbackDate) {
-                        loadDashboardData(fallbackDate);
-                        showNotification(`Showing students for ${new Date(fallbackDate).toLocaleDateString()}`, 'success');
-                    } else {
-                        showNotification('Please select a date first', 'error');
-                    }
-                }
-            }
         });
-        
-        // Date selector enter key press
-        (function(){
-            const mainDateInput = document.getElementById('student-date-selector');
-            if (!mainDateInput) return;
-            mainDateInput.addEventListener('keyup', function(event) {
-                if (event.key === 'Enter') {
-                    const selectedDate = this.value;
-                    if (selectedDate) {
-                        loadDashboardData(selectedDate);
-                        showNotification(`Showing students for ${new Date(selectedDate).toLocaleDateString()}`, 'success');
-                    } else {
-                        showNotification('Please select a date first', 'error');
-                    }
-                }
-            });
-        })();
 
         // --- Utility Functions ---
-        
-        // Helper function to convert MM/DD/YYYY to YYYY-MM-DD
-        function convertToISODate(dateStr) {
-            if (!dateStr) return '';
-            try {
-                const dateObj = new Date(dateStr);
-                return dateObj.toISOString().split('T')[0];
-            } catch (e) {
-                console.error('Error converting date:', e);
-                return '';
-            }
-        }
-        
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
             notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-success text-white' : 'bg-error text-white'}`;
@@ -1268,94 +1117,45 @@
             }, 5000);
         }
 
-        // Convert date from MM/DD/YYYY or MM-DD-YYYY format to YYYY-MM-DD (ISO format)
-        function convertToISODate(dateStr) {
-            if (!dateStr) return null;
-            
-            // If already in YYYY-MM-DD format, return as-is
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                return dateStr;
-            }
-            
-            // Handle MM/DD/YYYY or MM-DD-YYYY format
-            let parts = dateStr.split(/[\/\-]/);
-            if (parts.length === 3) {
-                const [month, day, year] = parts;
-                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            
-            // Fallback: try to parse as Date and format
-            try {
-                const date = new Date(dateStr);
-                return date.toISOString().split('T')[0];
-            } catch (e) {
-                console.error('Failed to convert date:', dateStr, e);
-                return null;
-            }
-        }
-
         // --- Data Loading ---
         // Add recursion prevention with timeout fallback
         let isLoadingDashboard = false;
         let loadingTimeout = null;
-        
-        function loadDashboardData(selectedDate = null) {
+
+        function loadDashboardData() {
             // Prevent recursive calls
             if (isLoadingDashboard) {
                 console.warn('loadDashboardData already in progress, skipping duplicate call');
                 return Promise.resolve();
             }
-            
+
             isLoadingDashboard = true;
-            
+
             // Safety timeout in case the finally block doesn't execute
             if (loadingTimeout) clearTimeout(loadingTimeout);
             loadingTimeout = setTimeout(() => {
-                console.warn('Loading timeout exceeded, resetting flag');
                 isLoadingDashboard = false;
             }, 10000);
-            
-            // Set date selector to today if not already set
-            if (!selectedDate) {
-                const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-                const mainDate = document.getElementById('student-date-selector');
-                if (mainDate) mainDate.value = today;
-                selectedDate = today;
-            } else {
-                // Convert date from MM/DD/YYYY (datepicker format) to YYYY-MM-DD (API format)
-                selectedDate = convertToISODate(selectedDate);
-            }
-            
-            console.log('=== DATE FILTER DEBUG ===');
-            console.log('Selected date for API:', selectedDate);
-            
-            // Debug JWT token details
+
             const token = window.TalkTimeAuth.getAccessToken();
             const user = window.TalkTimeAuth.getUser();
-            console.log('=== JWT DEBUG INFO ===');
-            console.log('Token available:', !!token);
-            console.log('Token length:', token ? token.length : 0);
-            console.log('Token preview:', token ? token.substring(0, 50) + '...' : 'No token');
-            console.log('User info:', user);
-            console.log('Is authenticated:', window.TalkTimeAuth.isAuthenticated());
             // Update dashboard header to "Welcome, [Volunteer Name]" using available auth data
             try {
                 const headerEl = document.querySelector('#page-dashboard h1');
 
                 // Meeting scheduling tips rotation state
                 const schedulingTips = [
-                    'Click on any student card to view their profile and schedule a meeting',
+                    'Schedule a meeting and a student will be automatically assigned to you',
                     'Each student can only have one meeting per day to ensure quality time',
                     'Meetings are automatically set to 40 minutes for optimal learning',
                     'All times sync to Kenya timezone to match students\' local schedule',
-                    'Choose a time that works for both you and the student\'s timezone',
                     'You\'ll receive email and SMS reminders before your scheduled meetings',
                     'Students get notified immediately when you schedule a meeting with them',
                     'You can reschedule or cancel meetings up to 1 hour before start time',
                     'All meetings include a secure video room that\'s ready when you are',
                     'Consider the student\'s school hours when picking meeting times',
                     'Your impact grows with each conversation - every meeting matters!',
-                    'Browse student profiles to find those who match your interests',
+                    'Tap a student to view their profile and meeting history',
                     'Instant calls are available when students are online and ready'
                 ];
                 let tipIndex = 0;
@@ -1403,68 +1203,6 @@
                         if (tipInterval) clearInterval(tipInterval);
                     });
                 }
-
-                // Ensure date picker defaults to current date in EAT (Africa/Nairobi)
-                function getTodayInEATISODate() {
-                    // Returns YYYY-MM-DD for Africa/Nairobi
-                    const now = new Date();
-                    const parts = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: 'Africa/Nairobi',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    }).formatToParts(now);
-                    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-                    return `${map.year}-${map.month}-${map.day}`;
-                }
-
-                function syncDateInputToEATToday() {
-                    const dateEl = document.getElementById('sticky-student-date');
-                    if (!dateEl) return;
-                    const eatToday = getTodayInEATISODate();
-                    // If empty or behind EAT day rollover, set to EAT today
-                    if (!dateEl.value || dateEl.value !== eatToday) {
-                        dateEl.value = eatToday;
-                        if (typeof selectedDate !== 'undefined') {
-                            selectedDate = eatToday;
-                        }
-                    }
-                }
-
-                // Compute ms until next midnight in EAT (UTC+3, no DST)
-                function msUntilNextEATMidnight() {
-                    const now = new Date();
-                    const parts = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: 'Africa/Nairobi',
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-                    }).formatToParts(now);
-                    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-                    const y = Number(map.year);
-                    const m = Number(map.month);
-                    const d = Number(map.day);
-                    // EAT midnight next day => UTC time is previous day 21:00 (UTC) or Date.UTC with hour -3
-                    const nextEatMidnightUTC = Date.UTC(y, m - 1, d + 1, -3, 0, 0);
-                    const diff = nextEatMidnightUTC - now.getTime();
-                    return diff > 0 ? diff : 0;
-                }
-
-                function scheduleEATMidnightRollover() {
-                    try { if (window.__eatMidnightTimer) clearTimeout(window.__eatMidnightTimer); } catch (_) {}
-                    const delay = msUntilNextEATMidnight();
-                    window.__eatMidnightTimer = setTimeout(() => {
-                        // Update the date input to EAT today and reload data
-                        try { syncDateInputToEATToday(); } catch (_) {}
-                        try { if (typeof loadDashboardData === 'function') loadDashboardData(); } catch (_) {}
-                        // Reschedule for the following midnight
-                        scheduleEATMidnightRollover();
-                    }, delay);
-                }
-
-                // Ensure we apply EAT date at load (DISABLED TO PREVENT RECURSION)
-                // document.addEventListener('DOMContentLoaded', () => {
-                //     // This was causing recursion issues - removed
-                // });
 
                 function setWelcomeHeader(fromUser) {
                     // Since we removed the welcome header, just start the tips rotation
@@ -1646,233 +1384,99 @@
                     }
                 }
 
-                console.log('=== MAKING STUDENT CARDS API CALL ===');
-                console.log('API URL:', `/api/v1/volunteers/students/cards?date=${selectedDate}`);
-                return window.TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/cards?date=${selectedDate}`, {
+                // Now load My Students data
+                return window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/my-students', {
                     method: 'GET'
                 });
             })
             .then(response => {
-                console.log('Student cards API response status:', response.status);
                 if (!response.ok) {
-                    throw new Error(`Failed to load students: ${response.status}`);
+                    throw new Error('Failed to load students: ' + response.status);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('=== STUDENT CARDS DATA RECEIVED ===');
-                console.log('Full API response:', data);
-                console.log('Available students count:', data.data?.available?.length || 0);
-                console.log('Unavailable students count:', data.data?.unavailable?.length || 0);
-                console.log('Available students:', data.data?.available?.map(s => s.full_name) || []);
-                console.log('Unavailable students with meetings:', data.data?.unavailable?.map(s => ({
-                    name: s.full_name,
-                    isOwner: s.meeting?.isOwner,
-                    meetingTime: s.meeting?.time
-                })) || []);
-                
-                // Update the available students section
+                const myStudents = data.data || [];
+                students = myStudents;
+
                 if (availableStudentsContainer) {
-                    // Backend returns data in data.available format
-                    const availableStudents = data.data?.available || [];
-                    if (!availableStudents || availableStudents.length === 0) {
-                        // Check if this is an empty database vs no students for this date
-                        const emptyMessage = data.isEmpty ? 
-                            '<div class="text-center py-8"><div class="bg-brand-primary border border-brand rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-brand-light rounded-full"><svg class="w-8 h-8 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><h3 class="text-lg font-semibold text-brand-primary mb-2">No Students Found</h3><p class="text-brand-primary-dark mb-4">The database appears to be empty. Please contact an administrator to add student profiles.</p><p class="text-sm text-brand-primary">Once students are added, they will appear here for scheduling.</p></div></div>' :
-                            '<div class="text-center py-8"><p class="text-gray-500">No students available for this date.</p></div>';
-                        availableStudentsContainer.innerHTML = emptyMessage;
+                    if (myStudents.length === 0) {
+                        // Empty state
+                        availableStudentsContainer.innerHTML = `
+                            <div class="text-center py-10">
+                                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: linear-gradient(135deg, rgba(209,1,0,0.1), rgba(56,103,255,0.1));">
+                                    <i class="fas fa-calendar-plus text-2xl" style="color: var(--brand-primary);"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">No Students Yet</h3>
+                                <p class="text-sm text-gray-500 mb-4 max-w-sm mx-auto">Schedule your first meeting and a student will be automatically assigned to you.</p>
+                                <a href="/volunteer/dashboard/schedule.html" class="inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:shadow-lg text-sm" style="background: var(--brand-primary);">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Schedule a Meeting
+                                </a>
+                            </div>`;
+                        const scheduleCta = document.getElementById('schedule-new-cta');
+                        if (scheduleCta) scheduleCta.classList.add('hidden');
                     } else {
-                        // Generate HTML for student cards from JSON data
-                        const studentCardsHtml = availableStudents.map((student, index) => {
-                            // Capitalize each word in the name
-                            const rawName = student.full_name || 'Student';
+                        const cardsHtml = myStudents.map((student, index) => {
+                            const rawName = student.fullName || 'Student';
                             const studentName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-                            // Generate initials from full name (first letter of first and last name)
                             const nameParts = studentName.trim().split(' ').filter(p => p);
                             const initials = nameParts.length >= 2
                                 ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
                                 : studentName.charAt(0).toUpperCase();
 
-                            // Check if photo exists and is valid
-                            const hasValidPhoto = student.photo_url &&
-                                student.photo_url !== '/images/default-profile.svg' &&
-                                student.photo_url.trim() !== '';
+                            const hasValidPhoto = student.photoUrl &&
+                                student.photoUrl !== '/images/default-profile.svg' &&
+                                student.photoUrl.trim() !== '';
 
-                            // Build age and gender line (Boy/Girl)
-                            const agePart = student.age ? `${student.age} years` : '';
+                            const agePart = student.age ? student.age + ' years' : '';
                             const genderRaw = student.gender ? student.gender.toLowerCase() : '';
                             const genderPart = genderRaw === 'm' || genderRaw === 'male' ? 'Boy' : genderRaw === 'f' || genderRaw === 'female' ? 'Girl' : student.gender || '';
-                            const ageGenderLine = [agePart, genderPart].filter(Boolean).join(' · ');
+                            const ageGenderLine = [agePart, genderPart].filter(Boolean).join(' \u00B7 ');
 
-                            // Availability status
-                            const availabilityText = student.is_available !== false ? 'Available' : 'Unavailable';
-
-                            // Show divider except for last item
-                            const isLast = index === availableStudents.length - 1;
-
-                            return `
-                            <div class="student-card cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(0,0,0,0.06);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor='rgba(0,0,0,0.15)'" onmouseleave="this.style.borderColor='rgba(0,0,0,0.06)'">
-                                <div style="display:flex;align-items:center;gap:16px">
-                                    <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.1);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-                                        ${hasValidPhoto
-                                            ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><span style="display:none;font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`
-                                            : `<span style="font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`}
-                                    </div>
-                                    <div style="flex:1;min-width:0">
-                                        <div style="font-weight:600;font-size:22px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
-                                        <div style="font-size:18px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
-                                    </div>
-                                    <div style="flex-shrink:0;text-align:right;">
-                                        <div style="font-size:18px;color:#9ca3af">${availabilityText}</div>
-                                        <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
-                                    </div>
-                                    <svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                </div>
-                            </div>
-                            ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
-                            `;
-                        }).join('');
-                        availableStudentsContainer.innerHTML = studentCardsHtml;
-                    }
-                }
-
-                // Toggle visibility of the 'Scheduled / Unavailable' section based on real data
-                const unavailableContainer = document.getElementById('student-list-unavailable');
-                const unavailableSection = unavailableContainer ? unavailableContainer.closest('section') : null;
-                const unavailableStudents = (data.data && Array.isArray(data.data.unavailable)) ? data.data.unavailable : [];
-                
-                console.log('=== UNAVAILABLE SECTION DEBUG ===');
-                console.log('Unavailable students data:', unavailableStudents);
-                console.log('Unavailable students count:', unavailableStudents.length);
-                console.log('Unavailable container exists:', !!unavailableContainer);
-                console.log('Unavailable section exists:', !!unavailableSection);
-                
-                if (unavailableSection) {
-                    if (!unavailableStudents || unavailableStudents.length === 0) {
-                        // Hide section entirely if truly empty
-                        console.log('Hiding unavailable section - no students');
-                        unavailableSection.classList.add('hidden');
-                        unavailableSection.setAttribute('aria-hidden', 'true');
-                    } else {
-                        // Ensure visible when data exists
-                        console.log('Showing unavailable section - has students:', unavailableStudents.length);
-                        unavailableSection.classList.remove('hidden');
-                        unavailableSection.removeAttribute('aria-hidden');
-                    }
-                }
-                
-                // Update the unavailable students section
-                const unavailableStudentsContainer = document.getElementById('student-list-unavailable');
-                if (unavailableStudentsContainer) {
-                    // Backend returns data in data.unavailable format
-                    const unavailableStudents = data.data?.unavailable || [];
-                    if (!unavailableStudents || unavailableStudents.length === 0) {
-                        unavailableStudentsContainer.innerHTML = '<div class="text-center py-4"><p class="text-xs text-gray-500">No unavailable students for this date.</p></div>';
-                    } else {
-                        // Generate HTML for unavailable student cards with owner-specific UI
-                        const unavailableCardsHtml = unavailableStudents.map((student, index) => {
-                            // Capitalize each word in the name
-                            const rawName = student.full_name || 'Student';
-                            const studentName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-                            // Generate initials from full name
-                            const nameParts = studentName.trim().split(' ').filter(p => p);
-                            const initials = nameParts.length >= 2
-                                ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
-                                : studentName.charAt(0).toUpperCase();
-
-                            const hasValidPhoto = student.photo_url &&
-                                student.photo_url !== '/images/default-profile.svg' &&
-                                student.photo_url.trim() !== '';
-
-                            const isOwner = student.meeting && student.meeting.isOwner;
-                            const meetingTime = student.meeting ? new Date(student.meeting.time) : null;
-
-                            // Build age and gender line (Boy/Girl)
-                            const agePart = student.age ? `${student.age} years` : '';
-                            const genderRaw = student.gender ? student.gender.toLowerCase() : '';
-                            const genderPart = genderRaw === 'm' || genderRaw === 'male' ? 'Boy' : genderRaw === 'f' || genderRaw === 'female' ? 'Girl' : student.gender || '';
-                            const ageGenderLine = [agePart, genderPart].filter(Boolean).join(' · ');
-
-                            // Show divider except for last item
-                            const isLast = index === unavailableStudents.length - 1;
-
-                            if (isOwner) {
-                                // Owner UI: Show "Your Meeting" status
-                                const timeUntilMeeting = meetingTime ? Math.max(0, meetingTime.getTime() - Date.now()) : 0;
-                                const hoursUntil = Math.floor(timeUntilMeeting / (1000 * 60 * 60));
-                                const minutesUntil = Math.floor((timeUntilMeeting % (1000 * 60 * 60)) / (1000 * 60));
-                                const timeDisplay = hoursUntil > 0 ? `${hoursUntil}h ${minutesUntil}m` : `${minutesUntil}m`;
-
-                                return `
-                                <div class="student-card cursor-pointer" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(22,163,74,0.15);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor='rgba(22,163,74,0.4)'" onmouseleave="this.style.borderColor='rgba(22,163,74,0.15)'">
-                                    <div style="display:flex;align-items:center;gap:16px">
-                                        <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-                                            ${hasValidPhoto
-                                                ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><span style="display:none;font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`
-                                                : `<span style="font-size:26px;font-weight:700;color:#16a34a">${initials}</span>`}
-                                        </div>
-                                        <div style="flex:1;min-width:0">
-                                            <div style="font-weight:600;font-size:22px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
-                                            <div style="font-size:18px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
-                                        </div>
-                                        <div style="flex-shrink:0;text-align:right;">
-                                            <div style="font-size:18px;color:#16a34a;font-weight:500">${timeDisplay}</div>
-                                            <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
-                                        </div>
-                                        <svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </div>
-                                </div>
-                                ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
-                                `;
-                            } else {
-                                // Non-owner UI: Show "Scheduled" status (muted) - DISABLED, cannot click
-                                return `
-                                <div class="student-card student-unavailable" data-student-id="${student.id}" data-student-admission="${student.admission_number || student.id}" data-student-name="${studentName}" style="padding:12px 16px;border:1px solid rgba(0,0,0,0.04);opacity:0.5;pointer-events:none;cursor:not-allowed">
-                                    <div style="display:flex;align-items:center;gap:16px">
-                                        <div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.08);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-                                            ${hasValidPhoto
-                                                ? `<img src="${student.photo_url}" alt="${studentName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;filter:grayscale(1)"><span style="display:none;font-size:26px;font-weight:700;color:#9ca3af">${initials}</span>`
-                                                : `<span style="font-size:26px;font-weight:700;color:#9ca3af">${initials}</span>`}
-                                        </div>
-                                        <div style="flex:1;min-width:0">
-                                            <div style="font-weight:600;font-size:22px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${studentName}</div>
-                                            <div style="font-size:18px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">${ageGenderLine || 'Student'}</div>
-                                        </div>
-                                        <div style="flex-shrink:0;text-align:right;">
-                                            <div style="font-size:18px;color:#9ca3af">Scheduled</div>
-                                            <div id="online-status-${student.id}" style="font-size:11px;color:#9ca3af;margin-top:2px;"></div>
-                                        </div>
-                                        <svg style="width:30px;height:30px;color:#d1d5db;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </div>
-                                </div>
-                                ${!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : ''}
-                                `;
+                            // Format next meeting time
+                            const nextTime = student.nextMeeting ? new Date(student.nextMeeting.scheduledTime) : null;
+                            let meetingInfo = '';
+                            if (nextTime) {
+                                const dateStr = nextTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                const timeStr = nextTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                meetingInfo = dateStr + ' ' + timeStr;
                             }
-                        }).join('');
-                        unavailableStudentsContainer.innerHTML = unavailableCardsHtml;
 
-                        // Start countdown timers for owner meetings
-                        startCountdownTimers();
+                            const meetingCount = student.activeMeetingCount || 0;
+                            const isLast = index === myStudents.length - 1;
+
+                            return '<div class="student-card cursor-pointer" data-student-id="' + student.id + '" data-student-admission="' + (student.admissionNumber || student.id) + '" data-student-name="' + studentName + '" style="padding:12px 16px;border:1px solid rgba(22,163,74,0.15);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor=\'rgba(22,163,74,0.4)\'" onmouseleave="this.style.borderColor=\'rgba(22,163,74,0.15)\'">' +
+                                '<div style="display:flex;align-items:center;gap:16px">' +
+                                    '<div style="width:70px;height:70px;border-radius:50%;background:rgba(22,163,74,0.1);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">' +
+                                        (hasValidPhoto
+                                            ? '<img src="' + student.photoUrl + '" alt="' + studentName + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"><span style="display:none;font-size:26px;font-weight:700;color:#16a34a">' + initials + '</span>'
+                                            : '<span style="font-size:26px;font-weight:700;color:#16a34a">' + initials + '</span>') +
+                                    '</div>' +
+                                    '<div style="flex:1;min-width:0">' +
+                                        '<div style="font-weight:600;font-size:22px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + studentName + '</div>' +
+                                        '<div style="font-size:18px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">' + (ageGenderLine || 'Student') + '</div>' +
+                                    '</div>' +
+                                    '<div style="flex-shrink:0;text-align:right;">' +
+                                        (meetingInfo ? '<div style="font-size:14px;color:#16a34a;font-weight:500">' + meetingInfo + '</div>' : '') +
+                                        '<div style="font-size:12px;color:#9ca3af;margin-top:2px;">' + meetingCount + ' meeting' + (meetingCount !== 1 ? 's' : '') + '</div>' +
+                                    '</div>' +
+                                    '<svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+                                '</div>' +
+                            '</div>' +
+                            (!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : '');
+                        }).join('');
+                        availableStudentsContainer.innerHTML = cardsHtml;
+                        const scheduleCta = document.getElementById('schedule-new-cta');
+                        if (scheduleCta) scheduleCta.classList.remove('hidden');
                     }
                 }
-
-                // Fetch online status for all students
-                fetchOnlineStatus(data);
             })
             .catch(error => {
-                console.error('Error loading dashboard data:', error);
-                
-                // Only show error notification for real errors (not 404 which might be empty database)
-                if (!error.message.includes('404')) {
-                    showNotification('Failed to load student data: ' + error.message, 'error');
-                }
-                
-                // Show user-friendly empty state messages instead of error messages
+                console.error('Error loading my students:', error);
+                showNotification('Failed to load student data: ' + error.message, 'error');
                 if (availableStudentsContainer) {
-                    availableStudentsContainer.innerHTML = '<div class="text-center py-8"><div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6"><div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning-light rounded-full"><svg class="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div><h3 class="text-lg font-semibold text-yellow-900 mb-2">Unable to Load Students</h3><p class="text-yellow-700 mb-4">There might be a connection issue or the database is empty.</p><button onclick="loadDashboardData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">Try Again</button></div></div>';
-                }
-                if (document.getElementById('student-list-unavailable')) {
-                    document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-8"><p class="text-gray-500">Unable to load unavailable students.</p></div>';
+                    availableStudentsContainer.innerHTML = '<div class="text-center py-8"><div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6"><h3 class="text-lg font-semibold text-yellow-900 mb-2">Unable to Load Students</h3><p class="text-yellow-700 mb-4">There might be a connection issue.</p><button onclick="loadDashboardData()" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">Try Again</button></div></div>';
                 }
             })
             .finally(() => {
@@ -1883,119 +1487,7 @@
             });
         }
 
-        // Fetch online status for all students and update indicators
-        function fetchOnlineStatus(data) {
-            const allStudents = [
-                ...(data.data?.available || []),
-                ...(data.data?.unavailable || [])
-            ];
-            const studentIds = allStudents.map(s => s.id);
-            if (studentIds.length === 0) return;
-
-            window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/students/online-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentIds: studentIds })
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(result) {
-                var online = result.online || {};
-                studentIds.forEach(function(id) {
-                    var el = document.getElementById('online-status-' + id);
-                    if (!el) return;
-                    if (online[id]) {
-                        el.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#16a34a;margin-right:3px;vertical-align:middle;"></span>online';
-                        el.style.color = '#16a34a';
-                    } else {
-                        el.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#9ca3af;margin-right:3px;vertical-align:middle;"></span>offline';
-                        el.style.color = '#9ca3af';
-                    }
-                });
-            })
-            .catch(function(err) {
-                console.error('Failed to fetch online status:', err);
-            });
-        }
-
-        // Function to start and update countdown timers for owner meetings
-        function startCountdownTimers() {
-            // Clear any existing timers
-            if (window.countdownInterval) {
-                clearInterval(window.countdownInterval);
-            }
-            
-            // Update timers every minute
-            window.countdownInterval = setInterval(() => {
-                const ownerCards = document.querySelectorAll('.student-card.bg-green-50');
-                ownerCards.forEach(card => {
-                    const timerElement = card.querySelector('.text-success-dark');
-                    if (timerElement && timerElement.textContent.includes('Your Meeting:')) {
-                        // Extract meeting time from data attributes or re-calculate
-                        // For now, we'll refresh the entire section when timers need updating
-                        // This ensures accuracy and prevents drift
-                    }
-                });
-            }, 60000); // Update every minute
-        }
-
-        // Clear timers when page unloads
-        window.addEventListener('beforeunload', () => {
-            if (window.countdownInterval) {
-                clearInterval(window.countdownInterval);
-            }
-        });
         
-        // Function to handle instant call button clicks
-        function setupEventListeners() {
-            // Event delegation for student cards
-            document.addEventListener('click', function(event) {
-                // Handle student card clicks (for viewing details)
-                if (event.target.closest('.student-card')) {
-                    const card = event.target.closest('.student-card');
-
-                    // CRITICAL: Block clicks on unavailable/scheduled students
-                    if (card.classList.contains('student-unavailable')) {
-                        console.log('[TalkTime] Student is unavailable - already scheduled by another volunteer');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return; // Do nothing - student is not available
-                    }
-
-                    const studentId = card.dataset.studentId;
-                    const studentAdmission = card.dataset.studentAdmission;
-                    const studentName = card.querySelector('h3')?.textContent || card.dataset.studentName || 'Student';
-
-                    // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before scheduling
-                    if (!checkNotificationPermissionForCriticalAction('viewing student for scheduling')) {
-                        console.log('🚫 Blocking student detail navigation - notifications not enabled');
-                        showNotificationRequiredMessage();
-                        return; // Prevent navigation
-                    }
-
-                    window.location.href = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
-                }
-            });
-
-            // Global click interceptor for critical action links
-            document.addEventListener('click', function(event) {
-                const target = event.target.closest('a');
-                if (target && target.href) {
-                    const href = target.getAttribute('href');
-                    
-                    // Intercept navigation to upcoming meetings (where cancellation/rescheduling happens)
-                    if (href && href.includes('/volunteer/dashboard/upcoming')) {
-                        // 🚨 CRITICAL ACTION ENFORCEMENT: Check notifications before accessing meeting management
-                        if (!checkNotificationPermissionForCriticalAction('managing scheduled meetings')) {
-                            console.log('🚫 Blocking upcoming meetings navigation - notifications not enabled');
-                            event.preventDefault();
-                            event.stopPropagation();
-                            showNotificationRequiredMessage();
-                            return false;
-                        }
-                    }
-                }
-            });
-        }
         
 
         
@@ -2004,77 +1496,49 @@
 
         // --- Initial Load ---
         loadDashboardData();
-        setupEventListeners();
-        
-        // Initialize approval status component using JWT authentication
+
+        // --- Floating Widget Stack ---
+        // Prevents newsletter pill and upcoming FAB from overlapping.
+        // Newsletter sits on top, upcoming FAB below. If only one exists it occupies the bottom position.
+        (function initFloatingStack() {
+            const stack = document.createElement('div');
+            stack.id = 'floating-widgets-stack';
+            document.body.appendChild(stack);
+
+            function adoptWidget(el) {
+                if (el && el.parentNode !== stack) {
+                    stack.appendChild(el);
+                }
+            }
+
+            function gather() {
+                const newsletter = document.getElementById('newsletter-widget');
+                const fab = document.getElementById('upcoming-fab');
+                // Newsletter first (top), FAB second (bottom)
+                adoptWidget(newsletter);
+                adoptWidget(fab);
+            }
+
+            // Both widgets are created asynchronously — observe body for their arrival
+            const observer = new MutationObserver(() => gather());
+            observer.observe(document.body, { childList: true });
+
+            // Also poll briefly to catch widgets added before observer
+            const poll = setInterval(() => {
+                gather();
+                const has = stack.children.length;
+                if (has >= 2) clearInterval(poll);
+            }, 500);
+            setTimeout(() => { clearInterval(poll); observer.disconnect(); }, 10000);
+        })();
+
         // --- Notification Permission Functions ---
         
-        // Check and show notification permission warning on page load
-        function checkAndShowNotificationWarning() {
-            if ('Notification' in window) {
-                const permission = Notification.permission;
-                console.log('Current notification permission:', permission);
-                
-                // Show warning if permission is not granted
-                if (permission === 'default' || permission === 'denied') {
-                    const warningBanner = document.getElementById('notification-permission-warning');
-                    if (warningBanner) {
-                        warningBanner.style.display = 'block';
-                        
-                        // Auto-hide after 30 seconds if not interacted with
-                        setTimeout(() => {
-                            if (warningBanner.style.display !== 'none') {
-                                warningBanner.style.display = 'none';
-                            }
-                        }, 30000);
-                    }
-                } else if (permission === 'granted') {
-                    console.log('✅ Notifications already enabled');
-                    hideNotificationWarning();
-                }
-            } else {
-                console.log('❌ Browser does not support notifications');
-            }
-        }
+        // Notification permission check is handled by the shared notification-enforcer.js on page load
 
-        // Enhanced notification request with better messaging
+        // Notification permission request — delegates to the shared modal
         function requestNotificationPermission() {
-            console.log('📱 Requesting enhanced notification permission...');
-            
-            if ('Notification' in window) {
-                Notification.requestPermission().then(function(permission) {
-                    console.log('Permission result:', permission);
-                    
-                    if (permission === 'granted') {
-                        console.log('✅ Enhanced notification permission granted!');
-                        showNotification('🎉 Perfect! You\'ll now receive rich notifications for meetings, reminders, and instant calls with action buttons and persistence.', 'success');
-                        hideNotificationWarning();
-                        
-                        // Send an enhanced test notification
-                        setTimeout(() => {
-                            sendEnhancedTestNotification();
-                        }, 1000);
-                        
-                        // Set up notification event listeners
-                        setupNotificationEventListeners();
-                        
-                        // Track permission granted for analytics
-                        trackNotificationPermission('granted');
-                    } else {
-                        console.log('❌ Notification permission denied');
-                        showNotification('Notifications were blocked. You can enable them in your browser settings to get meeting reminders and instant call alerts.', 'error');
-                        
-                        // Track permission denied for analytics  
-                        trackNotificationPermission('denied');
-                        
-                        // Keep the banner visible but update the message
-                        updateWarningForDeniedPermission();
-                    }
-                });
-            } else {
-                console.log('❌ Browser does not support notifications');
-                showNotification('Your browser doesn\'t support notifications. Please update your browser for the best experience.', 'error');
-            }
+            showNotificationRequiredMessage();
         }
 
         // Send an enhanced test notification with action buttons
@@ -2082,31 +1546,12 @@
             if (Notification.permission === 'granted') {
                 console.log('🔔 Sending enhanced test notification...');
                 
-                const notification = new Notification('🎉 TalkTime Enhanced Notifications Enabled!', {
-                    body: 'You\'ll receive rich notifications like this with action buttons for meetings, reminders, and instant calls. Notifications will persist until you interact with them.',
+                const notification = new Notification('TalkTime Notifications Enabled', {
+                    body: 'You will receive meeting reminders, instant call alerts, and important updates.',
                     icon: '/talktime.ico',
                     badge: '/talktime.ico',
                     tag: 'talktime-enhanced-test',
-                    requireInteraction: false,
-                    actions: [
-                        {
-                            action: 'view_dashboard',
-                            title: '👀 View Dashboard'
-                        },
-                        {
-                            action: 'settings',
-                            title: '⚙️ Settings'
-                        },
-                        {
-                            action: 'dismiss',
-                            title: '✕ Dismiss'
-                        }
-                    ],
-                    data: {
-                        url: '/volunteer/dashboard/students.html',
-                        timestamp: new Date().toISOString(),
-                        type: 'test'
-                    }
+                    requireInteraction: false
                 });
 
                 notification.onclick = function(event) {
@@ -2137,114 +1582,13 @@
 
         // Function removed - now defined inside DOMContentLoaded handler
 
-        // Show notification info modal
-        function showNotificationInfo() {
-            const infoModal = `
-                <div id="notification-info-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeNotificationInfo()">
-                    <div class="bg-white rounded-xl p-8 max-w-lg mx-4 relative" onclick="event.stopPropagation()">
-                        <button onclick="closeNotificationInfo()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
-                        
-                        <div class="text-center mb-6">
-                            <div class="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-bell text-brand-primary text-2xl"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">Why Enable Notifications?</h3>
-                        </div>
-                        
-                        <div class="space-y-4 text-sm text-gray-600">
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-clock text-brand-primary mt-1"></i>
-                                <div>
-                                    <strong>Meeting Reminders:</strong> Get notified 1 hour, 30 minutes, and 5 minutes before your scheduled meetings.
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-phone text-green-500 mt-1"></i>
-                                <div>
-                                    <strong>Instant Calls:</strong> Receive immediate alerts when students initiate instant calls with you.
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-calendar-alt text-brand-secondary mt-1"></i>
-                                <div>
-                                    <strong>Schedule Changes:</strong> Get notified about meeting reschedules, cancellations, and confirmations.
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-shield-alt text-brand-primary mt-1"></i>
-                                <div>
-                                    <strong>Always Secure:</strong> Notifications only show basic info and never include personal details.
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 flex gap-3">
-                            <button onclick="requestNotificationPermission(); closeNotificationInfo();" 
-                                    class="flex-1 bg-brand-primary text-white py-3 rounded-lg font-medium hover:bg-brand-primary-dark transition-colors">
-                                <i class="fas fa-bell mr-2"></i>Enable Now
-                            </button>
-                            <button onclick="closeNotificationInfo()" 
-                                    class="px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                Maybe Later
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', infoModal);
-        }
+        // Notification info is now shown within the shared NotificationPermissionModal
+        function showNotificationInfo() { showNotificationRequiredMessage(); }
+        function closeNotificationInfo() {}
 
-        // Close notification info modal
-        function closeNotificationInfo() {
-            const modal = document.getElementById('notification-info-modal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        // Update warning message for denied permission
-        function updateWarningForDeniedPermission() {
-            const warningBanner = document.getElementById('notification-permission-warning');
-            if (warningBanner) {
-                const content = warningBanner.querySelector('.warning-content');
-                if (content) {
-                    content.innerHTML = `
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="notification-icon">
-                                    <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-white font-bold text-lg mb-2">
-                                    🚫 Notifications Blocked
-                                </h3>
-                                <p class="text-white/90 text-sm mb-4 leading-relaxed">
-                                    Notifications are currently blocked. To enable them:
-                                    <br>• Click the 🔒 lock icon in your browser's address bar
-                                    <br>• Look for "Notifications" and change it to "Allow"
-                                    <br>• Refresh the page and try again
-                                </p>
-                                <div class="flex flex-wrap gap-3">
-                                    <button onclick="hideNotificationWarning()" class="dismiss-btn">
-                                        <i class="fas fa-times mr-2"></i>Got It
-                                    </button>
-                                </div>
-                            </div>
-                            <button onclick="hideNotificationWarning()" class="close-btn">
-                                <i class="fas fa-times text-white text-xl hover:text-red-200 transition-colors"></i>
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-        }
+        // Banner removed — notification permission handled by the shared modal
+        function updateWarningForDeniedPermission() {}
+        function showBrowserNotificationGuide() { showNotificationRequiredMessage(); }
 
         // Function removed - now defined inside DOMContentLoaded handler
 
@@ -2382,17 +1726,7 @@
             // Initialize navigation with authentication requirement
             await VolunteerNavLoader.init(true);
 
-            // Initialize enhanced notification system
-            console.log('🚀 Initializing enhanced notification system...');
-            
-            // Initialize notification enforcer for critical actions
-            if (typeof window.talkTimeNotificationEnforcer !== 'undefined') {
-                console.log('🔒 Initializing notification enforcement for critical actions');
-                window.talkTimeNotificationEnforcer.init();
-            } else if (typeof NotificationEnforcer !== 'undefined') {
-                console.log('🔒 Using NotificationEnforcer instance');
-                // NotificationEnforcer auto-initializes, no need to call init manually
-            }
+            // Notification enforcer auto-initializes via its constructor — no manual init needed
             
             // Define notification event listeners function
             function setupNotificationEventListeners() {
@@ -2421,13 +1755,7 @@
                     icon: notificationData.icon || '/favicon.ico',
                     badge: notificationData.badge || '/favicon.ico',
                     tag: notificationData.tag || 'talktime-notification',
-                    requireInteraction: notificationData.requireInteraction || false,
-                    actions: notificationData.actions || [
-                        { action: 'view', title: '👀 View' },
-                        { action: 'dismiss', title: '✕ Dismiss' }
-                    ],
-                    data: metadata || {},
-                    renotify: priority === 'urgent'
+                    requireInteraction: notificationData.requireInteraction || false
                 });
                 
                 notification.onclick = function(event) {
@@ -2459,63 +1787,12 @@
                 }
             }
             
-            // Helper functions for notification warnings
-            function hideNotificationWarning() {
-                const warning = document.getElementById('notification-permission-warning');
-                if (warning) {
-                    warning.style.display = 'none';
-                }
-            }
-            
-            function updateWarningForDeniedPermission() {
-                const warning = document.getElementById('notification-permission-warning');
-                if (warning) {
-                    warning.innerHTML = `
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-red-800">
-                                        Notifications Blocked
-                                    </h3>
-                                    <div class="mt-2 text-sm text-error-dark">
-                                        <p>Browser notifications are blocked. To enable them:</p>
-                                        <ol class="list-decimal list-inside mt-2 space-y-1">
-                                            <li>Click the lock icon in your browser's address bar</li>
-                                            <li>Change notifications from "Block" to "Allow"</li>
-                                            <li>Refresh this page</li>
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Check notification permission status
-            if ('Notification' in window) {
-                if (Notification.permission === 'granted') {
-                    console.log('✅ Enhanced notifications already enabled');
-                    hideNotificationWarning();
-                    setupNotificationEventListeners();
-                } else if (Notification.permission === 'denied') {
-                    console.log('❌ Notifications denied - showing help message');
-                    updateWarningForDeniedPermission();
-                } else {
-                    console.log('📱 Notification permission not set - showing request banner');
-                    // Banner is shown by default in HTML - ensure it stays visible
-                    const warningBanner = document.getElementById('notification-permission-warning');
-                    if (warningBanner) {
-                        warningBanner.style.display = 'block';
-                    }
-                }
-            } else {
-                console.log('❌ Browser does not support notifications');
+            // No-op stubs — banner removed, notification permission handled by the shared modal via enforcer
+            function hideNotificationWarning() {}
+
+            // Notification permission check handled by notification-enforcer.js
+            if ('Notification' in window && Notification.permission === 'granted') {
+                setupNotificationEventListeners();
             }
             
             // Set up periodic notification cleanup

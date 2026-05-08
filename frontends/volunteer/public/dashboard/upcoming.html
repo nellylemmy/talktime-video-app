@@ -499,6 +499,8 @@
         });
 
         // --- Data Loading ---
+        // Exposed on window so the Socket.IO script block can call it
+        window.loadDashboardData = loadDashboardData;
         function loadDashboardData() {
             // Check JWT authentication
             if (!window.TalkTimeAuth.isAuthenticated()) {
@@ -556,7 +558,7 @@
                 const day = meetingDate.getDate();
                 const month = meetingDate.toLocaleDateString(undefined, { month: 'short' });
                 const year = meetingDate.getFullYear();
-                const friendlyTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const friendlyTime = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
 
                 const photoUrl = meeting.profileImage || meeting.photoUrl || meeting.photo_url || '';
                 const studentName = meeting.name || 'Student';
@@ -713,33 +715,33 @@
 
             // Handle real-time meeting updates (scheduled, rescheduled, canceled)
             socket.on('meeting-scheduled', (data) => {
-                console.log('📅 New meeting scheduled:', data);
-                showToast('Meeting Scheduled', data.message || 'A new meeting has been scheduled', 'success');
-                loadDashboardData();
+                console.log('New meeting scheduled:', data);
+                showNotification(data.message || 'A new meeting has been scheduled', 'success');
+                if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
             socket.on('meeting-rescheduled', (data) => {
-                console.log('🔄 Meeting rescheduled:', data);
-                showToast('Meeting Rescheduled', data.message || 'A meeting has been rescheduled', 'warning');
-                loadDashboardData();
+                console.log('Meeting rescheduled:', data);
+                showNotification(data.message || 'A meeting has been rescheduled', 'success');
+                if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
             socket.on('meeting-canceled', (data) => {
-                console.log('❌ Meeting canceled:', data);
-                showToast('Meeting Canceled', data.message || 'A meeting has been canceled', 'error');
-                loadDashboardData();
+                console.log('Meeting canceled:', data);
+                showNotification(data.message || 'A meeting has been canceled', 'error');
+                if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
             socket.on('meeting-missed', (data) => {
-                console.log('⏰ Meeting missed:', data);
-                showToast('Meeting Missed', data.message || 'A meeting was missed', 'warning');
-                loadDashboardData();
+                console.log('Meeting missed:', data);
+                showNotification(data.message || 'A meeting was missed', 'error');
+                if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
             socket.on('meeting-reminder', (data) => {
-                console.log('⏰ Meeting reminder:', data);
-                showToast('Meeting Reminder', data.message || `Meeting in ${data.minutesBefore} minutes`, 'info');
-                loadDashboardData();
+                console.log('Meeting reminder:', data);
+                showNotification(data.message || `Meeting in ${data.minutesBefore} minutes`, 'success');
+                if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
             /**

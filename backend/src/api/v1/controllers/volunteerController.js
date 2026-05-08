@@ -742,6 +742,79 @@ export const getStudentCards = async (req, res) => {
 };
 
 /**
+ * Get students the volunteer has upcoming meetings with ("My Students").
+ * Returns deduplicated student list with next meeting info.
+ */
+export const getMyStudents = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+
+        // Only return students this volunteer has active meetings with.
+        // Uses students.user_id as the FK (meetings.student_id references users.id).
+        const query = `
+            SELECT DISTINCT ON (s.id)
+                s.id,
+                s.user_id,
+                s.full_name,
+                s.admission_number,
+                s.age,
+                s.gender,
+                s.bio,
+                s.photo_url,
+                s.is_available,
+                m.id AS next_meeting_id,
+                m.scheduled_time AS next_meeting_time,
+                m.room_id AS next_meeting_room_id,
+                m.status AS next_meeting_status,
+                (
+                    SELECT COUNT(*)
+                    FROM meetings m2
+                    WHERE m2.volunteer_id = $1
+                      AND m2.student_id = s.user_id
+                      AND m2.status IN ('scheduled', 'in_progress')
+                      AND m2.scheduled_time >= NOW()
+                ) AS active_meeting_count
+            FROM students s
+            INNER JOIN meetings m
+                ON m.student_id = s.user_id
+               AND m.volunteer_id = $1
+               AND m.status IN ('scheduled', 'in_progress')
+               AND m.scheduled_time >= NOW()
+            ORDER BY s.id, m.scheduled_time ASC
+        `;
+
+        const { rows } = await pool.query(query, [volunteerId]);
+
+        const students = rows.map(row => ({
+            id: row.id,
+            userId: row.user_id,
+            fullName: row.full_name,
+            admissionNumber: row.admission_number,
+            age: row.age,
+            gender: row.gender,
+            bio: row.bio,
+            photoUrl: sanitizeImageUrl(row.photo_url),
+            isAvailable: row.is_available !== false,
+            nextMeeting: {
+                id: row.next_meeting_id,
+                scheduledTime: row.next_meeting_time,
+                roomId: row.next_meeting_room_id,
+                status: row.next_meeting_status
+            },
+            activeMeetingCount: parseInt(row.active_meeting_count, 10)
+        }));
+
+        res.json({
+            success: true,
+            data: students
+        });
+    } catch (error) {
+        console.error('Error fetching my students:', error);
+        res.status(500).json({ error: 'Failed to load your students' });
+    }
+};
+
+/**
  * Get detailed student profile data for volunteers
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -817,6 +890,76 @@ export const getStudentProfile = async (req, res) => {
 };
 
 /**
+ * Round-robin student selection for auto-assignment.
+ * Returns the best available student for a given volunteer and time, or null.
+ */
+export async function selectStudentRoundRobin(volunteerId, scheduledTime) {
+    const query = `
+        WITH available_students AS (
+            SELECT s.id, s.user_id, s.full_name, s.admission_number,
+                   s.photo_url, s.age, s.gender, s.is_available
+            FROM students s
+            WHERE s.is_available = true
+        ),
+        -- Exclude students who already have a meeting on this DATE
+        day_booked AS (
+            SELECT DISTINCT m.student_id
+            FROM meetings m
+            WHERE m.status IN ('scheduled', 'in_progress')
+            AND DATE(m.scheduled_time AT TIME ZONE 'Africa/Nairobi') = DATE($2::timestamptz AT TIME ZONE 'Africa/Nairobi')
+        ),
+        -- Exclude students at 3-meeting limit with this volunteer
+        pair_limit AS (
+            SELECT m.student_id
+            FROM meetings m
+            WHERE m.volunteer_id = $1
+            AND m.status IN ('scheduled', 'in_progress')
+            GROUP BY m.student_id
+            HAVING COUNT(*) >= 3
+        ),
+        -- Exclude students with a time-slot conflict at exact scheduledTime
+        time_conflict AS (
+            SELECT DISTINCT m.student_id
+            FROM meetings m
+            WHERE m.scheduled_time = $2
+            AND m.status IN ('scheduled', 'in_progress')
+        ),
+        -- Count upcoming meetings per student for ordering
+        upcoming_counts AS (
+            SELECT m.student_id, COUNT(*) as cnt
+            FROM meetings m
+            WHERE m.status IN ('scheduled', 'in_progress')
+            AND m.scheduled_time >= NOW()
+            GROUP BY m.student_id
+        ),
+        -- Most recent completed meeting per student for ordering
+        last_meeting AS (
+            SELECT m.student_id, MAX(m.scheduled_time) as last_time
+            FROM meetings m
+            WHERE m.status = 'completed'
+            GROUP BY m.student_id
+        )
+        SELECT a.id, a.user_id, a.full_name, a.admission_number,
+               a.photo_url, a.age, a.gender
+        FROM available_students a
+        WHERE a.id NOT IN (SELECT student_id FROM day_booked)
+          AND a.user_id NOT IN (SELECT student_id FROM day_booked)
+          AND a.id NOT IN (SELECT student_id FROM pair_limit)
+          AND a.user_id NOT IN (SELECT student_id FROM pair_limit)
+          AND a.id NOT IN (SELECT student_id FROM time_conflict)
+          AND a.user_id NOT IN (SELECT student_id FROM time_conflict)
+        ORDER BY
+            COALESCE((SELECT cnt FROM upcoming_counts uc WHERE uc.student_id = a.id OR uc.student_id = a.user_id), 0) ASC,
+            COALESCE((SELECT last_time FROM last_meeting lm WHERE lm.student_id = a.id OR lm.student_id = a.user_id), '1970-01-01'::timestamptz) ASC,
+            RANDOM()
+        LIMIT 1
+    `;
+
+    const { rows } = await pool.query(query, [volunteerId, scheduledTime]);
+    return rows.length > 0 ? rows[0] : null;
+}
+
+/**
  * Create a new meeting between volunteer and student
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -825,11 +968,11 @@ export const getStudentProfile = async (req, res) => {
 export const createMeeting = async (req, res) => {
     try {
         const volunteerId = req.user.id;
-        const { studentId, date, time, timezone } = req.body;
-        
-        // Validate required fields
-        if (!studentId || !date || !time || !timezone) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        const { studentId: requestedStudentId, date, time, timezone } = req.body;
+
+        // Validate required fields — studentId is now optional (auto-assign mode)
+        if (!date || !time || !timezone) {
+            return res.status(400).json({ error: 'Missing required fields: date, time, and timezone are required' });
         }
         
         // Validate date format (YYYY-MM-DD)
@@ -844,32 +987,23 @@ export const createMeeting = async (req, res) => {
             return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
         }
         
-        // Check if student exists - check users table first, then students table
+        // --- Student Resolution: Manual (requestedStudentId) or Auto-Assign ---
         let student = null;
-        let actualStudentId = studentId;
+        let actualStudentId = requestedStudentId;
+        let autoAssigned = false;
+        let autoAssignedStudentRecord = null; // Extra info for auto-assign response
 
-        // First, try to find in users table with role='student'
-        // Note: is_available lives on the students table, not users
-        const userResult = await pool.query(
-            'SELECT u.id, u.full_name, s.is_available FROM users u LEFT JOIN students s ON s.user_id = u.id WHERE u.id = $1 AND u.role = $2',
-            [studentId, 'student']
-        );
-
-        if (userResult.rows.length > 0) {
-            student = userResult.rows[0];
-        } else {
-            // If not found in users, the studentId might be from students table
-            // Look up the student and get their user_id
-            console.log('[Volunteer] Student not in users table, checking students table for ID:', studentId);
+        if (requestedStudentId) {
+            // MANUAL MODE: Check if student exists - check students table FIRST (profile endpoint returns students.id),
+            // then fall back to users table if not found
             const studentsResult = await pool.query(
                 'SELECT id, user_id, full_name, is_available FROM students WHERE id = $1',
-                [studentId]
+                [requestedStudentId]
             );
 
             if (studentsResult.rows.length > 0) {
                 const studentRecord = studentsResult.rows[0];
                 if (studentRecord.user_id) {
-                    // Use the user_id from students table for meeting creation
                     actualStudentId = studentRecord.user_id;
                     student = {
                         id: actualStudentId,
@@ -877,33 +1011,41 @@ export const createMeeting = async (req, res) => {
                         is_available: studentRecord.is_available
                     };
                     console.log('[Volunteer] Found student via students table:', {
-                        studentsTableId: studentId,
+                        studentsTableId: requestedStudentId,
                         usersTableId: actualStudentId
                     });
                 } else {
-                    // Student exists but no linked user - use students.id directly
                     student = {
                         id: studentRecord.id,
                         full_name: studentRecord.full_name,
                         is_available: studentRecord.is_available
                     };
                     actualStudentId = studentRecord.id;
-                    console.log('[Volunteer] Using students.id directly (no user_id):', studentId);
+                    console.log('[Volunteer] Using students.id directly (no user_id):', requestedStudentId);
+                }
+            } else {
+                console.log('[Volunteer] Student not in students table, checking users table for ID:', requestedStudentId);
+                const userResult = await pool.query(
+                    'SELECT u.id, u.full_name, s.is_available FROM users u LEFT JOIN students s ON s.user_id = u.id WHERE u.id = $1 AND u.role = $2',
+                    [requestedStudentId, 'student']
+                );
+
+                if (userResult.rows.length > 0) {
+                    student = userResult.rows[0];
                 }
             }
-        }
 
-        if (!student) {
-            return res.status(404).json({ error: 'Student not found' });
-        }
+            if (!student) {
+                return res.status(404).json({ error: 'Student not found' });
+            }
 
-        // Use actualStudentId for all subsequent database operations
-        const effectiveStudentId = actualStudentId;
-
-        // Check if student is available
-        if (student.is_available === false) {
-            return res.status(400).json({ error: 'Student is not available for meetings' });
+            if (student.is_available === false) {
+                return res.status(400).json({ error: 'Student is not available for meetings' });
+            }
         }
+        // AUTO-ASSIGN MODE handled after scheduledTime is computed (needs the time for conflict checks)
+
+        // effectiveStudentId removed — resolvedStudentId is set after auto-assign below
 
         // Check volunteer performance restrictions (exclude admin-cleared meetings)
         const performanceQuery = `
@@ -949,52 +1091,106 @@ export const createMeeting = async (req, res) => {
         }
         
         // Format the scheduled time from date and time fields
-        const scheduledTime = `${date} ${time}:00`;
+        // Time slots are always in EAT (UTC+3). Use the frontend's scheduledTime ISO string
+        // if available (already timezone-correct), otherwise build with +03:00 offset.
+        const scheduledTime = req.body.scheduledTime || `${date}T${time}:00+03:00`;
         const scheduledDateTime = new Date(scheduledTime);
-        
+
+        // Server-side EAT window validation
+        // Convert to EAT components for validation
+        const eatStr = scheduledDateTime.toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+        const eatParsed = new Date(eatStr);
+        const eatDay = eatParsed.getDay();     // 0=Sunday
+        const eatHour = eatParsed.getHours();
+        const eatMin = eatParsed.getMinutes();
+        const eatTotalMin = eatHour * 60 + eatMin;
+
+        // Block Sundays
+        if (eatDay === 0) {
+            return res.status(400).json({ error: 'Students are unavailable on Sundays. Please select Monday through Saturday.' });
+        }
+
+        // Validate time is within student availability windows (EAT)
+        // Morning: 7:30 - 8:00 AM (450-480 min), Evening: 4:00 - 6:00 PM (960-1080 min)
+        const inMorning = eatTotalMin >= 450 && eatTotalMin < 480;
+        const inEvening = eatTotalMin >= 960 && eatTotalMin < 1080;
+        if (!inMorning && !inEvening) {
+            return res.status(400).json({ error: 'Students are only available 7:30-8:00 AM and 4:00-6:00 PM EAT. Please select a time within these windows.' });
+        }
+
         // Validate that the scheduled time is in the future
         const now = new Date();
         if (scheduledDateTime <= now) {
             return res.status(400).json({ error: 'Cannot schedule meetings in the past' });
         }
-        
-        // Check for existing meeting conflicts for this student at the same time
-        const conflictQuery = `
-            SELECT id, scheduled_time, volunteer_id 
-            FROM meetings 
-            WHERE student_id = $1 
-            AND scheduled_time = $2 
-            AND status IN ('scheduled', 'in_progress')
-        `;
-        
-        const { rows: conflicts } = await pool.query(conflictQuery, [effectiveStudentId, scheduledTime]);
-        
-        if (conflicts.length > 0) {
-            const conflict = conflicts[0];
-            return res.status(409).json({ 
-                error: 'Student already has a meeting scheduled at this time',
-                conflictDetails: {
-                    meetingId: conflict.id,
-                    scheduledTime: conflict.scheduled_time,
-                    volunteerId: conflict.volunteer_id
-                }
+
+        // --- AUTO-ASSIGN MODE: resolve student via round-robin ---
+        if (!requestedStudentId) {
+            const candidate = await selectStudentRoundRobin(volunteerId, scheduledTime);
+            if (!candidate) {
+                return res.status(409).json({
+                    error: 'All students are booked for this time. Please try a different date or time.',
+                    code: 'NO_STUDENT_AVAILABLE'
+                });
+            }
+            // Resolve IDs the same way as manual mode
+            actualStudentId = candidate.user_id || candidate.id;
+            student = {
+                id: actualStudentId,
+                full_name: candidate.full_name,
+                is_available: true
+            };
+            autoAssigned = true;
+            autoAssignedStudentRecord = candidate;
+            console.log('[Volunteer] Auto-assigned student via round-robin:', {
+                studentId: candidate.id,
+                userId: candidate.user_id,
+                name: candidate.full_name
             });
         }
-        
-        // Check for volunteer conflicts at the same time
+
+        const resolvedStudentId = actualStudentId;
+
+        // Check for existing meeting conflicts for this student at the same time
+        // (Skip for auto-assigned students — round-robin already verified no conflicts)
+        if (!autoAssigned) {
+            const conflictQuery = `
+                SELECT id, scheduled_time, volunteer_id
+                FROM meetings
+                WHERE student_id = $1
+                AND scheduled_time = $2
+                AND status IN ('scheduled', 'in_progress')
+            `;
+
+            const { rows: conflicts } = await pool.query(conflictQuery, [resolvedStudentId, scheduledTime]);
+
+            if (conflicts.length > 0) {
+                const conflict = conflicts[0];
+                return res.status(409).json({
+                    error: 'Student already has a meeting scheduled at this time',
+                    conflictDetails: {
+                        meetingId: conflict.id,
+                        scheduledTime: conflict.scheduled_time,
+                        volunteerId: conflict.volunteer_id
+                    }
+                });
+            }
+        }
+
+        // Check for volunteer conflicts at the same time (always check)
         const volunteerConflictQuery = `
-            SELECT id, scheduled_time, student_id 
-            FROM meetings 
-            WHERE volunteer_id = $1 
-            AND scheduled_time = $2 
+            SELECT id, scheduled_time, student_id
+            FROM meetings
+            WHERE volunteer_id = $1
+            AND scheduled_time = $2
             AND status IN ('scheduled', 'in_progress')
         `;
-        
+
         const { rows: volunteerConflicts } = await pool.query(volunteerConflictQuery, [volunteerId, scheduledTime]);
-        
+
         if (volunteerConflicts.length > 0) {
             const conflict = volunteerConflicts[0];
-            return res.status(409).json({ 
+            return res.status(409).json({
                 error: 'You already have a meeting scheduled at this time',
                 conflictDetails: {
                     meetingId: conflict.id,
@@ -1003,20 +1199,20 @@ export const createMeeting = async (req, res) => {
                 }
             });
         }
-        
+
         // Create a unique room ID for the meeting
-        const roomId = `talktime-${volunteerId}-${effectiveStudentId}-${Date.now()}`;
+        const roomId = `talktime-${volunteerId}-${resolvedStudentId}-${Date.now()}`;
 
         // scheduledTime already defined above for conflict checking
 
         // Create meeting in database with parameters expected by the Meeting model
         const meetingData = {
             volunteerId,
-            studentId: effectiveStudentId,
+            studentId: resolvedStudentId,
             scheduledTime,
             roomId
         };
-        
+
         const meeting = await Meeting.create(meetingData);
 
         // Format meeting time for notification messages
@@ -1044,7 +1240,7 @@ export const createMeeting = async (req, res) => {
 
             // Notify student
             await notificationService.sendNotification({
-                recipient_id: effectiveStudentId,
+                recipient_id: resolvedStudentId,
                 recipient_role: 'student',
                 title: 'New Meeting Scheduled',
                 message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
@@ -1059,7 +1255,7 @@ export const createMeeting = async (req, res) => {
             // Emit real-time socket event to student
             const io = getIO();
             if (io) {
-                io.to(`user_${effectiveStudentId}`).emit('meeting-scheduled', {
+                io.to(`user_${resolvedStudentId}`).emit('meeting-scheduled', {
                     meeting_id: meeting.id,
                     message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
                     scheduledTime: meeting.scheduled_time,
@@ -1070,19 +1266,30 @@ export const createMeeting = async (req, res) => {
             console.error('Error sending meeting notifications:', notifErr);
         }
 
-        // Return the created meeting
-        res.status(201).json({
+        // Build response — include extra student info when auto-assigned
+        const responseBody = {
             meeting: {
                 id: meeting.id,
                 scheduledTime: meeting.scheduled_time,
                 roomId: meeting.room_id,
                 status: meeting.status,
+                autoAssigned: autoAssigned,
                 student: {
                     id: student.id,
                     name: student.full_name
                 }
             }
-        });
+        };
+
+        if (autoAssigned && autoAssignedStudentRecord) {
+            responseBody.meeting.student.admissionNumber = autoAssignedStudentRecord.admission_number;
+            responseBody.meeting.student.photoUrl = sanitizeImageUrl(autoAssignedStudentRecord.photo_url);
+            responseBody.meeting.student.age = autoAssignedStudentRecord.age;
+            responseBody.meeting.student.gender = autoAssignedStudentRecord.gender;
+            responseBody.meeting.student.studentTableId = autoAssignedStudentRecord.id;
+        }
+
+        res.status(201).json(responseBody);
     } catch (error) {
         console.error('Error creating meeting:', error);
         res.status(500).json({ error: 'Failed to create meeting' });
@@ -1307,5 +1514,104 @@ export const updateVolunteerSettings = async (req, res) => {
     } catch (error) {
         console.error('Error updating volunteer settings:', error);
         res.status(500).json({ error: 'Failed to update settings' });
+    }
+};
+
+/**
+ * Create a recurring schedule for the volunteer
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const createRecurringSchedule = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+        const { time_slot, days_of_week } = req.body;
+
+        if (!time_slot || !days_of_week || !Array.isArray(days_of_week) || days_of_week.length === 0) {
+            return res.status(400).json({ error: 'time_slot (HH:MM:SS) and days_of_week (array of 1-6) are required' });
+        }
+
+        // Validate days are 1-6 (no Sunday)
+        for (const d of days_of_week) {
+            if (d < 1 || d > 6) {
+                return res.status(400).json({ error: 'days_of_week must contain values 1 (Mon) through 6 (Sat). Sunday (0) is not allowed.' });
+            }
+        }
+
+        // Validate time_slot is within student availability windows (EAT)
+        const timeParts = time_slot.split(':');
+        const h = parseInt(timeParts[0], 10);
+        const m = parseInt(timeParts[1], 10);
+        const totalMin = h * 60 + m;
+        const inMorning = totalMin >= 450 && totalMin < 480;   // 7:30-8:00
+        const inEvening = totalMin >= 960 && totalMin < 1080;  // 16:00-18:00
+        if (!inMorning && !inEvening) {
+            return res.status(400).json({ error: 'time_slot must be within student availability: 07:30-08:00 or 16:00-18:00 EAT' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO recurring_schedules (volunteer_id, time_slot, days_of_week)
+             VALUES ($1, $2, $3)
+             RETURNING *`,
+            [volunteerId, time_slot, days_of_week]
+        );
+
+        res.status(201).json({ success: true, schedule: result.rows[0] });
+    } catch (error) {
+        console.error('Error creating recurring schedule:', error);
+        res.status(500).json({ error: 'Failed to create recurring schedule' });
+    }
+};
+
+/**
+ * Get active recurring schedules for the volunteer
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getRecurringSchedules = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+
+        const result = await pool.query(
+            `SELECT * FROM recurring_schedules
+             WHERE volunteer_id = $1 AND is_active = TRUE
+             ORDER BY time_slot ASC`,
+            [volunteerId]
+        );
+
+        res.json({ success: true, schedules: result.rows });
+    } catch (error) {
+        console.error('Error fetching recurring schedules:', error);
+        res.status(500).json({ error: 'Failed to fetch recurring schedules' });
+    }
+};
+
+/**
+ * Soft-delete a recurring schedule (set is_active = FALSE)
+ * Does NOT cancel already-created meetings
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const deleteRecurringSchedule = async (req, res) => {
+    try {
+        const volunteerId = req.user.id;
+        const scheduleId = req.params.id;
+
+        const result = await pool.query(
+            `UPDATE recurring_schedules
+             SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1 AND volunteer_id = $2
+             RETURNING *`,
+            [scheduleId, volunteerId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Recurring schedule not found' });
+        }
+
+        res.json({ success: true, message: 'Recurring schedule deactivated. Existing meetings are unaffected.' });
+    } catch (error) {
+        console.error('Error deleting recurring schedule:', error);
+        res.status(500).json({ error: 'Failed to delete recurring schedule' });
     }
 };

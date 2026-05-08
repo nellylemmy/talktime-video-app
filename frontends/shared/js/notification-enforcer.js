@@ -25,6 +25,13 @@ class TalkTimeNotificationEnforcer {
     }
 
     init() {
+        // Guard against double initialization
+        if (this._initCalled) {
+            console.log('[TalkTime] Notification Enforcer already initialized — skipping');
+            return;
+        }
+        this._initCalled = true;
+
         console.log('[TalkTime] Notification Enforcer initializing...');
 
         // Wait for DOM to be ready
@@ -36,30 +43,38 @@ class TalkTimeNotificationEnforcer {
     }
 
     start() {
-        // Delay slightly to ensure page is fully loaded
+        // Short delay to let deferred scripts finish executing
         setTimeout(() => {
             this.checkAndEnforcePermission();
-        }, 1000);
+        }, 300);
     }
 
     checkAndEnforcePermission() {
-        this.checkCount++;
-        console.log(`[TalkTime] Permission check ${this.checkCount}/${this.maxChecks}`);
-
         // Check if notification modal class is available
         if (typeof NotificationPermissionModal === 'undefined') {
-            console.log('[TalkTime] Waiting for NotificationPermissionModal to load...');
+            // First attempt: listen for the loader's ready event before falling back
+            if (!this._waitingForModal) {
+                this._waitingForModal = true;
+                console.log('[TalkTime] Waiting for NotificationPermissionModal...');
 
-            if (this.checkCount < this.maxChecks) {
-                setTimeout(() => this.checkAndEnforcePermission(), 2000);
-                return;
-            } else {
-                console.error('[TalkTime] NotificationPermissionModal failed to load');
-                if (!this.loadingModal) {
-                    this.loadNotificationModalScript();
-                }
+                // Listen for the event fired by notification-loader.html
+                document.addEventListener('talktimeNotificationSystemReady', () => {
+                    console.log('[TalkTime] Notification system ready event received');
+                    this._waitingForModal = false;
+                    this.checkAndEnforcePermission();
+                }, { once: true });
+
+                // Safety timeout: if no event after 5s, try dynamic load
+                setTimeout(() => {
+                    if (this._waitingForModal) {
+                        console.log('[TalkTime] Timed out waiting — loading modal script directly');
+                        this._waitingForModal = false;
+                        this.loadNotificationModalScript();
+                    }
+                }, 5000);
                 return;
             }
+            return;
         }
 
         // Check if we need to show the modal
@@ -490,8 +505,9 @@ class TalkTimeNotificationEnforcer {
         }));
 
         if (Notification.permission === 'granted') {
+            const { actions, vibrate, ...safeOptions } = data.notificationData;
             const notification = new Notification(data.notificationData.title, {
-                ...data.notificationData,
+                ...safeOptions,
                 data: {
                     ...data.notificationData.data,
                     ...data.metadata
@@ -583,7 +599,7 @@ class TalkTimeNotificationEnforcer {
                 throw new Error('No user ID available for subscription');
             }
 
-            const response = await fetch('/api/push-notifications/subscribe', {
+            const response = await fetch('/api/v1/push-notifications/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -619,7 +635,7 @@ class TalkTimeNotificationEnforcer {
 
     async getVapidKey() {
         try {
-            const response = await fetch('/api/push-notifications/vapid-public-key');
+            const response = await fetch('/api/v1/push-notifications/vapid-public-key');
             const data = await response.json();
 
             if (!response.ok) {
@@ -630,9 +646,7 @@ class TalkTimeNotificationEnforcer {
             return this.urlBase64ToUint8Array(data.publicKey);
         } catch (error) {
             console.error('[TalkTime] Error getting VAPID key:', error);
-            // Fallback to a default key if needed
-            const fallbackKey = 'BNxlp8gE5Jx7KqjOVOJNZN1jcKp2KzGQpY5k4M7X3N8vZwY2pF1nQrSt6uV9z2P3A5B7c9D1E3F5G7H9I1J3k5L7m9N1O3p5Q7r9S1t3U5v7W9x1Y3z5';
-            return this.urlBase64ToUint8Array(fallbackKey);
+            throw error;
         }
     }
 
@@ -653,21 +667,9 @@ class TalkTimeNotificationEnforcer {
     }
 
     trackEvent(eventName, data = {}) {
-        // Send analytics
+        // Send to Google Analytics if available
         if (typeof gtag !== 'undefined') {
             gtag('event', eventName, data);
-        }
-
-        // Send to backend (only if not on test pages)
-        if (!window.location.pathname.includes('test-notifications')) {
-            fetch('/api/v1/analytics/track', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ event: eventName, data })
-            }).catch(err => {
-                // Silently ignore analytics errors
-            });
         }
     }
 

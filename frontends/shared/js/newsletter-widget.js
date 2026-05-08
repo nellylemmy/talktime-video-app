@@ -123,8 +123,8 @@ class NewsletterWidget {
                  style="display: none;">
                 <!-- Minimized State -->
                 <div id="newsletter-minimized" class="newsletter-minimized cursor-pointer pointer-events-auto">
-                    <div class="pulse-zoom glass-card rounded-full p-4 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 bg-blue-600 hover:bg-blue-700 text-white" style="--pulse-color: rgb(59 130 246 / 0.4);">
-                        <div class="flex items-center gap-3 text-white">
+                    <div class="rounded-full p-4 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105" style="background:#3867FF;color:#fff;--pulse-color:rgb(56 103 255/0.4);">
+                        <div class="flex items-center gap-3" style="color:#fff;">
                             <i class="fas fa-paper-plane text-lg"></i>
                             <span class="font-semibold text-sm">Subscribe</span>
                             <i class="fas fa-chevron-up text-xs"></i>

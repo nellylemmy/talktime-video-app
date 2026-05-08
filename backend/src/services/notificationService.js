@@ -231,8 +231,9 @@ export const sendNotification = async (notificationData, channels = ['in-app', '
             notificationPrefs = await getUserNotificationPreferences(recipient_id);
         }
         
-        // Always include push notifications as default channel
-        if (!channels.includes('push')) {
+        // Only add push as default when no channels were explicitly specified
+        // Respect the caller's channel preference when channels are provided
+        if (channels.length === 0 && !channels.includes('push')) {
             channels.push('push');
         }
         

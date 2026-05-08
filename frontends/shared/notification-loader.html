@@ -112,8 +112,10 @@ This ensures notification permissions are checked on every page load
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             `;
             message.innerHTML = `
-                🚫 Your browser doesn't support notifications.<br>
-                <small>For the best TalkTime experience, please use a modern browser.</small>
+                <div style="display:flex;align-items:flex-start;gap:8px;justify-content:center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#742a2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                    <span>Your browser does not support notifications.<br><small>For the best TalkTime experience, please use a modern browser.</small></span>
+                </div>
             `;
             
             document.body.appendChild(message);
@@ -215,8 +217,10 @@ This ensures notification permissions are checked on every page load
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             `;
             errorMsg.innerHTML = `
-                ⚠️ <strong>Notification System Error</strong><br>
-                <small>Some features may not work properly. Please refresh the page.</small>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#742a2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span><strong>Notification System Error</strong><br><small>Some features may not work properly. Please refresh the page.</small></span>
+                </div>
             `;
             
             document.body.appendChild(errorMsg);

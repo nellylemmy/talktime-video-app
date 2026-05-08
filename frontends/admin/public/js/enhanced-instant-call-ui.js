@@ -578,11 +578,7 @@ class EnhancedInstantCallUI {
                 icon: '/images/talktime-icon.png',
                 badge: '/images/talktime-badge.png',
                 tag: 'instant-call',
-                requireInteraction: true,
-                actions: [
-                    { action: 'answer', title: 'Answer' },
-                    { action: 'decline', title: 'Decline' }
-                ]
+                requireInteraction: true
             });
             
             notification.onclick = clickHandler;

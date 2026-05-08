@@ -55,6 +55,7 @@
                 <label for="email" class="text-sm font-medium text-gray-700">Email Address</label>
                 <input type="email" name="email" id="email" required
                        class="w-full px-3 py-2 mt-1 text-gray-900 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                <p id="email-error" class="hidden mt-1 text-xs text-red-700"></p>
             </div>
             
             <div>
@@ -99,12 +100,21 @@
             const errorMessage = document.getElementById('error-message');
             const successMessage = document.getElementById('success-message');
             
+            document.getElementById('email').addEventListener('input', function() {
+                this.classList.remove('border-red-500', 'bg-red-50');
+                document.getElementById('email-error').classList.add('hidden');
+            });
+
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 // Clear previous messages
                 errorMessage.classList.add('hidden');
                 successMessage.classList.add('hidden');
+                const emailInput = document.getElementById('email');
+                const emailError = document.getElementById('email-error');
+                emailInput.classList.remove('border-red-500', 'bg-red-50');
+                emailError.classList.add('hidden');
                 
                 // Get form values
                 const fullname = document.getElementById('fullname').value;
@@ -143,6 +153,13 @@
                     const data = await response.json();
                     
                     if (!response.ok || !data.success) {
+                        if (response.status === 409) {
+                            emailInput.classList.add('border-red-500', 'bg-red-50');
+                            emailError.textContent = 'This email is already registered. Please use a different email or sign in instead.';
+                            emailError.classList.remove('hidden');
+                            emailInput.focus();
+                            return;
+                        }
                         throw new Error(data.error || 'Failed to create admin account');
                     }
                     

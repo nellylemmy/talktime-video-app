@@ -331,7 +331,7 @@
                         <div class="flex flex-col gap-3">
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-semibold text-base sm:text-lg text-gray-800 truncate">Call with ${studentName}</h3>
-                                <p class="text-gray-600 text-sm mt-1">${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                <p class="text-gray-600 text-sm mt-1">${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', timeZoneName: 'short'})}</p>
                                 <div class="mt-2 flex items-center">
                                     <i class="${config.icon} mr-2 ${config.color}"></i>
                                     <span class="text-sm text-gray-600">${config.label}</span>

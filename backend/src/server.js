@@ -30,6 +30,7 @@ import messageRoutes from './api/v1/routes/messageRoutes.js';
 // import uploadRoutes from './routes/upload.js';
 import mailchimpRoutes from './api/v1/routes/mailchimpRoutes.js';
 import uploadRoutes from './api/v1/routes/uploadRoutes.js';
+import pushNotificationRoutes from './routes/push-notifications.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initializeSocket } from './socket.js';
 import { redisClient } from './config/cache.js';
@@ -90,6 +91,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Public routes (no authentication required)
 app.use('/api/v1/parental-approval', parentalApprovalRoutes); // Parental approval routes
+app.use('/api/v1/push-notifications', pushNotificationRoutes); // Push notification routes (VAPID key is public)
 // Newsletter routes REMOVED - handled by newsletter-service microservice
 
 // JWT Authentication routes (no additional middleware needed)

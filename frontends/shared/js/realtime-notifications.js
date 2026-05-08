@@ -280,15 +280,15 @@ class RealtimeNotifications {
             if (Notification.permission === 'granted') {
                 try {
                     // Create browser notification
+                    // actions and vibrate are only supported via ServiceWorkerRegistration.showNotification(),
+                    // not the basic Notification constructor — omit them here
                     const notification = new Notification(data.notificationData.title, {
                         body: data.notificationData.body,
                         icon: data.notificationData.icon || '/favicon.ico',
                         badge: data.notificationData.badge || '/favicon.ico',
                         tag: data.notificationData.tag || 'talktime-notification',
                         requireInteraction: data.notificationData.requireInteraction || false,
-                        data: data.notificationData.data,
-                        actions: data.notificationData.actions || [],
-                        vibrate: data.notificationData.vibrate || [200, 100, 200]
+                        data: data.notificationData.data
                     });
                     
                     // Handle notification click
@@ -473,8 +473,8 @@ class RealtimeNotifications {
         if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(notification.title, {
                 body: notification.message,
-                icon: '/images/logo-icon.png',
-                badge: '/images/logo-icon.png',
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
                 tag: `notification-${notification.id}`,
                 requireInteraction: notification.priority === 'high'
             });
@@ -742,17 +742,7 @@ class RealtimeNotifications {
                 icon: '/favicon.ico',
                 badge: '/favicon.ico',
                 tag: `meeting-reschedule-${data.meeting_id}`,
-                requireInteraction: true,
-                actions: [
-                    {
-                        action: 'view',
-                        title: '👀 View Details'
-                    },
-                    {
-                        action: 'dismiss',
-                        title: '✕ Dismiss'
-                    }
-                ]
+                requireInteraction: true
             });
 
             notification.onclick = () => {

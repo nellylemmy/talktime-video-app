@@ -95,27 +95,27 @@ export const createMeeting = async (req, res) => {
             maxAllowedTime: threeMonthsFromNow
         });
 
-        // Check if student exists - handle both students.id and users.id
-        let student = await User.findById(studentId);
+        // Check if student exists - check students table FIRST (profile endpoint returns students.id),
+        // then fall back to users table
+        let student = null;
         let actualStudentUserId = studentId;
 
-        if (!student) {
-            // studentId might be from students table, look up the user_id
-            console.log('Student not found in users table, checking students table for ID:', studentId);
-            const studentLookup = await pool.query(
-                'SELECT user_id, full_name FROM students WHERE id = $1 LIMIT 1',
-                [studentId]
-            );
+        const studentLookup = await pool.query(
+            'SELECT id, user_id, full_name FROM students WHERE id = $1 LIMIT 1',
+            [studentId]
+        );
 
-            if (studentLookup.rows.length > 0 && studentLookup.rows[0].user_id) {
-                actualStudentUserId = studentLookup.rows[0].user_id;
-                student = await User.findById(actualStudentUserId);
-                console.log('Found student via students table:', {
-                    studentsTableId: studentId,
-                    usersTableId: actualStudentUserId,
-                    name: studentLookup.rows[0].full_name
-                });
-            }
+        if (studentLookup.rows.length > 0 && studentLookup.rows[0].user_id) {
+            actualStudentUserId = studentLookup.rows[0].user_id;
+            student = await User.findById(actualStudentUserId);
+            console.log('Found student via students table:', {
+                studentsTableId: studentId,
+                usersTableId: actualStudentUserId,
+                name: studentLookup.rows[0].full_name
+            });
+        } else {
+            // Not in students table — try users table directly
+            student = await User.findById(studentId);
         }
 
         if (!student) {

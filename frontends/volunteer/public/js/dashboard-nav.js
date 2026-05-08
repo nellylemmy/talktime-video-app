@@ -281,7 +281,7 @@ class VolunteerDashboardNav {
 
     renderDesktopTabs() {
         const tabs = [
-            { id: 'students', label: 'Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
+            { id: 'students', label: 'My Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
             { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' },
             { id: 'history', label: 'History', icon: 'fa-history', href: '/volunteer/dashboard/history' },
             { id: 'messages', label: 'Messages', icon: 'fa-envelope', href: '/volunteer/dashboard/messages' },
@@ -331,7 +331,7 @@ class VolunteerDashboardNav {
 
     renderBottomNav() {
         const navItems = [
-            { id: 'students', label: 'Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
+            { id: 'students', label: 'My Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
             { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' },
             { id: 'history', label: 'History', icon: 'fa-history', href: '/volunteer/dashboard/history' },
             { id: 'messages', label: 'Messages', icon: 'fa-envelope', href: '/volunteer/dashboard/messages' },

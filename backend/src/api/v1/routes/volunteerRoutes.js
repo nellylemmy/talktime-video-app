@@ -231,6 +231,13 @@ router.get('/ping', (req, res) => {
 router.get('/students/cards', volunteerController.getStudentCards);
 
 /**
+ * @route   GET /api/v1/volunteers/my-students
+ * @desc    Get students the volunteer has upcoming meetings with
+ * @access  Private (Volunteers only)
+ */
+router.get('/my-students', volunteerController.getMyStudents);
+
+/**
  * @route   POST /api/v1/volunteers/students/online-status
  * @desc    Check online status for a list of student IDs
  * @access  Private (Volunteers only)
@@ -298,6 +305,27 @@ router.get('/students/:id/profile', volunteerController.getStudentProfile);
  * @access  Private (Volunteers only)
  */
 router.post('/meetings', volunteerController.createMeeting);
+
+/**
+ * @route   POST /api/v1/volunteers/recurring-schedules
+ * @desc    Create a recurring schedule for the volunteer
+ * @access  Private (Volunteers only)
+ */
+router.post('/recurring-schedules', volunteerController.createRecurringSchedule);
+
+/**
+ * @route   GET /api/v1/volunteers/recurring-schedules
+ * @desc    Get active recurring schedules for the volunteer
+ * @access  Private (Volunteers only)
+ */
+router.get('/recurring-schedules', volunteerController.getRecurringSchedules);
+
+/**
+ * @route   DELETE /api/v1/volunteers/recurring-schedules/:id
+ * @desc    Soft-delete a recurring schedule
+ * @access  Private (Volunteers only)
+ */
+router.delete('/recurring-schedules/:id', volunteerController.deleteRecurringSchedule);
 
 /**
  * @route   GET /api/v1/volunteers/settings

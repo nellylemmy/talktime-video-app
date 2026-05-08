@@ -97,7 +97,7 @@
         }
 
         .time-slot {
-            padding: 12px 8px;
+            padding: 10px 8px;
             border-radius: 10px;
             text-align: center;
             cursor: pointer;
@@ -192,43 +192,8 @@
     <!-- Main Content Area -->
     <main class="content-area">
         <!-- No Student Selected State - shown when accessed without URL params -->
-        <div id="no-student-state" class="hidden w-full">
-            <div class="bg-white rounded-2xl p-6 sm:p-8 text-center shadow-lg border border-gray-100">
-                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background: linear-gradient(135deg, rgba(209,1,0,0.1), rgba(56,103,255,0.1));">
-                    <i class="fas fa-calendar-plus text-2xl" style="color: var(--brand-primary);"></i>
-                </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Schedule a Meeting</h2>
-                <p class="text-gray-600 mb-6 max-w-sm mx-auto text-sm sm:text-base">
-                    Select a student from the Students tab to schedule a conversation session.
-                </p>
-                <a href="/volunteer/dashboard/students" class="inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:shadow-lg" style="background: var(--brand-primary);">
-                    <i class="fas fa-users"></i>
-                    Browse Students
-                </a>
-                <div class="mt-8 pt-6 border-t border-gray-100">
-                    <div class="grid gap-4 text-left max-w-xs mx-auto">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: rgba(17,108,0,0.1);">
-                                <i class="fas fa-clock text-sm" style="color: #116C00;"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-gray-800">40-minute sessions</p>
-                                <p class="text-xs text-gray-500">Standard call duration</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: rgba(56,103,255,0.1);">
-                                <i class="fas fa-users text-sm" style="color: var(--brand-secondary);"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-gray-800">3 meetings max</p>
-                                <p class="text-xs text-gray-500">Per volunteer-student pair</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- No-student state is no longer shown — auto-assign mode loads calendar directly -->
+        <div id="no-student-state" class="hidden w-full"></div>
 
         <!-- Back Navigation - hidden when no student selected -->
         <div class="mb-4 hidden" id="back-link-container">
@@ -301,6 +266,7 @@
                         <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Time</label>
                         <span id="selected-date-display" class="text-xs font-medium" style="color: var(--brand-primary);">(July 16, 2025)</span>
                     </div>
+                    <p class="text-xs text-gray-400 mb-3"><i class="fas fa-info-circle mr-1"></i>Times shown in your timezone. Kenya time (EAT) shown below each slot.</p>
                     <div id="time-slots" class="time-input">
                         <!-- Time slots will be inserted here -->
                     </div>
@@ -366,6 +332,42 @@
         </div>
     </div>
 
+    <!-- Recurring Schedule Modal -->
+    <div id="recurring-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background: rgba(56,103,255,0.1);">
+                    <i class="fas fa-sync-alt text-xl" style="color: #3867FF;"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-1">Make It Recurring?</h3>
+                <p class="text-sm text-gray-600">Talk to a student at <span id="recurring-time-display" class="font-semibold" style="color: var(--brand-primary);">4:00 PM EAT</span> on a regular schedule.</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-xl mb-5">
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 block">Select Days</label>
+                <div class="flex items-center gap-2 mb-3">
+                    <input type="checkbox" id="recurring-all-days" class="w-4 h-4 rounded" style="accent-color: var(--brand-primary);">
+                    <label for="recurring-all-days" class="text-sm font-medium text-gray-700">Every day (Mon-Sat)</label>
+                </div>
+                <div class="grid grid-cols-3 gap-2" id="recurring-day-checkboxes">
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="1" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Mon</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="2" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Tue</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="3" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Wed</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="4" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Thu</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="5" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Fri</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" value="6" class="recurring-day-cb w-4 h-4 rounded" style="accent-color: var(--brand-primary);"> Sat</label>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="recurring-skip" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700">
+                    No Thanks
+                </button>
+                <button id="recurring-confirm" class="flex-1 px-4 py-3 text-white rounded-xl transition-all hover:shadow-lg text-sm font-semibold" style="background: var(--brand-secondary);">
+                    Set Recurring
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="notification" class="hidden"></div>
 
@@ -405,7 +407,7 @@
         let studentData = null;
         let meetingId = null; // For rescheduling
         let isRescheduling = false;
-        let volunteerTimezone = null; // Volunteer's saved timezone
+        let volunteerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Browser timezone as immediate fallback; overwritten by profile fetch
         
         // --- Utility Functions ---
         function showNotification(message, type = 'success') {
@@ -447,46 +449,62 @@
         }
         
         // Function to generate time slots for a specific date based on EAT constraints
+        // Students are available: Morning 7:30-8:00 AM EAT, Evening 4:00-6:00 PM EAT, Mon-Sat only
         function generateTimeSlotsForDate(date, timezone) {
             const slots = [];
-            
-            // EAT constraints: 9:00 AM - 5:00 PM with 15-minute intervals
-            const eatStartHour = 9; // 9:00 AM EAT
-            const eatEndHour = 17;  // 5:00 PM EAT
-            
-            // Create a date object for the selected date at midnight
+
+            // Extract the selected date components (year/month/day) for ISO string building
             const selectedDateObj = new Date(date);
-            selectedDateObj.setHours(0, 0, 0, 0);
-            
-            // Check if the selected date is today
-            const today = new Date();
-            const isToday = selectedDateObj.toDateString() === today.toDateString();
-            
-            // Get current time in volunteer's timezone for filtering past slots
-            const currentVolunteerTime = new Date();
-            
-            // Generate all possible time slots in 15-minute increments within EAT constraints
-            for (let hour = eatStartHour; hour < eatEndHour; hour++) {
-                for (let minute = 0; minute < 60; minute += 15) {
-                    // Create a date object for this time slot in EAT
-                    const eatDate = new Date(selectedDateObj);
-                    eatDate.setHours(hour, minute, 0, 0);
-                    
-                    // Convert EAT time to the volunteer's timezone for display
-                    const volunteerDate = convertEatToVolunteerTime(eatDate, timezone);
-                    
+            const yr = selectedDateObj.getFullYear();
+            const mo = String(selectedDateObj.getMonth() + 1).padStart(2, '0');
+            const dy = String(selectedDateObj.getDate()).padStart(2, '0');
+
+            // Block Sundays — students unavailable
+            if (selectedDateObj.getDay() === 0) {
+                return slots;
+            }
+
+            // Student availability windows in EAT
+            const windows = [
+                { startHour: 7, startMinute: 30, endHour: 8, endMinute: 0, interval: 30 },   // Morning: 7:30 AM (1 slot)
+                { startHour: 16, startMinute: 0, endHour: 18, endMinute: 0, interval: 30 }    // Evening: 4:00-5:30 PM (4 slots)
+            ];
+
+            // Check if the selected date is today (compare date strings to avoid TZ issues)
+            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const selectedStr = `${yr}-${mo}-${dy}`;
+            const isToday = selectedStr === todayStr;
+
+            // Current time as UTC ms for filtering past slots
+            const nowMs = Date.now();
+
+            // Generate slots for each availability window
+            for (const win of windows) {
+                let hour = win.startHour;
+                let minute = win.startMinute;
+                const endMs = win.endHour * 60 + win.endMinute;
+
+                while (hour * 60 + minute < endMs) {
+                    // Build EAT time with EXPLICIT +03:00 offset — timezone-safe regardless of browser
+                    const hr = String(hour).padStart(2, '0');
+                    const mi = String(minute).padStart(2, '0');
+                    const eatIso = `${yr}-${mo}-${dy}T${hr}:${mi}:00+03:00`;
+                    const eatDate = new Date(eatIso); // Internal UTC is correct
+
                     // Skip past time slots if this is today
-                    if (isToday && volunteerDate <= currentVolunteerTime) {
+                    if (isToday && eatDate.getTime() <= nowMs) {
+                        minute += win.interval;
+                        if (minute >= 60) { hour++; minute -= 60; }
                         continue;
                     }
-                    
-                    // Get the hours and minutes in the volunteer's timezone
-                    const volunteerHour = volunteerDate.getHours();
-                    const volunteerMinute = volunteerDate.getMinutes();
-                    
+
+                    // Get the hours and minutes in the volunteer's local timezone for display
+                    const volunteerHour = parseInt(eatDate.toLocaleString('en-US', { timeZone: timezone, hour: '2-digit', hour12: false }));
+                    const volunteerMinute = parseInt(eatDate.toLocaleString('en-US', { timeZone: timezone, minute: '2-digit' }));
+
                     // Format the time for display
                     const displayTime = formatTime(volunteerHour, volunteerMinute);
-                    
+
                     // Add the time slot
                     slots.push({
                         display: displayTime,
@@ -494,11 +512,14 @@
                         minute: volunteerMinute,
                         eatHour: hour,
                         eatMinute: minute,
-                        date: volunteerDate
+                        date: eatDate  // Correct UTC timestamp
                     });
+
+                    minute += win.interval;
+                    if (minute >= 60) { hour++; minute -= 60; }
                 }
             }
-            
+
             return slots;
         }
         
@@ -598,10 +619,14 @@
                 const threeMonthsFromToday = new Date(today);
                 threeMonthsFromToday.setMonth(today.getMonth() + 3);
                 
-                // Check if this day is in the past or beyond 3-month window
-                if (dateToCheck < new Date(today.getFullYear(), today.getMonth(), today.getDate()) || 
-                    dateToCheck > threeMonthsFromToday) {
+                // Check if this day is in the past, beyond 3-month window, or a Sunday
+                if (dateToCheck < new Date(today.getFullYear(), today.getMonth(), today.getDate()) ||
+                    dateToCheck > threeMonthsFromToday ||
+                    dateToCheck.getDay() === 0) {
                     dayEl.classList.add('day-disabled');
+                    if (dateToCheck.getDay() === 0) {
+                        dayEl.title = 'Students unavailable on Sundays';
+                    }
                 } else {
                     // Check if this is the selected date
                     if (selectedDate && day === selectedDate.getDate() && currentMonth === selectedDate.getMonth() && currentYear === selectedDate.getFullYear()) {
@@ -654,8 +679,7 @@
             // Use volunteer's saved timezone
             const timezone = volunteerTimezone;
             
-            // Generate time slots based on EAT constraints (9:00 AM - 5:00 PM EAT)
-            // with 15-minute intervals (00, 15, 30, 45)
+            // Generate time slots based on student availability windows
             const slots = generateTimeSlotsForDate(selectedDate, timezone);
             
             // Show message if no slots available (all passed for today)
@@ -666,17 +690,23 @@
                 msg.className = 'text-center py-6 col-span-full';
                 msg.innerHTML = isToday
                     ? `<p class="text-xs text-gray-400"><i class="fas fa-clock mr-1"></i>All available time slots for today have passed.</p>
-                       <p class="text-xs text-gray-300 mt-1">Students are available 9:00 AM – 5:00 PM EAT. Please select another date.</p>`
+                       <p class="text-xs text-gray-300 mt-1">Students are available 7:30\u20138:00 AM and 4:00\u20136:00 PM EAT, Mon\u2013Sat. Please select another date.</p>`
                     : `<p class="text-xs text-gray-400"><i class="fas fa-clock mr-1"></i>No available time slots for this date.</p>`;
                 timeSlots.appendChild(msg);
                 confirmContainer.classList.add('hidden');
                 return;
             }
 
-            // Add time slots to the UI
+            // Add time slots to the UI — show volunteer's local time + EAT time
             slots.forEach(slot => {
                 const timeSlot = document.createElement('div');
-                timeSlot.textContent = slot.display;
+                const eatDisplay = formatTime(slot.eatHour, slot.eatMinute);
+                // If volunteer's timezone is Africa/Nairobi (EAT), only show one time
+                if (timezone === 'Africa/Nairobi') {
+                    timeSlot.textContent = slot.display;
+                } else {
+                    timeSlot.innerHTML = `<span style="display:block;font-size:13px;font-weight:600;">${slot.display}</span><span style="display:block;font-size:10px;color:#9ca3af;margin-top:1px;">${eatDisplay} EAT</span>`;
+                }
                 timeSlot.classList.add('time-slot');
                 timeSlot.dataset.eatHour = slot.eatHour;
                 timeSlot.dataset.eatMinute = slot.eatMinute;
@@ -705,56 +735,81 @@
             });
         }
         
+        // Track whether we are in auto-assign mode (no student param)
+        let isAutoAssignMode = false;
+
         // --- Data Loading ---
         function loadStudentData() {
             const params = getUrlParams();
 
             if (!params) {
-                // No student selected - show the "select student" state
+                // AUTO-ASSIGN MODE: No student in URL — show calendar directly
+                isAutoAssignMode = true;
                 const noStudentState = document.getElementById('no-student-state');
                 const pageScheduler = document.getElementById('page-scheduler');
-                const backLinkContainer = document.getElementById('back-link-container');
+                const backLinkContainerEl = document.getElementById('back-link-container');
+                const meetingLimitStatus = document.getElementById('meeting-limit-status');
 
-                if (noStudentState) noStudentState.classList.remove('hidden');
-                if (pageScheduler) pageScheduler.classList.add('hidden');
-                if (backLinkContainer) backLinkContainer.classList.add('hidden');
+                if (noStudentState) noStudentState.classList.add('hidden');
+                if (pageScheduler) pageScheduler.classList.remove('hidden');
+
+                // Show back link to My Students
+                if (backLinkContainerEl) {
+                    backLinkContainerEl.classList.remove('hidden');
+                    backLinkContainerEl.innerHTML = '<a href="/volunteer/dashboard/students" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"><i class="fas fa-arrow-left"></i>Back to My Students</a>';
+                }
+
+                // Hide student image, show generic header
+                if (studentImage) studentImage.style.display = 'none';
+                if (scheduleTitle) scheduleTitle.textContent = 'Schedule New Meeting';
+                if (studentName) {
+                    studentName.textContent = '';
+                }
+                if (studentDetails) studentDetails.textContent = 'A student will be assigned automatically';
+                if (meetingLimitStatus) meetingLimitStatus.style.display = 'none';
+
+                // Update modal student name for auto-assign
+                if (modalStudentName) modalStudentName.textContent = 'an auto-assigned student';
+
+                document.title = 'TalkTime - Schedule Meeting | Volunteer Dashboard';
+
+                // Load timezone and render calendar
+                loadVolunteerTimezone();
                 return;
             }
 
-            // Student selected - show the scheduler
+            // MANUAL MODE: Student selected - show the scheduler
+            isAutoAssignMode = false;
             const noStudentState = document.getElementById('no-student-state');
             const pageScheduler = document.getElementById('page-scheduler');
-            const backLinkContainer = document.getElementById('back-link-container');
+            const backLinkContainerEl = document.getElementById('back-link-container');
 
             if (noStudentState) noStudentState.classList.add('hidden');
             if (pageScheduler) pageScheduler.classList.remove('hidden');
-            if (backLinkContainer) backLinkContainer.classList.remove('hidden');
-            
+            if (backLinkContainerEl) backLinkContainerEl.classList.remove('hidden');
+
             // Check if this is a reschedule
             isRescheduling = params.action === 'update';
             if (isRescheduling) {
                 scheduleTitle.textContent = 'Reschedule Meeting with';
                 meetingId = params.meetingId;
-                
-                // Update page title for reschedule
-                document.title = `TalkTime - Reschedule Meeting | Volunteer Dashboard`;
+                document.title = 'TalkTime - Reschedule Meeting | Volunteer Dashboard';
             } else {
-                // Update page title for new schedule
-                document.title = `TalkTime - Schedule Meeting | Volunteer Dashboard`;
+                document.title = 'TalkTime - Schedule Meeting | Volunteer Dashboard';
             }
-            
+
             // Update canonical link
             const canonicalLink = document.getElementById('canonical-link');
             canonicalLink.href = window.location.href;
-            
+
             // Update back link
-            backLinkContainer.innerHTML = `
+            backLinkContainerEl.innerHTML = `
                 <a href="/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}" class="text-brand-primary hover:text-brand-primary flex items-center">
                     <i class="fas fa-arrow-left mr-2"></i>
                     Back to Student Profile
                 </a>
             `;
-            
+
             // Fetch student data using JWT authentication
             TalkTimeAuth.authenticatedRequest(`/api/v1/volunteers/students/${params.studentId}/profile`, {
                 method: 'GET'
@@ -766,14 +821,11 @@
                     return response.json();
                 })
                 .then(data => {
-                    studentData = data.student; // API returns student data wrapped in 'student' property
-                    
-                    // Store the numeric student ID for later use
+                    studentData = data.student;
+
                     console.log('Received student data with numeric ID:', studentData.id);
-                    
-                    // Update student info - using correct property names from API response
+
                     studentName.textContent = studentData.full_name || studentData.name || params.studentName;
-                    // Format age/gender: "14 years · Girl"
                     const ageParts = [];
                     if (studentData.age) ageParts.push(studentData.age + ' years');
                     if (studentData.gender) {
@@ -781,29 +833,22 @@
                         ageParts.push(g === 'f' || g === 'female' ? 'Girl' : g === 'm' || g === 'male' ? 'Boy' : studentData.gender);
                     }
                     studentDetails.textContent = ageParts.join(' \u00B7 ');
-                    
-                    // Update profile image with fallback
+
                     const profileImageSrc = studentData.profileImage || '/images/placeholder-student.jpg';
                     studentImage.src = profileImageSrc;
                     studentImage.alt = studentData.full_name || 'Student';
-                    
-                    // Add error handler for broken images
+
                     studentImage.onerror = function() {
                         this.src = '/images/placeholder-student.jpg';
                     };
-                    
-                    // Update modal student name
+
                     modalStudentName.textContent = studentData.full_name || studentData.name || params.studentName;
-                    
-                    // If rescheduling, fetch meeting details
+
                     if (isRescheduling && meetingId) {
                         fetchMeetingDetails(meetingId);
                     }
-                    
-                    // Check meeting limit status with this student
+
                     checkMeetingLimitStatus(params.studentId);
-                    
-                    // Load volunteer's saved timezone
                     loadVolunteerTimezone();
                 })
                 .catch(error => {
@@ -1047,20 +1092,30 @@
                 return;
             }
 
-            // Ensure student data is loaded before showing confirmation
-            if (!studentData || !studentData.id) {
+            // In manual mode, ensure student data is loaded before showing confirmation
+            if (!isAutoAssignMode && (!studentData || !studentData.id)) {
                 showNotification('Loading student data... Please wait.', 'warning');
                 return;
             }
 
-            // Set the selected date and time for the meeting
-            const meetingDate = new Date(selectedDate);
-            meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
-            
-            // Update modal with selected date and time
+            // Use the timezone-safe date object from the slot
+            const meetingDate = selectedTimeSlot.date
+                ? new Date(selectedTimeSlot.date)
+                : new Date(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}T${String(selectedTimeSlot.eatHour||selectedTimeSlot.hour).padStart(2,'0')}:${String(selectedTimeSlot.eatMinute||selectedTimeSlot.minute).padStart(2,'0')}:00+03:00`);
+
+            // Update modal with date and time including timezone label
             modalDate.textContent = formatDate(meetingDate);
-            modalTime.textContent = formatTime(selectedTimeSlot.hour, selectedTimeSlot.minute);
-            
+            const volTzAbbr = meetingDate.toLocaleString('en-US', { timeZone: volunteerTimezone, timeZoneName: 'short' }).split(' ').pop();
+            modalTime.textContent = `${formatTime(selectedTimeSlot.hour, selectedTimeSlot.minute)} (${volTzAbbr})`;
+
+            // Populate Kenya Time (EAT) in modal
+            const eatH = selectedTimeSlot.eatHour != null ? selectedTimeSlot.eatHour : selectedTimeSlot.hour;
+            const eatM = selectedTimeSlot.eatMinute != null ? selectedTimeSlot.eatMinute : selectedTimeSlot.minute;
+            const modalTimeEat = document.getElementById('modal-time-eat');
+            if (modalTimeEat) {
+                modalTimeEat.textContent = formatTime(eatH, eatM);
+            }
+
             // Show confirmation modal
             confirmModal.classList.remove('hidden');
         });
@@ -1073,57 +1128,65 @@
             // Hide modal
             confirmModal.classList.add('hidden');
 
-            // Get student ID from URL
+            // Get student ID from URL (may be null for auto-assign)
             const params = getUrlParams();
-            if (!params) return;
 
-            // Ensure student data is loaded
-            if (!studentData || !studentData.id) {
+            // In manual mode, ensure student data is loaded
+            if (!isAutoAssignMode && (!studentData || !studentData.id)) {
                 showNotification('Student data not loaded yet. Please wait and try again.', 'error');
                 return;
             }
 
-            // Set the selected date and time for the meeting
-            const meetingDate = new Date(selectedDate);
-            meetingDate.setHours(selectedTimeSlot.hour, selectedTimeSlot.minute);
+            // Build meeting time from EAT hours with explicit +03:00 offset
+            let meetingDate;
+            if (selectedTimeSlot.date) {
+                meetingDate = new Date(selectedTimeSlot.date);
+            } else {
+                const yr = selectedDate.getFullYear();
+                const mo = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                const dy = String(selectedDate.getDate()).padStart(2, '0');
+                const hr = String(selectedTimeSlot.eatHour != null ? selectedTimeSlot.eatHour : selectedTimeSlot.hour).padStart(2, '0');
+                const mi = String(selectedTimeSlot.eatMinute != null ? selectedTimeSlot.eatMinute : selectedTimeSlot.minute).padStart(2, '0');
+                meetingDate = new Date(`${yr}-${mo}-${dy}T${hr}:${mi}:00+03:00`);
+            }
 
-            // Use volunteer's saved timezone
             const timezone = volunteerTimezone;
 
-            // Format date as YYYY-MM-DD and time as HH:MM for the volunteer endpoint
             const year = selectedDate.getFullYear();
             const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
             const day = String(selectedDate.getDate()).padStart(2, '0');
             const dateStr = `${year}-${month}-${day}`;
-            const timeStr = `${String(selectedTimeSlot.hour).padStart(2, '0')}:${String(selectedTimeSlot.minute).padStart(2, '0')}`;
+            const eatH = selectedTimeSlot.eatHour != null ? selectedTimeSlot.eatHour : selectedTimeSlot.hour;
+            const eatM = selectedTimeSlot.eatMinute != null ? selectedTimeSlot.eatMinute : selectedTimeSlot.minute;
+            const timeStr = `${String(eatH).padStart(2, '0')}:${String(eatM).padStart(2, '0')}`;
 
-            // Prepare meeting data for volunteer endpoint
+            // Prepare meeting data — omit studentId for auto-assign mode
             const meetingData = {
-                studentId: studentData.id, // Use the numeric ID from the API response
                 date: dateStr,
                 time: timeStr,
                 timezone: timezone,
-                scheduledTime: meetingDate.toISOString(), // Also include ISO format for compatibility
+                scheduledTime: meetingDate.toISOString(),
                 eatTime: {
-                    hour: selectedTimeSlot.eatHour,
-                    minute: selectedTimeSlot.eatMinute
+                    hour: selectedTimeSlot.eatHour != null ? selectedTimeSlot.eatHour : selectedTimeSlot.hour,
+                    minute: selectedTimeSlot.eatMinute != null ? selectedTimeSlot.eatMinute : selectedTimeSlot.minute
                 }
             };
 
-            console.log('Sending meeting data with numeric studentId:', meetingData.studentId);
-            console.log('Meeting date:', dateStr, 'time:', timeStr);
+            // Include studentId only in manual mode
+            if (!isAutoAssignMode && studentData && studentData.id) {
+                meetingData.studentId = studentData.id;
+            }
 
-            // API endpoint and method - use volunteer endpoint which handles students table IDs
+            console.log('Sending meeting data:', isAutoAssignMode ? '(auto-assign)' : 'studentId=' + meetingData.studentId);
+
             let endpoint = '/api/v1/volunteers/meetings';
             let method = 'POST';
 
-            // If rescheduling, update the endpoint and method
             if (isRescheduling && meetingId) {
                 endpoint = `/api/v1/meetings/${meetingId}`;
                 method = 'PUT';
             }
-            
-            // Send API request to schedule or reschedule the meeting using JWT authentication
+
             TalkTimeAuth.authenticatedRequest(endpoint, {
                 method: method,
                 headers: {
@@ -1133,20 +1196,22 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        // Handle different error status codes
                         return response.json().then(errorData => {
                             console.log('Server error response:', errorData);
                             if (response.status === 403) {
                                 if (errorData.error && errorData.error.includes('3-meeting limit')) {
-                                    throw new Error(`You have reached the 3-meeting limit with this student (${errorData.meetingCount}/${errorData.limit}). This ensures all students get equal opportunities to practice with different volunteers.`);
+                                    throw new Error('You have reached the 3-meeting limit with this student. This ensures all students get equal opportunities.');
                                 } else if (errorData.error && errorData.error.includes('restricted')) {
                                     throw new Error(errorData.message || errorData.error);
                                 } else {
-                                    // Show actual server error instead of generic message
                                     throw new Error(errorData.message || errorData.error || 'Access denied');
                                 }
                             } else if (response.status === 409) {
-                                throw new Error(errorData.error || 'This student already has a meeting scheduled for this date. Please choose a different date.');
+                                // Handle auto-assign NO_STUDENT_AVAILABLE
+                                if (errorData.code === 'NO_STUDENT_AVAILABLE') {
+                                    throw new Error('All students are booked for this time. Please try a different date or time.');
+                                }
+                                throw new Error(errorData.error || 'Time slot conflict. Please choose a different date or time.');
                             } else {
                                 throw new Error(errorData.error || 'Failed to schedule meeting');
                             }
@@ -1155,38 +1220,39 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Show success notification
+                    // Check if this was an auto-assigned meeting
+                    if (data.meeting && data.meeting.autoAssigned) {
+                        const assignedName = data.meeting.student ? data.meeting.student.name : 'a student';
+                        showNotification('Meeting scheduled with ' + assignedName + '!');
+
+                        // Show recurring prompt instead of immediately redirecting
+                        const eatH = selectedTimeSlot.eatHour != null ? selectedTimeSlot.eatHour : selectedTimeSlot.hour;
+                        const eatM = selectedTimeSlot.eatMinute != null ? selectedTimeSlot.eatMinute : selectedTimeSlot.minute;
+                        showRecurringPrompt(eatH, eatM);
+                        return;
+                    }
+
+                    // Manual mode: existing behavior
                     showNotification(isRescheduling ? 'Meeting rescheduled successfully' : 'Meeting scheduled successfully');
-                    
-                    // If this is a reschedule, immediately trigger the reschedule sound
+
                     if (isRescheduling) {
-                        console.log('🔊 Triggering reschedule sound manually...');
-                        
-                        // Method 1: Direct sound event trigger
                         if (document.dispatchEvent) {
                             document.dispatchEvent(new CustomEvent('talktimeNotificationSent', {
                                 detail: {
                                     type: 'meeting_rescheduled',
                                     priority: 'high',
-                                    metadata: {
-                                        meeting_id: meetingId,
-                                        action: 'reschedule_confirmed'
-                                    },
+                                    metadata: { meeting_id: meetingId, action: 'reschedule_confirmed' },
                                     source: 'schedule_page',
                                     force_play: true
                                 }
                             }));
                         }
-                        
-                        // Method 2: Direct sound manager call
                         if (window.talkTimeNotificationSoundManager) {
-                            window.talkTimeNotificationSoundManager.playSound('meeting_rescheduled', { 
+                            window.talkTimeNotificationSoundManager.playSound('meeting_rescheduled', {
                                 forcePlay: true,
-                                source: 'schedule_confirmation' 
-                            }).catch(err => console.log('Sound play failed:', err));
+                                source: 'schedule_confirmation'
+                            }).catch(function() {});
                         }
-                        
-                        // Method 3: Realtime notifications call
                         if (window.realtimeNotifications && window.realtimeNotifications.playNotificationSound) {
                             window.realtimeNotifications.playNotificationSound({
                                 sound_type: 'meeting_rescheduled',
@@ -1195,31 +1261,118 @@
                                 source: 'schedule_confirmation'
                             });
                         }
-                        
-                        console.log('🔊 Reschedule sound triggered via multiple methods');
                     }
-                    
-                    // Increase redirect delay to allow Socket.IO events to be received and sounds to play
-                    const redirectDelay = isRescheduling ? 3000 : 1500; // 3 seconds for reschedule, 1.5 for new meetings
-                    
-                    setTimeout(() => {
-                        window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
-                    }, redirectDelay);
+
+                    const redirectDelay = isRescheduling ? 3000 : 1500;
+
+                    if (params) {
+                        setTimeout(() => {
+                            window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
+                        }, redirectDelay);
+                    } else {
+                        setTimeout(() => {
+                            window.location.href = '/volunteer/dashboard/students';
+                        }, redirectDelay);
+                    }
                 })
                 .catch(error => {
                     console.error('Error scheduling meeting:', error);
-                    // Display the specific error message
                     showNotification(error.message || 'Failed to schedule meeting. Please try again.', 'error');
-                    
-                    // If it's a 403 error (student already has a meeting), redirect back to student detail page after 3 seconds
-                    if (error.message && error.message.includes('already has an active meeting')) {
-                        setTimeout(() => {
-                            window.location.href = `/volunteer/dashboard/student-detail.html?id=${params.studentId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
-                        }, 3000);
-                    }
                 });
         });
         
+        // --- Recurring Schedule Prompt ---
+        function showRecurringPrompt(eatH, eatM) {
+            const recurringModal = document.getElementById('recurring-modal');
+            const timeDisplay = document.getElementById('recurring-time-display');
+            if (!recurringModal) return;
+
+            // Format EAT time for display
+            const period = eatH >= 12 ? 'PM' : 'AM';
+            const displayH = eatH % 12 || 12;
+            timeDisplay.textContent = `${displayH}:${String(eatM).padStart(2, '0')} ${period} EAT`;
+
+            // Store EAT time on the modal for the confirm handler
+            recurringModal.dataset.eatHour = eatH;
+            recurringModal.dataset.eatMinute = eatM;
+
+            // Reset checkboxes
+            document.querySelectorAll('.recurring-day-cb').forEach(cb => cb.checked = false);
+            document.getElementById('recurring-all-days').checked = false;
+
+            recurringModal.classList.remove('hidden');
+        }
+
+        // "Every day" toggle
+        const recurringAllDays = document.getElementById('recurring-all-days');
+        if (recurringAllDays) {
+            recurringAllDays.addEventListener('change', (e) => {
+                document.querySelectorAll('.recurring-day-cb').forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+            });
+        }
+
+        // Individual day checkbox — uncheck "all days" if any single day is unchecked
+        document.querySelectorAll('.recurring-day-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = Array.from(document.querySelectorAll('.recurring-day-cb')).every(c => c.checked);
+                document.getElementById('recurring-all-days').checked = allChecked;
+            });
+        });
+
+        // Skip button
+        const recurringSkip = document.getElementById('recurring-skip');
+        if (recurringSkip) {
+            recurringSkip.addEventListener('click', () => {
+                document.getElementById('recurring-modal').classList.add('hidden');
+                window.location.href = '/volunteer/dashboard/students';
+            });
+        }
+
+        // Confirm recurring schedule
+        const recurringConfirmBtn = document.getElementById('recurring-confirm');
+        if (recurringConfirmBtn) {
+            recurringConfirmBtn.addEventListener('click', () => {
+                const selectedDays = Array.from(document.querySelectorAll('.recurring-day-cb:checked')).map(cb => parseInt(cb.value));
+
+                if (selectedDays.length === 0) {
+                    showNotification('Please select at least one day.', 'error');
+                    return;
+                }
+
+                const modal = document.getElementById('recurring-modal');
+                const eatH = parseInt(modal.dataset.eatHour);
+                const eatM = parseInt(modal.dataset.eatMinute);
+                const timeSlot = `${String(eatH).padStart(2, '0')}:${String(eatM).padStart(2, '0')}:00`;
+
+                recurringConfirmBtn.disabled = true;
+                recurringConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+
+                TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/recurring-schedules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ time_slot: timeSlot, days_of_week: selectedDays })
+                })
+                .then(response => {
+                    if (!response.ok) return response.json().then(d => { throw new Error(d.error || 'Failed'); });
+                    return response.json();
+                })
+                .then(() => {
+                    showNotification('Recurring schedule created!');
+                    modal.classList.add('hidden');
+                    setTimeout(() => {
+                        window.location.href = '/volunteer/dashboard/students';
+                    }, 1500);
+                })
+                .catch(err => {
+                    showNotification(err.message || 'Failed to create recurring schedule.', 'error');
+                    recurringConfirmBtn.disabled = false;
+                    recurringConfirmBtn.innerHTML = 'Set Recurring';
+                });
+            });
+        }
+
         // --- Initialize Authentication ---
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
         
