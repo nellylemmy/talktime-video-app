@@ -7,7 +7,9 @@ import Meeting from '../../../models/Meeting.js';
 import pool from '../../../config/database.js';
 import bcrypt from 'bcrypt';
 import * as notificationService from '../../../services/notificationService.js';
+import * as configService from '../../../services/configService.js';
 import { getIO } from '../../../socket.js';
+import { getSafeTimezone } from '../../../utils/timezoneUtils.js';
 
 // Local placeholder image for students (Volunteer Dashboard default)
 const PLACEHOLDER_LOCAL = '/images/default-profile.svg';
@@ -893,7 +895,11 @@ export const getStudentProfile = async (req, res) => {
  * Round-robin student selection for auto-assignment.
  * Returns the best available student for a given volunteer and time, or null.
  */
-export async function selectStudentRoundRobin(volunteerId, scheduledTime) {
+export async function selectStudentRoundRobin(volunteerId, scheduledTime, dayCheckTimezone = 'Africa/Nairobi') {
+    const safeTz = getSafeTimezone(dayCheckTimezone);
+    // Get max concurrent meetings per slot from config
+    const maxConcurrent = await configService.getMaxConcurrentPerSlot();
+
     const query = `
         WITH available_students AS (
             SELECT s.id, s.user_id, s.full_name, s.admission_number,
@@ -901,12 +907,19 @@ export async function selectStudentRoundRobin(volunteerId, scheduledTime) {
             FROM students s
             WHERE s.is_available = true
         ),
+        -- Check if the time slot is already at capacity
+        slot_capacity AS (
+            SELECT COUNT(*) as slot_count
+            FROM meetings m
+            WHERE m.scheduled_time = $2
+              AND m.status IN ('scheduled', 'in_progress')
+        ),
         -- Exclude students who already have a meeting on this DATE
         day_booked AS (
             SELECT DISTINCT m.student_id
             FROM meetings m
             WHERE m.status IN ('scheduled', 'in_progress')
-            AND DATE(m.scheduled_time AT TIME ZONE 'Africa/Nairobi') = DATE($2::timestamptz AT TIME ZONE 'Africa/Nairobi')
+            AND DATE(m.scheduled_time AT TIME ZONE $4) = DATE($2::timestamptz AT TIME ZONE $4)
         ),
         -- Exclude students at 3-meeting limit with this volunteer
         pair_limit AS (
@@ -942,7 +955,9 @@ export async function selectStudentRoundRobin(volunteerId, scheduledTime) {
         SELECT a.id, a.user_id, a.full_name, a.admission_number,
                a.photo_url, a.age, a.gender
         FROM available_students a
-        WHERE a.id NOT IN (SELECT student_id FROM day_booked)
+        -- Block assignment if slot is already at capacity
+        WHERE (SELECT slot_count FROM slot_capacity) < $3
+          AND a.id NOT IN (SELECT student_id FROM day_booked)
           AND a.user_id NOT IN (SELECT student_id FROM day_booked)
           AND a.id NOT IN (SELECT student_id FROM pair_limit)
           AND a.user_id NOT IN (SELECT student_id FROM pair_limit)
@@ -955,7 +970,7 @@ export async function selectStudentRoundRobin(volunteerId, scheduledTime) {
         LIMIT 1
     `;
 
-    const { rows } = await pool.query(query, [volunteerId, scheduledTime]);
+    const { rows } = await pool.query(query, [volunteerId, scheduledTime, maxConcurrent, safeTz]);
     return rows.length > 0 ? rows[0] : null;
 }
 
@@ -1197,6 +1212,22 @@ export const createMeeting = async (req, res) => {
                     scheduledTime: conflict.scheduled_time,
                     studentId: conflict.student_id
                 }
+            });
+        }
+
+        // Check concurrent meeting capacity for this time slot
+        const maxConcurrent = await configService.getMaxConcurrentPerSlot();
+        const capacityQuery = `
+            SELECT COUNT(*) as slot_count
+            FROM meetings
+            WHERE scheduled_time = $1
+              AND status IN ('scheduled', 'in_progress')
+        `;
+        const { rows: [{ slot_count }] } = await pool.query(capacityQuery, [scheduledTime]);
+        if (parseInt(slot_count) >= maxConcurrent) {
+            return res.status(409).json({
+                error: 'This time slot is fully booked. Please choose a different time.',
+                code: 'SLOT_CAPACITY_REACHED'
             });
         }
 
@@ -1525,7 +1556,8 @@ export const updateVolunteerSettings = async (req, res) => {
 export const createRecurringSchedule = async (req, res) => {
     try {
         const volunteerId = req.user.id;
-        const { time_slot, days_of_week } = req.body;
+        const { time_slot, days_of_week, timezone } = req.body;
+        const scheduleTz = timezone || 'Africa/Nairobi';
 
         if (!time_slot || !days_of_week || !Array.isArray(days_of_week) || days_of_week.length === 0) {
             return res.status(400).json({ error: 'time_slot (HH:MM:SS) and days_of_week (array of 1-6) are required' });
@@ -1550,10 +1582,10 @@ export const createRecurringSchedule = async (req, res) => {
         }
 
         const result = await pool.query(
-            `INSERT INTO recurring_schedules (volunteer_id, time_slot, days_of_week)
-             VALUES ($1, $2, $3)
+            `INSERT INTO recurring_schedules (volunteer_id, time_slot, days_of_week, timezone)
+             VALUES ($1, $2, $3, $4)
              RETURNING *`,
-            [volunteerId, time_slot, days_of_week]
+            [volunteerId, time_slot, days_of_week, scheduleTz]
         );
 
         res.status(201).json({ success: true, schedule: result.rows[0] });
@@ -1613,5 +1645,48 @@ export const deleteRecurringSchedule = async (req, res) => {
     } catch (error) {
         console.error('Error deleting recurring schedule:', error);
         res.status(500).json({ error: 'Failed to delete recurring schedule' });
+    }
+};
+
+/**
+ * Get slot capacity for a given date
+ * Returns booking counts per EAT time slot and the max concurrent limit
+ * @param {Object} req - Express request object (query param: date=YYYY-MM-DD)
+ * @param {Object} res - Express response object
+ */
+export const getSlotCapacity = async (req, res) => {
+    try {
+        const { date } = req.query;
+
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return res.status(400).json({ error: 'Valid date parameter required (YYYY-MM-DD)' });
+        }
+
+        const maxConcurrent = await configService.getMaxConcurrentPerSlot();
+
+        const capacityQuery = `
+            SELECT
+                TO_CHAR(scheduled_time AT TIME ZONE 'Africa/Nairobi', 'HH24:MI') as eat_time,
+                COUNT(*) as count
+            FROM meetings
+            WHERE DATE(scheduled_time AT TIME ZONE 'Africa/Nairobi') = $1
+              AND status IN ('scheduled', 'in_progress')
+            GROUP BY eat_time
+        `;
+
+        const { rows } = await pool.query(capacityQuery, [date]);
+
+        const slotCounts = {};
+        for (const row of rows) {
+            slotCounts[row.eat_time] = parseInt(row.count);
+        }
+
+        res.json({
+            maxConcurrent,
+            slotCounts
+        });
+    } catch (error) {
+        console.error('Error fetching slot capacity:', error);
+        res.status(500).json({ error: 'Failed to fetch slot capacity' });
     }
 };

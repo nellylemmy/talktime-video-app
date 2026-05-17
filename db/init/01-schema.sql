@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS meetings (
     reschedule_count INTEGER DEFAULT 0,
     cleared_by_admin BOOLEAN DEFAULT FALSE,
     cleared_by_admin_at TIMESTAMPTZ,
+    recurring_schedule_id INTEGER,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -124,6 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_meetings_student_id ON meetings(student_id);
 CREATE INDEX IF NOT EXISTS idx_meetings_scheduled_time ON meetings(scheduled_time);
 CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
 CREATE INDEX IF NOT EXISTS idx_meetings_cleared_by_admin ON meetings(cleared_by_admin) WHERE cleared_by_admin = TRUE;
+CREATE INDEX IF NOT EXISTS idx_meetings_recurring_schedule ON meetings(recurring_schedule_id) WHERE recurring_schedule_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
@@ -145,6 +147,20 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_activity_log_user_created ON activity_log(user_id, created_at DESC);
+
+-- Recurring schedules table
+CREATE TABLE IF NOT EXISTS recurring_schedules (
+    id SERIAL PRIMARY KEY,
+    volunteer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    time_slot TIME NOT NULL,
+    days_of_week INTEGER[] NOT NULL,
+    timezone VARCHAR(100) DEFAULT 'Africa/Nairobi',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_recurring_schedules_volunteer ON recurring_schedules(volunteer_id) WHERE is_active = TRUE;
 
 -- Insert default admin secret code
 INSERT INTO admin_secret_codes (code) VALUES ('123456') ON CONFLICT (code) DO NOTHING;

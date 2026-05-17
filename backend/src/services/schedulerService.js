@@ -1,8 +1,9 @@
 import cron from 'node-cron';
 import { processScheduledNotifications, scheduleMeetingNotifications } from './notificationService.js';
 import { selectStudentRoundRobin } from '../api/v1/controllers/volunteerController.js';
-import Meeting from '../models/Meeting.js';
 import pool from '../config/database.js';
+import { getMaxUpcomingPerSchedule, getVolunteerThresholds } from './configService.js';
+import { getSafeTimezone } from '../utils/timezoneUtils.js';
 
 /**
  * Docker-compatible scheduler service for meeting notifications and auto-launch
@@ -90,10 +91,13 @@ export const initializeScheduler = () => {
 
 /**
  * Process all active recurring schedules.
- * For each schedule, creates meetings for the next 30 days where:
- * - The day-of-week matches the schedule's days_of_week
- * - The volunteer doesn't already have a meeting at that exact time
- * - A student is available via round-robin
+ * For each schedule, maintains exactly 1 upcoming meeting at a time.
+ * After that meeting is attended/missed/canceled, the next cron run creates the next occurrence.
+ *
+ * Guards:
+ * - Duplicate check covers ALL statuses (prevents re-creating at same time slot)
+ * - Cap of 1 upcoming meeting per schedule (configurable via recurring.max_upcoming_per_schedule)
+ * - Volunteer performance check (skips if cancellation/missed rate too high)
  */
 async function processRecurringSchedules() {
     console.log('[RECURRING] Starting daily recurring schedule processing...');
@@ -112,43 +116,88 @@ async function processRecurringSchedules() {
 
     console.log(`[RECURRING] Processing ${schedules.length} active recurring schedule(s)...`);
 
+    const maxUpcoming = await getMaxUpcomingPerSchedule();
+    const { cancellationRate: cancelThreshold, missedRate: missedThreshold } = await getVolunteerThresholds();
+
     let totalCreated = 0;
     let totalSkipped = 0;
 
     for (const schedule of schedules) {
-        const { volunteer_id, time_slot, days_of_week } = schedule;
+        const { id: scheduleId, volunteer_id, time_slot, days_of_week, volunteer_name, timezone } = schedule;
+        const tz = getSafeTimezone(timezone || 'Africa/Nairobi');
+
+        // --- Performance guard: skip if volunteer is restricted ---
+        const { rows: [perfStats] } = await pool.query(
+            `SELECT
+                COUNT(*) FILTER (WHERE status IN ('completed', 'canceled', 'cancelled', 'missed')) as total_terminal,
+                COUNT(*) FILTER (WHERE status IN ('canceled', 'cancelled')) as total_canceled,
+                COUNT(*) FILTER (WHERE status = 'missed') as total_missed
+             FROM meetings
+             WHERE volunteer_id = $1`,
+            [volunteer_id]
+        );
+
+        const totalTerminal = parseInt(perfStats.total_terminal) || 0;
+        if (totalTerminal > 0) {
+            const cancelRate = (parseInt(perfStats.total_canceled) / totalTerminal) * 100;
+            const missedRate = (parseInt(perfStats.total_missed) / totalTerminal) * 100;
+            if (cancelRate >= cancelThreshold || missedRate >= missedThreshold) {
+                console.log(`[RECURRING] Skipping schedule ${scheduleId} — volunteer ${volunteer_name} (ID ${volunteer_id}) restricted (cancel: ${cancelRate.toFixed(1)}%, missed: ${missedRate.toFixed(1)}%)`);
+                continue;
+            }
+        }
+
+        // --- Cap check: how many upcoming meetings does this schedule already have? ---
+        const { rows: [{ count: upcomingCount }] } = await pool.query(
+            `SELECT COUNT(*)::int as count FROM meetings
+             WHERE recurring_schedule_id = $1 AND status = 'scheduled' AND scheduled_time > NOW()`,
+            [scheduleId]
+        );
+
+        if (upcomingCount >= maxUpcoming) {
+            console.log(`[RECURRING] Schedule ${scheduleId} already has ${upcomingCount}/${maxUpcoming} upcoming. Skipping.`);
+            totalSkipped++;
+            continue;
+        }
 
         // time_slot is a TIME value like '16:30:00'
         const [slotH, slotM] = time_slot.split(':').map(Number);
 
-        // Iterate today+1 through today+30
+        // Iterate today+1 through today+30, create at most (maxUpcoming - upcomingCount) meetings
+        let createdForSchedule = 0;
+        const remaining = maxUpcoming - upcomingCount;
         const today = new Date();
+
         for (let offset = 1; offset <= 30; offset++) {
+            if (createdForSchedule >= remaining) break;
+
             const targetDate = new Date(today);
             targetDate.setDate(today.getDate() + offset);
 
-            // Get the EAT day-of-week (JS: 0=Sun, 1=Mon ... 6=Sat)
-            // Our DB uses 1=Mon..6=Sat
-            const jsDow = targetDate.getDay(); // 0=Sun
-            // Convert to our format: Sun=0, Mon=1 ... Sat=6 (same mapping)
-            // But our constraint uses 1=Mon..6=Sat (no 0=Sunday)
-            if (jsDow === 0) continue; // Sunday — skip
+            // Get day-of-week in the schedule's timezone (not UTC)
+            const dowStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(targetDate);
+            const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+            const localDow = dayMap[dowStr];
+            if (localDow === 0) continue; // Sunday — skip
+            if (!days_of_week.includes(localDow)) continue;
 
-            if (!days_of_week.includes(jsDow)) continue;
-
-            // Build the scheduled time as EAT with +03:00 offset
-            const yr = targetDate.getFullYear();
-            const mo = String(targetDate.getMonth() + 1).padStart(2, '0');
-            const dy = String(targetDate.getDate()).padStart(2, '0');
+            // Get YYYY-MM-DD in the schedule's timezone
+            const localDateStr = new Intl.DateTimeFormat('en-CA', {
+                timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(targetDate);
             const hr = String(slotH).padStart(2, '0');
             const mi = String(slotM).padStart(2, '0');
-            const scheduledTime = `${yr}-${mo}-${dy}T${hr}:${mi}:00+03:00`;
 
-            // Check if volunteer already has a meeting at this exact time
+            // Use PostgreSQL AT TIME ZONE for DST-safe UTC conversion
+            const localDatetime = `${localDateStr} ${hr}:${mi}:00`;
+            const { rows: [{ ts: scheduledTime }] } = await pool.query(
+                `SELECT ($1::timestamp AT TIME ZONE $2)::timestamptz as ts`, [localDatetime, tz]
+            );
+
+            // Duplicate check: has ANY meeting ever existed at this volunteer + time slot?
             const { rows: existing } = await pool.query(
                 `SELECT id FROM meetings
-                 WHERE volunteer_id = $1 AND scheduled_time = $2
-                 AND status IN ('scheduled', 'in_progress')`,
+                 WHERE volunteer_id = $1 AND scheduled_time = $2`,
                 [volunteer_id, scheduledTime]
             );
 
@@ -158,7 +207,7 @@ async function processRecurringSchedules() {
             }
 
             // Auto-assign a student via round-robin
-            const student = await selectStudentRoundRobin(volunteer_id, scheduledTime);
+            const student = await selectStudentRoundRobin(volunteer_id, scheduledTime, tz);
             if (!student) {
                 totalSkipped++;
                 continue;
@@ -168,18 +217,19 @@ async function processRecurringSchedules() {
             const roomId = `talktime-${volunteer_id}-${studentId}-${Date.now()}-${offset}`;
 
             try {
-                const meeting = await Meeting.create({
-                    volunteerId: volunteer_id,
-                    studentId: studentId,
-                    scheduledTime: scheduledTime,
-                    roomId: roomId
-                });
+                const { rows: [meeting] } = await pool.query(
+                    `INSERT INTO meetings (volunteer_id, student_id, scheduled_time, room_id, status, recurring_schedule_id)
+                     VALUES ($1, $2, $3, $4, 'scheduled', $5)
+                     RETURNING *`,
+                    [volunteer_id, studentId, scheduledTime, roomId, scheduleId]
+                );
 
                 // Schedule notifications for the meeting
                 await scheduleMeetingNotifications(meeting);
                 totalCreated++;
+                createdForSchedule++;
             } catch (meetingErr) {
-                console.error(`[RECURRING] Failed to create meeting for volunteer ${volunteer_id} at ${scheduledTime}:`, meetingErr.message);
+                console.error(`[RECURRING] Failed to create meeting for schedule ${scheduleId} at ${scheduledTime}:`, meetingErr.message);
                 totalSkipped++;
             }
         }
