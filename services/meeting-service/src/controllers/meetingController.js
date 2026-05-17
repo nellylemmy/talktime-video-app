@@ -148,8 +148,8 @@ export const createMeeting = async (req, res) => {
             });
         }
 
-        // CRITICAL: Check 1-call-per-day rule
-        const existingMeeting = await checkOneCallPerDay(studentId, scheduledTime);
+        // CRITICAL: Check 1-call-per-day rule (use resolved users.id, not raw students.id)
+        const existingMeeting = await checkOneCallPerDay(actualStudentId, scheduledTime);
         if (existingMeeting) {
             return res.status(409).json({
                 error: 'Student already has a meeting scheduled for this date',
@@ -157,8 +157,8 @@ export const createMeeting = async (req, res) => {
             });
         }
 
-        // Check 3-meeting limit per volunteer-student pair
-        const meetingLimit = await checkThreeMeetingLimit(volunteerId, studentId);
+        // Check 3-meeting limit per volunteer-student pair (use resolved users.id)
+        const meetingLimit = await checkThreeMeetingLimit(volunteerId, actualStudentId);
         if (!meetingLimit.canSchedule) {
             return res.status(403).json({
                 error: 'You have reached the 3-meeting limit with this student.',
@@ -170,9 +170,9 @@ export const createMeeting = async (req, res) => {
         // Generate room ID
         const roomId = uuidv4();
 
-        // Create meeting
+        // Create meeting (use actualStudentId — always users.id, never students.id)
         const meeting = await Meeting.create({
-            studentId,
+            studentId: actualStudentId,
             volunteerId,
             scheduledTime,
             roomId,
@@ -348,11 +348,23 @@ export const getMeetingsByStudentId = async (req, res) => {
         const { studentId } = req.params;
         const volunteerId = req.user.id;
 
+        // Resolve students.id → users.id if the incoming ID is from the students table.
+        // meetings.student_id stores users.id, but the frontend may pass students.id.
+        let resolvedStudentId = studentId;
+        const studentsLookup = await pool.query(
+            'SELECT user_id FROM students WHERE id = $1',
+            [studentId]
+        );
+        if (studentsLookup.rows.length > 0 && studentsLookup.rows[0].user_id) {
+            resolvedStudentId = studentsLookup.rows[0].user_id;
+            console.log('[Meeting Service] Resolved students.id', studentId, '→ users.id', resolvedStudentId);
+        }
+
         // Find active meeting
-        const activeMeeting = await Meeting.findActiveByParticipants(studentId, volunteerId);
+        const activeMeeting = await Meeting.findActiveByParticipants(resolvedStudentId, volunteerId);
 
         // Get all meetings between this volunteer and student
-        const volunteerStudentMeetings = await Meeting.findByStudentIdWithVolunteer(studentId, volunteerId);
+        const volunteerStudentMeetings = await Meeting.findByStudentIdWithVolunteer(resolvedStudentId, volunteerId);
 
         // Get config values for status calculation
         const [timeoutMinutes, durationMinutes] = await Promise.all([
@@ -391,7 +403,7 @@ export const getMeetingsByStudentId = async (req, res) => {
         ).length;
 
         // Get meeting limit from config
-        const { limit: meetingLimit } = await checkThreeMeetingLimit(volunteerId, studentId);
+        const { limit: meetingLimit } = await checkThreeMeetingLimit(volunteerId, resolvedStudentId);
 
         res.json({
             activeMeeting: activeMeeting ? {
