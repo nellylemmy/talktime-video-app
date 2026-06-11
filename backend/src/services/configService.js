@@ -15,12 +15,13 @@ const PUBLIC_SETTINGS_CACHE_KEY = 'config:public';
 // Default values (fallback if database is unavailable)
 const DEFAULT_SETTINGS = {
     // Meeting settings
-    'meeting.duration_minutes': 40,
+    'meeting.duration_minutes': 30,
     'meeting.min_duration_minutes': 5,
-    'meeting.auto_timeout_minutes': 40,
+    'meeting.auto_timeout_minutes': 30,
     'meeting.max_future_months': 3,
     'meeting.calls_per_student_per_day': 1,
     'meeting.meetings_per_volunteer_student_pair': 3,
+    'meeting.max_concurrent_per_slot': 4,
 
     // Instant call settings
     'instant_call.response_timeout_seconds': 180,
@@ -30,10 +31,18 @@ const DEFAULT_SETTINGS = {
     'call_timer.warning_1_minutes': 5,
     'call_timer.warning_2_minutes': 1,
 
-    // Volunteer performance settings
+    // Volunteer performance settings (legacy percentage-based — kept for display)
     'volunteer.cancellation_rate_threshold': 40,
     'volunteer.missed_rate_threshold': 30,
     'volunteer.min_reputation_score': 30,
+
+    // Volunteer restriction settings (count-based — used for actual restriction)
+    'volunteer.cancel_count_threshold': 5,
+    'volunteer.missed_count_threshold': 4,
+    'volunteer.min_meetings_for_restriction': 5,
+
+    // Recurring schedule settings
+    'recurring.max_upcoming_per_schedule': 1,
 
     // Notification settings
     'notification.reminder_intervals_minutes': [30, 10, 5],
@@ -411,6 +420,13 @@ export async function getCallsPerStudentPerDay() {
 }
 
 /**
+ * Get max concurrent meetings per time slot
+ */
+export async function getMaxConcurrentPerSlot() {
+    return await getSetting('meeting.max_concurrent_per_slot');
+}
+
+/**
  * Get instant call response timeout in seconds
  */
 export async function getInstantCallTimeout() {
@@ -433,7 +449,10 @@ export async function getVolunteerThresholds() {
     const cancellationRate = await getSetting('volunteer.cancellation_rate_threshold');
     const missedRate = await getSetting('volunteer.missed_rate_threshold');
     const minScore = await getSetting('volunteer.min_reputation_score');
-    return { cancellationRate, missedRate, minScore };
+    const cancelCountThreshold = await getSetting('volunteer.cancel_count_threshold');
+    const missedCountThreshold = await getSetting('volunteer.missed_count_threshold');
+    const minMeetingsForRestriction = await getSetting('volunteer.min_meetings_for_restriction');
+    return { cancellationRate, missedRate, minScore, cancelCountThreshold, missedCountThreshold, minMeetingsForRestriction };
 }
 
 /**
@@ -441,6 +460,13 @@ export async function getVolunteerThresholds() {
  */
 export async function getReminderIntervals() {
     return await getSetting('notification.reminder_intervals_minutes');
+}
+
+/**
+ * Get max upcoming meetings per recurring schedule
+ */
+export async function getMaxUpcomingPerSchedule() {
+    return await getSetting('recurring.max_upcoming_per_schedule');
 }
 
 // Export default object for convenience
@@ -456,9 +482,11 @@ export default {
     getAutoTimeoutMinutes,
     getMeetingLimitPerPair,
     getCallsPerStudentPerDay,
+    getMaxConcurrentPerSlot,
     getInstantCallTimeout,
     getCallTimerWarnings,
     getVolunteerThresholds,
     getReminderIntervals,
+    getMaxUpcomingPerSchedule,
     DEFAULT_SETTINGS
 };

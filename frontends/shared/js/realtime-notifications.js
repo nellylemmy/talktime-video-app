@@ -46,11 +46,21 @@ class RealtimeNotifications {
                 await this.loadSocketIO();
             }
 
-            // Initialize Socket.IO connection
+            // Initialize Socket.IO connection.
+            // Pass the JWT explicitly (defense in depth - works even if a stale
+            // cached socket.io bundle without the auth shim is in play)
+            let authToken = null;
+            try {
+                for (const role of ['volunteer', 'student', 'admin']) {
+                    authToken = localStorage.getItem(`${role}_talktime_access_token`);
+                    if (authToken) break;
+                }
+            } catch (e) { /* storage blocked */ }
             this.socket = io({
                 transports: ['websocket', 'polling'],
                 upgrade: true,
-                rememberUpgrade: true
+                rememberUpgrade: true,
+                auth: authToken ? { token: authToken } : {}
             });
 
             this.setupEventListeners(userData);
@@ -78,7 +88,7 @@ class RealtimeNotifications {
             }
 
             const script = document.createElement('script');
-            script.src = '/socket.io/socket.io.js';
+            script.src = '/shared/js/vendor/socket.io.min.js?v=2';
             script.onload = resolve;
             script.onerror = reject;
             document.head.appendChild(script);
@@ -121,6 +131,15 @@ class RealtimeNotifications {
         });
 
         this.socket.on('connect_error', (error) => {
+            // Auth rejections will not heal by retrying - refresh the page token
+            // state instead of hammering the server 5 times
+            if (error && /auth/i.test(error.message || '')) {
+                console.warn('Real-time notifications: socket auth failed - stopping retries (stale session or stale cached script).');
+                this.triggerCallback('connectionStatus', { connected: false, error });
+                this.reconnectAttempts = this.maxReconnectAttempts;
+                if (this.socket) this.socket.disconnect();
+                return;
+            }
             console.error('Real-time notifications connection error:', error);
             this.triggerCallback('connectionStatus', { connected: false, error });
             this.reconnect();

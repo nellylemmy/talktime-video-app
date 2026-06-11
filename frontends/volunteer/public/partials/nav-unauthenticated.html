@@ -1,98 +1,20 @@
-<header id="main-header" class="fixed top-0 left-0 right-0 p-6 z-20">
-    <nav class="container mx-auto flex items-center justify-between relative">
-        <div class="flex flex-col">
-            <a href="/" class="flex items-center text-2xl font-bold" aria-label="TalkTime Home">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:var(--brand-primary);" />
-                            <stop offset="100%" style="stop-color:var(--brand-secondary);" />
-                        </linearGradient>
-                    </defs>
-                    <path stroke="url(#logo-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
-                </svg>
-                <span class="gradient-text">TALK TIME</span>
-            </a>
-            <div class="flex items-center gap-2">
-                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation" class="w-5 h-5 rounded-full object-cover border border-gray-200 self-center" />
-                <span class="text-xs text-gray-600 self-center">
-                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="hover:text-brand-primary transition-colors">
-                        Powered by ADEA Foundation
-                    </a>
-                </span>
-            </div>
-        </div>
+<!-- Unauthenticated top nav: identical skeleton to the authenticated nav,
+     with Log in | Sign up in place of the bell/name/avatar -->
+<header id="main-header" class="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100">
+    <div class="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
+        <!-- Logo - black, no gradient -->
+        <a href="/" class="flex items-center gap-2" aria-label="TalkTime Home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-7 md:w-7" viewBox="0 0 24 24" fill="none">
+                <path stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+            </svg>
+            <span class="font-bold text-gray-900 tracking-tight text-lg">TALKTIME</span>
+        </a>
 
-        <!-- Navigation Links for Non-authenticated Users -->
-        <div class="hidden md:flex items-center space-x-4">
-            <a href="/" class="px-4 py-2 text-gray-700 hover:text-brand-primary transition-colors flex items-center">
-                <i class="fas fa-home mr-2"></i>
-                Home
-            </a>
-            <a href="/volunteer/signup" class="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary transition-colors flex items-center">
-                <i class="fas fa-user-plus mr-2"></i>
-                Sign Up
-            </a>
-            <a href="/volunteer/login" class="px-4 py-2 text-gray-700 hover:text-brand-primary transition-colors flex items-center">
-                <i class="fas fa-sign-in-alt mr-2"></i>
-                Login
-            </a>
-        </div>
-
-        <!-- Mobile Menu Button -->
-        <div class="md:hidden">
-            <button id="mobile-menu-toggle" class="text-gray-800" aria-label="Toggle menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 6h16M4 12h16m-7 6h7"></path>
-                </svg>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="md:hidden hidden mt-4 p-4 glass-bg rounded-lg">
-        <div class="flex flex-col space-y-3">
-            <a href="/" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
-                <i class="fas fa-home mr-2"></i>
-                Home
-            </a>
-            <a href="/volunteer/signup" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
-                <i class="fas fa-user-plus mr-2"></i>
-                Sign Up
-            </a>
-            <a href="/volunteer/login" class="text-gray-700 hover:text-brand-primary transition-colors font-medium flex items-center py-2">
-                <i class="fas fa-sign-in-alt mr-2"></i>
-                Login
-            </a>
+        <!-- Log in | Sign up -->
+        <div class="flex items-center gap-1 sm:gap-2">
+            <a href="/volunteer/login" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors">Log in</a>
+            <span class="text-gray-300 select-none" aria-hidden="true">|</span>
+            <a href="/volunteer/signup" class="inline-flex items-center px-3 py-2 text-sm font-semibold text-white rounded-lg transition-colors" style="background:#D10100;">Sign up</a>
         </div>
     </div>
 </header>
-
-<script>
-    // Mobile menu functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-        const mobileMenu = document.getElementById('mobile-menu');
-
-        // Mobile menu toggle
-        if (mobileMenuToggle && mobileMenu) {
-            mobileMenuToggle.addEventListener('click', function() {
-                mobileMenu.classList.toggle('hidden');
-            });
-        }
-
-        // Highlight current page in navigation
-        const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('nav a[href]');
-        
-        navLinks.forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('text-brand-primary', 'font-bold');
-                link.classList.remove('text-gray-700');
-            }
-        });
-    });
-</script>

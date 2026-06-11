@@ -224,6 +224,13 @@ router.get('/ping', (req, res) => {
 });
 
 /**
+ * @route   GET /api/v1/volunteers/slot-capacity
+ * @desc    Get booking counts per time slot for a given date
+ * @access  Private (Volunteers only)
+ */
+router.get('/slot-capacity', volunteerController.getSlotCapacity);
+
+/**
  * @route   GET /api/v1/volunteers/students/cards
  * @desc    Get available student cards HTML
  * @access  Private (Volunteers only)
@@ -236,6 +243,30 @@ router.get('/students/cards', volunteerController.getStudentCards);
  * @access  Private (Volunteers only)
  */
 router.get('/my-students', volunteerController.getMyStudents);
+
+/**
+ * @route   GET /api/v1/volunteers/me/messages/unread-count
+ * @desc    Get count of unread messages for the volunteer (nav badge)
+ * @access  Private (Volunteers only)
+ */
+router.get('/me/messages/unread-count', volunteerJWTMiddleware, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT COUNT(*) as count
+             FROM messages
+             WHERE recipient_id = $1 AND is_read = false`,
+            [req.user.id]
+        );
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            unreadCount: parseInt(result.rows[0].count, 10)
+        });
+    } catch (error) {
+        console.error('Error fetching volunteer unread message count:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching unread count' });
+    }
+});
 
 /**
  * @route   POST /api/v1/volunteers/students/online-status
@@ -447,6 +478,13 @@ router.put('/settings', async (req, res) => {
 
         if (updateFields.length === 0) {
             return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        // Keep the canonical timezone in sync: scheduling and notifications
+        // read users.timezone, not volunteer_settings.primary_timezone
+        if (updates.primary_timezone !== undefined) {
+            await pool.query('UPDATE users SET timezone = $1, updated_at = NOW() WHERE id = $2',
+                [updates.primary_timezone, volunteerId]);
         }
 
         values.push(volunteerId);

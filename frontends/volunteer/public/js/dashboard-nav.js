@@ -8,6 +8,8 @@ class VolunteerDashboardNav {
     constructor() {
         this.currentPage = this.detectCurrentPage();
         this.user = null;
+        this._notifCount = 0;
+        this._msgCount = 0;
     }
 
     detectCurrentPage() {
@@ -17,7 +19,12 @@ class VolunteerDashboardNav {
         if (path.includes('students')) return 'students';
         if (path.includes('upcoming')) return 'upcoming';
         if (path.includes('history')) return 'history';
-        return 'students'; // default
+        if (path.includes('schedule')) return 'students';
+        // Non-tab pages (profile, settings, feedback, appeal): highlight
+        // nothing instead of falsely marking "Students" active
+        if (path.includes('profile') || path.includes('settings') ||
+            path.includes('feedback') || path.includes('appeal')) return null;
+        return 'students'; // dashboard default
     }
 
     /**
@@ -40,8 +47,63 @@ class VolunteerDashboardNav {
         // Add body class for proper padding
         document.body.classList.add('dashboard-page');
 
+        // Scoped styles for the "More" dropdown / bottom sheet
+        this.injectNavStyles();
+
         // Setup dropdown event listeners
         this.setupDropdownListeners();
+    }
+
+    injectNavStyles() {
+        if (document.getElementById('dashboard-nav-more-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'dashboard-nav-more-styles';
+        style.textContent = `
+            #more-tab-btn, #more-bottom-btn { -webkit-appearance: none; appearance: none; background: transparent; font: inherit; cursor: pointer; }
+            .tab-more-wrap { position: relative; }
+            .more-dropdown {
+                position: absolute; top: calc(100% + 0.5rem); right: 0;
+                min-width: 210px; background: #fff; border: 1px solid #f3f4f6;
+                border-radius: 0.75rem; box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.1));
+                padding: 0.5rem; z-index: 9999;
+                opacity: 0; visibility: hidden; transform: translateY(-8px);
+                transition: all 0.2s ease-in-out;
+            }
+            .more-dropdown.show { opacity: 1; visibility: visible; transform: translateY(0); }
+            .more-dropdown a {
+                display: flex; align-items: center; gap: 0.75rem; justify-content: space-between;
+                padding: 0.625rem 0.75rem; border-radius: 0.5rem; color: #374151;
+                font-size: 0.95rem; text-decoration: none; transition: background 0.15s ease;
+            }
+            .more-dropdown a:hover { background: #f9fafb; color: var(--brand-primary, #D10100); }
+            .more-dropdown a .mi-left { display: flex; align-items: center; gap: 0.75rem; }
+            .more-dropdown a i.mi-icon { width: 1.25rem; text-align: center; color: #9ca3af; }
+            .more-dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--brand-primary, #D10100); display: inline-block; }
+            .more-trigger-dot {
+                position: absolute; top: -2px; right: -3px; width: 8px; height: 8px;
+                border-radius: 9999px; background: #ef4444;
+            }
+            /* Mobile bottom sheet */
+            .more-sheet {
+                position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%) translateY(10px);
+                width: min(92vw, 360px); background: #fff; border: 1px solid #f3f4f6;
+                border-radius: 1rem; box-shadow: 0 -6px 30px rgba(0,0,0,0.18); padding: 0.5rem;
+                z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.2s ease-in-out;
+            }
+            .more-sheet.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+            .more-sheet a {
+                display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+                min-height: 48px; padding: 0.75rem 1rem; border-radius: 0.625rem; color: #374151;
+                font-size: 16px; text-decoration: none;
+            }
+            .more-sheet a:active { background: #f3f4f6; }
+            .more-sheet a .mi-left { display: flex; align-items: center; gap: 0.75rem; }
+            .more-sheet a i.mi-icon { width: 1.5rem; text-align: center; color: #9ca3af; }
+            @media (prefers-reduced-motion: reduce) {
+                .more-dropdown, .more-sheet { transition-duration: 0.01ms; }
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     loadUserData() {
@@ -166,7 +228,7 @@ class VolunteerDashboardNav {
         <header class="mobile-header fixed top-0 left-0 right-0 z-40">
             <div class="header-inner">
                 <!-- Logo - Black, no gradient -->
-                <a href="/volunteer" class="flex items-center gap-2">
+                <a href="/" class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-7 md:w-7" viewBox="0 0 24 24" fill="none">
                         <path stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
                     </svg>
@@ -208,17 +270,17 @@ class VolunteerDashboardNav {
                                     <i class="fas fa-cog text-gray-400 w-5 text-center"></i>
                                     <span>Settings</span>
                                 </a>
+                                <a href="/volunteer/dashboard/feedback" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-comment-dots text-gray-400 w-5 text-center"></i>
+                                    <span>Send Feedback</span>
+                                </a>
                             </div>
 
                             <!-- Navigation Links -->
                             <div class="py-1 border-b border-gray-100">
-                                <a href="/volunteer" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                                <a href="/" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
                                     <i class="fas fa-home text-gray-400 w-5 text-center"></i>
                                     <span>Home</span>
-                                </a>
-                                <a href="/volunteer/who-we-are" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-info-circle text-gray-400 w-5 text-center"></i>
-                                    <span>Who We Are</span>
                                 </a>
                             </div>
 
@@ -266,6 +328,30 @@ class VolunteerDashboardNav {
                 this.handleLogout();
             });
         }
+
+        // "More" dropdown (desktop tabs)
+        const moreBtn = document.getElementById('more-tab-btn');
+        const moreDropdown = document.getElementById('more-dropdown');
+        if (moreBtn && moreDropdown) {
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moreDropdown.classList.toggle('show');
+            });
+            moreDropdown.addEventListener('click', (e) => e.stopPropagation());
+            document.addEventListener('click', () => moreDropdown.classList.remove('show'));
+        }
+
+        // "More" bottom sheet (mobile bottom nav)
+        const moreBottomBtn = document.getElementById('more-bottom-btn');
+        const moreSheet = document.getElementById('more-sheet');
+        if (moreBottomBtn && moreSheet) {
+            moreBottomBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moreSheet.classList.toggle('show');
+            });
+            moreSheet.addEventListener('click', (e) => e.stopPropagation());
+            document.addEventListener('click', () => moreSheet.classList.remove('show'));
+        }
     }
 
     handleLogout() {
@@ -275,83 +361,78 @@ class VolunteerDashboardNav {
         localStorage.removeItem('volunteer_talktime_user');
         localStorage.removeItem('volunteer_user');
 
-        // Redirect to login
-        window.location.href = '/volunteer/login';
+        // Land on the public home page after an explicit logout
+        window.location.href = '/';
     }
 
     renderDesktopTabs() {
-        const tabs = [
-            { id: 'students', label: 'My Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
-            { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' },
-            { id: 'history', label: 'History', icon: 'fa-history', href: '/volunteer/dashboard/history' },
-            { id: 'messages', label: 'Messages', icon: 'fa-envelope', href: '/volunteer/dashboard/messages' },
-            { id: 'notifications', label: 'Notifications', icon: 'fa-bell', href: '/volunteer/notifications' }
+        const primary = [
+            { id: 'students', label: 'Schedules', icon: 'fa-calendar-check', href: '/volunteer/dashboard/students' },
+            { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' }
         ];
 
-        const tabsHtml = tabs.map(tab => {
+        const primaryHtml = primary.map(tab => {
             const isActive = this.currentPage === tab.id;
             const activeClass = isActive ? 'active text-brand-primary border-brand' : 'text-gray-600 border-transparent hover:text-gray-800';
-
-            // Badge HTML based on tab type
-            let badgeHtml = '';
-            if (tab.id === 'upcoming') {
-                badgeHtml = '<span id="upcoming-badge-desktop" class="hidden ml-1 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">0</span>';
-            } else if (tab.id === 'notifications') {
-                badgeHtml = '<span id="notifications-tab-badge" class="hidden ml-1 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>';
-            }
-
-            // Dot indicator for notifications and messages
-            let dotHtml = '';
-            if (tab.id === 'notifications') {
-                dotHtml = '<span id="notifications-tab-dot" class="hidden absolute -top-1 -left-0.5 w-2 h-2 bg-red-500 rounded-full"></span>';
-            } else if (tab.id === 'messages') {
-                dotHtml = '<span id="messages-tab-dot" class="hidden absolute -top-1 -left-0.5 w-2 h-2 bg-brand-primary rounded-full"></span>';
-            }
-
+            const badgeHtml = tab.id === 'upcoming'
+                ? '<span id="upcoming-badge-desktop" class="hidden ml-1 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">0</span>'
+                : '';
             return `
                 <a href="${tab.href}" class="tab-btn ${activeClass} border-b-2 flex items-center gap-2">
-                    <span class="relative inline-block">
-                        <i class="fas ${tab.icon}"></i>
-                        ${dotHtml}
-                    </span>
+                    <span class="relative inline-block"><i class="fas ${tab.icon}"></i></span>
                     <span>${tab.label}</span>
                     ${badgeHtml}
                 </a>
             `;
         }).join('');
 
+        const moreActive = ['history', 'messages', 'notifications'].includes(this.currentPage);
+        const moreActiveClass = moreActive ? 'active text-brand-primary border-brand' : 'text-gray-600 border-transparent hover:text-gray-800';
+
         return `
         <div class="desktop-tabs">
             <nav>
-                ${tabsHtml}
+                ${primaryHtml}
+                <div class="tab-more-wrap">
+                    <button type="button" id="more-tab-btn" class="tab-btn ${moreActiveClass} border-b-2 flex items-center gap-2">
+                        <span class="relative inline-block">
+                            <i class="fas fa-ellipsis-h"></i>
+                            <span id="more-tab-dot" class="more-trigger-dot hidden"></span>
+                        </span>
+                        <span>More</span>
+                        <i class="fas fa-chevron-down" style="font-size:11px"></i>
+                    </button>
+                    <div id="more-dropdown" class="more-dropdown">
+                        <a href="/volunteer/dashboard/history">
+                            <span class="mi-left"><i class="fas fa-history mi-icon"></i>History</span>
+                        </a>
+                        <a href="/volunteer/dashboard/messages">
+                            <span class="mi-left"><i class="fas fa-envelope mi-icon"></i>Messages</span>
+                            <span id="messages-tab-dot" class="more-dot hidden"></span>
+                        </a>
+                        <a href="/volunteer/notifications">
+                            <span class="mi-left"><i class="fas fa-bell mi-icon"></i>Notifications</span>
+                            <span id="notifications-tab-badge" class="hidden min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                        </a>
+                    </div>
+                </div>
             </nav>
         </div>
         `;
     }
 
     renderBottomNav() {
-        const navItems = [
-            { id: 'students', label: 'My Students', icon: 'fa-users', href: '/volunteer/dashboard/students' },
-            { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' },
-            { id: 'history', label: 'History', icon: 'fa-history', href: '/volunteer/dashboard/history' },
-            { id: 'messages', label: 'Messages', icon: 'fa-envelope', href: '/volunteer/dashboard/messages' },
-            { id: 'notifications', label: 'Alerts', icon: 'fa-bell', href: '/volunteer/notifications' }
+        const primary = [
+            { id: 'students', label: 'Schedules', icon: 'fa-calendar-check', href: '/volunteer/dashboard/students' },
+            { id: 'upcoming', label: 'Upcoming', icon: 'fa-calendar-alt', href: '/volunteer/dashboard/upcoming' }
         ];
 
-        const navHtml = navItems.map(item => {
+        const primaryHtml = primary.map(item => {
             const isActive = this.currentPage === item.id;
             const activeClass = isActive ? 'active' : '';
-
-            // Badge/dot HTML based on item type
-            let badgeHtml = '';
-            if (item.id === 'upcoming') {
-                badgeHtml = '<span id="upcoming-badge-mobile" class="hidden absolute -top-1 right-1/4 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">0</span>';
-            } else if (item.id === 'notifications') {
-                badgeHtml = '<span id="notifications-tab-dot-mobile" class="hidden absolute -top-0.5 -left-0.5 w-2 h-2 bg-red-500 rounded-full"></span>';
-            } else if (item.id === 'messages') {
-                badgeHtml = '<span id="messages-tab-dot-mobile" class="hidden absolute -top-0.5 -left-0.5 w-2 h-2 bg-brand-primary rounded-full"></span>';
-            }
-
+            const badgeHtml = item.id === 'upcoming'
+                ? '<span id="upcoming-badge-mobile" class="hidden absolute -top-1 right-1/4 w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">0</span>'
+                : '';
             return `
                 <a href="${item.href}" class="bottom-nav-item ${activeClass}">
                     <span class="relative inline-block">
@@ -363,10 +444,32 @@ class VolunteerDashboardNav {
             `;
         }).join('');
 
+        const moreActive = ['history', 'messages', 'notifications'].includes(this.currentPage) ? 'active' : '';
+
         return `
         <nav class="bottom-nav">
-            ${navHtml}
+            ${primaryHtml}
+            <button type="button" id="more-bottom-btn" class="bottom-nav-item ${moreActive}">
+                <span class="relative inline-block">
+                    <i class="fas fa-ellipsis-h"></i>
+                    <span id="more-tab-dot-mobile" class="hidden absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </span>
+                <span>More</span>
+            </button>
         </nav>
+        <div id="more-sheet" class="more-sheet">
+            <a href="/volunteer/dashboard/history">
+                <span class="mi-left"><i class="fas fa-history mi-icon"></i>History</span>
+            </a>
+            <a href="/volunteer/dashboard/messages">
+                <span class="mi-left"><i class="fas fa-envelope mi-icon"></i>Messages</span>
+                <span id="messages-tab-dot-mobile" class="more-dot hidden"></span>
+            </a>
+            <a href="/volunteer/notifications">
+                <span class="mi-left"><i class="fas fa-bell mi-icon"></i>Notifications</span>
+                <span id="notifications-tab-dot-mobile" class="more-dot hidden" style="background:#ef4444"></span>
+            </a>
+        </div>
         `;
     }
 
@@ -398,17 +501,33 @@ class VolunteerDashboardNav {
      * @param {number} count - Number of unread messages
      */
     updateMessageBadge(count) {
-        // Desktop tab dot indicator
+        this._msgCount = count || 0;
+
+        // Messages dot inside the More dropdown (desktop)
         const tabDot = document.getElementById('messages-tab-dot');
         if (tabDot) {
             tabDot.classList.toggle('hidden', count === 0);
         }
 
-        // Mobile tab dot indicator
+        // Messages dot inside the More sheet (mobile)
         const tabDotMobile = document.getElementById('messages-tab-dot-mobile');
         if (tabDotMobile) {
             tabDotMobile.classList.toggle('hidden', count === 0);
         }
+
+        this.updateMoreDot();
+    }
+
+    /**
+     * Show an aggregate dot on the More trigger when notifications OR messages are unread,
+     * so collapsing the tabs never hides that there is something to see.
+     */
+    updateMoreDot() {
+        const hasUnread = (this._notifCount > 0) || (this._msgCount > 0);
+        const moreDot = document.getElementById('more-tab-dot');
+        if (moreDot) moreDot.classList.toggle('hidden', !hasUnread);
+        const moreDotMobile = document.getElementById('more-tab-dot-mobile');
+        if (moreDotMobile) moreDotMobile.classList.toggle('hidden', !hasUnread);
     }
 
     /**
@@ -416,6 +535,8 @@ class VolunteerDashboardNav {
      * @param {number} count - Number of unread notifications
      */
     updateNotificationBadge(count) {
+        this._notifCount = count || 0;
+
         // Header bell badge (numeric count)
         const headerBadge = document.getElementById('notification-badge');
         if (headerBadge) {
@@ -427,7 +548,7 @@ class VolunteerDashboardNav {
             }
         }
 
-        // Desktop tab badge (numeric count)
+        // Numeric badge on the Notifications item inside the More dropdown (desktop)
         const tabBadge = document.getElementById('notifications-tab-badge');
         if (tabBadge) {
             if (count > 0) {
@@ -438,17 +559,13 @@ class VolunteerDashboardNav {
             }
         }
 
-        // Desktop tab dot indicator
-        const tabDot = document.getElementById('notifications-tab-dot');
-        if (tabDot) {
-            tabDot.classList.toggle('hidden', count === 0);
-        }
-
-        // Mobile tab dot indicator
+        // Notifications dot inside the More sheet (mobile)
         const tabDotMobile = document.getElementById('notifications-tab-dot-mobile');
         if (tabDotMobile) {
             tabDotMobile.classList.toggle('hidden', count === 0);
         }
+
+        this.updateMoreDot();
     }
 
     /**

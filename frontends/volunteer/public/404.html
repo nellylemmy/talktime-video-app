@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Not Found - TalkTime</title>
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
     <style>
         * {
             margin: 0;
@@ -22,6 +24,7 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f8fafc;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,7 +41,7 @@
         .error-code {
             font-size: clamp(80px, 20vw, 140px);
             font-weight: 700;
-            background: linear-gradient(135deg, var(--brand-primary, #D10100), var(--brand-secondary, #3867FF));
+            background: linear-gradient(135deg, var(--brand-primary, #D10100), var(--brand-secondary, #5f6a2d));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -50,7 +53,7 @@
             width: 64px;
             height: 64px;
             margin: 0 auto 24px;
-            background: linear-gradient(135deg, rgba(209, 1, 0, 0.1), rgba(56, 103, 255, 0.1));
+            background: linear-gradient(135deg, rgba(209, 1, 0, 0.1), rgba(95, 106, 45, 0.1));
             border-radius: 50%;
             display: flex;
             align-items: center;

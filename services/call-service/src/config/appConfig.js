@@ -11,7 +11,7 @@ const CACHE_TTL = 60 * 1000; // 1 minute cache
 
 // Default values (fallback if database is unavailable)
 const DEFAULT_CONFIG = {
-    'meeting.duration_minutes': 40,
+    'meeting.duration_minutes': 30,
     'call_timer.warning_1_minutes': 5,
     'call_timer.warning_2_minutes': 1
 };

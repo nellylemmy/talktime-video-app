@@ -92,7 +92,13 @@ self.addEventListener('push', event => {
     console.log('📨 Push message received');
     
     if (event.data) {
-        const data = event.data.json();
+        let data;
+        try {
+            data = event.data.json();
+        } catch (e) {
+            // Non-JSON payload: show a generic notification instead of crashing
+            data = { title: 'TalkTime', message: event.data.text ? event.data.text() : 'You have a new notification' };
+        }
         event.waitUntil(handlePushMessage(data));
     }
 });
@@ -169,7 +175,7 @@ async function handleViewDashboard(data) {
 async function handleAddToCalendar(data) {
     if (data.scheduled_time) {
         const startDate = new Date(data.scheduled_time);
-        const endDate = new Date(startDate.getTime() + 40 * 60000); // 40 minutes
+        const endDate = new Date(startDate.getTime() + 30 * 60000); // 30 minutes
         
         const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=TalkTime Meeting&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=TalkTime conversation practice session&location=Online`;
         

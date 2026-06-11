@@ -728,7 +728,7 @@ class TalkTimeNav extends HTMLElement {
                             <span class="logo-text">TALK TIME</span>
                         </a>
                         <div class="powered-by">
-                            <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA">
+                            <img src="/shared/images/adea-logo.jpg" alt="ADEA">
                             <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
                         </div>
                     </div>
@@ -742,9 +742,6 @@ class TalkTimeNav extends HTMLElement {
                                 </a>
                             </li>
                             <li>
-                                <a href="/volunteer/who-we-are.html" class="nav-link">
-                                    <i class="fas fa-heart"></i>Who We Are
-                                </a>
                             </li>
                             <li class="auth-only">
                                 <a href="/volunteer/dashboard/students.html" class="nav-link">
@@ -781,9 +778,6 @@ class TalkTimeNav extends HTMLElement {
                             <div class="dropdown">
                                 <a href="/" class="dropdown-item">
                                     <i class="fas fa-home"></i>Home
-                                </a>
-                                <a href="/volunteer/who-we-are.html" class="dropdown-item">
-                                    <i class="fas fa-heart"></i>Who We Are
                                 </a>
                                 <a href="/volunteer/dashboard/students.html" class="dropdown-item">
                                     <i class="fas fa-tachometer-alt"></i>Dashboard
@@ -871,9 +865,6 @@ class TalkTimeNav extends HTMLElement {
                 <div class="mobile-nav-items">
                     <a href="/" class="mobile-nav-item">
                         <i class="fas fa-home"></i>Home
-                    </a>
-                    <a href="/volunteer/who-we-are.html" class="mobile-nav-item">
-                        <i class="fas fa-heart"></i>Who We Are
                     </a>
                     <div class="auth-only">
                         <a href="/volunteer/dashboard/students.html" class="mobile-nav-item">

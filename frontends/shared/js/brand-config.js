@@ -21,11 +21,11 @@ window.TalkTimeBrand = {
     // Primary brand colors - MUST MATCH brand-theme.css
     colors: {
       primary: '#D10100',        // Red
-      secondary: '#3867FF',      // Blue
+      secondary: '#5f6a2d',      // Blue
       primaryDark: '#7d0000',    // Dark Red
-      secondaryDark: '#001d7d',  // Dark Blue
+      secondaryDark: '#4d561f',  // Dark Blue
       primaryLight: '#ff3d3d',   // Light Red
-      secondaryLight: '#7d9cff', // Light Blue
+      secondaryLight: '#97a35a', // Light Blue
 
       // Semantic colors
       success: '#116C00',
@@ -38,7 +38,7 @@ window.TalkTimeBrand = {
     logo: {
       gradient: 'logo-gradient',
       primaryColor: '#D10100',
-      secondaryColor: '#3867FF'
+      secondaryColor: '#5f6a2d'
     }
   },
 
@@ -172,7 +172,7 @@ window.TalkTimeBrand = {
       success: '#10b981',
       warning: '#f59e0b',
       error: '#ef4444',
-      info: '#3b82f6'
+      info: '#5f6a2d'
     };
     this.applyTheme();
     localStorage.removeItem('talktime-brand-colors');
@@ -247,7 +247,7 @@ window.TalkTimeBrand = {
     midnight: {
       name: 'Midnight Blue',
       primary: '#1e3a8a',
-      secondary: '#3b82f6'
+      secondary: '#5f6a2d'
     },
     rose: {
       name: 'Rose Pink',
@@ -289,3 +289,36 @@ if (document.readyState === 'loading') {
   TalkTimeBrand.init();
   TalkTimeBrand.loadSavedTheme();
 }
+/* Apply the saved page-zoom preference on every page, as early as possible.
+   The Settings page writes talktime_zoom_level; this makes it truly global. */
+(function () {
+    try {
+        var z = parseInt(localStorage.getItem('talktime_zoom_level') || '100', 10);
+        if (z && z !== 100 && z >= 50 && z <= 200) {
+            document.documentElement.style.zoom = z + '%';
+        }
+    } catch (e) { /* storage blocked */ }
+})();
+
+/* Defensive scrub: the "Who We Are" page must have no links anywhere (owner
+   directive). Removes any survivor from stale-cached nav markup at runtime. */
+(function () {
+    function scrub() {
+        try {
+            document.querySelectorAll('a[href*="who-we-are"]').forEach(function (a) { a.remove(); });
+        } catch (e) { /* ignore */ }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scrub);
+    } else {
+        scrub();
+    }
+    // Navs are injected after DOMContentLoaded - watch briefly for late arrivals
+    if (typeof MutationObserver !== 'undefined') {
+        var mo = new MutationObserver(scrub);
+        if (document.documentElement) {
+            mo.observe(document.documentElement, { childList: true, subtree: true });
+            setTimeout(function () { mo.disconnect(); }, 15000);
+        }
+    }
+})();

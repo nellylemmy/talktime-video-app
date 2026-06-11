@@ -2,26 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TalkTime - Login</title>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
 
     <!-- Google Fonts: Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
 
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
 
     <!-- JWT Authentication Utilities -->
-    <script src="/volunteer/js/jwt-auth.js"></script>
-    <script src="/volunteer/js/modal-utils.js"></script>
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    <script src="/shared/js/realtime-notifications.js"></script>
+    <script src="/volunteer/js/jwt-auth.js?v=4"></script>
+    <script src="/shared/js/modal-utils.js?v=4"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script src="/shared/js/realtime-notifications.js?v=4"></script>
 
     <style>
         * {
@@ -34,6 +36,7 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f8fafc;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
         }
@@ -329,9 +332,9 @@
         .bg-green-100 { background-color: #dcfce7; }
         .bg-red-100 { background-color: #fee2e2; }
         .bg-yellow-100 { background-color: #fef9c3; }
-        .bg-blue-100 { background-color: #dbeafe; }
+        .bg-blue-100 { background-color: #e7e9d9; }
         .bg-gray-100 { background-color: #f3f4f6; }
-        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-600 { background-color: #54602a; }
         .bg-green-600 { background-color: #16a34a; }
         .bg-red-600 { background-color: #dc2626; }
         .text-white { color: #fff; }
@@ -342,7 +345,7 @@
         .text-green-600 { color: #16a34a; }
         .text-red-600 { color: #dc2626; }
         .text-yellow-600 { color: #ca8a04; }
-        .text-blue-600 { color: #2563eb; }
+        .text-blue-600 { color: #54602a; }
         .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
         .font-medium { font-weight: 500; }
         .font-semibold { font-weight: 600; }
@@ -374,16 +377,16 @@
         .w-8 { width: 2rem; }
         .h-8 { height: 2rem; }
         .flex-shrink-0 { flex-shrink: 0; }
-        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-blue-700:hover { background-color: #4d561f; }
         .hover\:bg-green-700:hover { background-color: #15803d; }
         .hover\:bg-red-700:hover { background-color: #b91c1c; }
         .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
         .hover\:text-gray-600:hover { color: #4b5563; }
         .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
         .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
-        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:border-blue-500:focus { border-color: #3b82f6; }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:border-blue-500:focus { border-color: #5f6a2d; }
 
         /* Modal input field override */
         #talktime-modal-container input[type="text"],
@@ -417,7 +420,7 @@
                 <span class="logo-text">TALK TIME</span>
             </a>
             <div class="powered-by">
-                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <img src="/shared/images/adea-logo.jpg" alt="ADEA Foundation">
                 <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
             </div>
         </div>
@@ -549,8 +552,16 @@
                         }
                     );
                 } else {
-                    // Fallback to alert if modal system fails
-                    alert(error.message || 'Login failed. Please try again.');
+                    // Non-blocking inline fallback if the modal system failed to load
+                    let fb = document.getElementById('login-fallback-error');
+                    if (!fb) {
+                        fb = document.createElement('p');
+                        fb.id = 'login-fallback-error';
+                        fb.setAttribute('role', 'alert');
+                        fb.style.cssText = 'color:#7d0000;font-size:14px;margin-top:12px;text-align:center;';
+                        submitButton.parentNode.appendChild(fb);
+                    }
+                    fb.textContent = error.message || 'Login failed. Please try again.';
                 }
             } finally {
                 // Re-enable submit button

@@ -44,6 +44,15 @@ router.post('/volunteer/login', async (req, res) => {
             });
         }
 
+        // Block volunteers pending parental approval
+        if (user.is_approved === false) {
+            return res.status(403).json({
+                success: false,
+                code: 'PENDING_APPROVAL',
+                error: 'Your account is waiting for parent or guardian approval. Please ask them to check their email.'
+            });
+        }
+
         // Generate JWT token using utility function with proper audience
         const tokens = generateTokens(user);
 
@@ -70,6 +79,29 @@ router.post('/volunteer/login', async (req, res) => {
             success: false,
             error: 'Internal server error'
         });
+    }
+});
+
+/**
+ * @route   GET /api/v1/jwt-auth/volunteer/check-email?email=...
+ * @desc    Check whether an email is available for signup (early wizard validation)
+ * @access  Public
+ */
+router.get('/volunteer/check-email', async (req, res) => {
+    try {
+        const email = (req.query.email || '').trim();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, error: 'Valid email is required' });
+        }
+        const { rows } = await pool.query(
+            'SELECT 1 FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1',
+            [email]
+        );
+        res.json({ success: true, available: rows.length === 0 });
+    } catch (error) {
+        console.error('Email availability check error:', error);
+        // Fail open: signup still validates on final submit
+        res.json({ success: true, available: true });
     }
 });
 
@@ -218,9 +250,18 @@ router.post('/volunteer/verify-security-answers', async (req, res) => {
 router.post('/volunteer/reset-password', async (req, res) => {
     try {
         const { reset_token, new_password } = req.body;
-        
+
         console.log('Password reset attempt with token');
-        
+
+        // Same strength policy as signup
+        const resetPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;':",.<>?\/`~]).{8,}$/;
+        if (new_password && !resetPasswordRegex.test(new_password)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Password must be at least 8 characters with one uppercase letter, one number, and one special character'
+            });
+        }
+
         if (!reset_token || !new_password) {
             return res.status(400).json({
                 success: false,
@@ -298,6 +339,15 @@ router.post('/volunteer/signup', async (req, res) => {
             });
         }
         
+        // Validate password strength
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;':",.<>?\/`~]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Password must be at least 8 characters with one uppercase letter, one number, and one special character'
+            });
+        }
+
         // Validate timezone format (IANA timezone identifier)
         if (timezone && typeof timezone === 'string') {
             const validTimezonePattern = /^[A-Za-z_]+\/[A-Za-z_]+$/;
@@ -379,14 +429,14 @@ router.post('/volunteer/signup', async (req, res) => {
         
         const insertQuery = `
             INSERT INTO users (
-                username, full_name, email, password_hash, role, volunteer_type, is_under_18, 
-                age, gender, phone, timezone, parent_email, parent_phone, school_name, 
+                username, full_name, email, password_hash, role, volunteer_type, is_under_18,
+                age, gender, phone, timezone, parent_email, parent_phone, school_name,
                 security_question_1, security_answer_1_hash,
                 security_question_2, security_answer_2_hash,
                 security_question_3, security_answer_3_hash,
-                created_at, updated_at
+                is_approved, created_at, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW(), NOW())
             RETURNING *
         `;
         const { rows: newUserRows } = await pool.query(insertQuery, [
@@ -409,7 +459,8 @@ router.post('/volunteer/signup', async (req, res) => {
             security_questions[1].question,
             hashedAnswers[1],
             security_questions[2].question,
-            hashedAnswers[2]
+            hashedAnswers[2],
+            !needsParentalApproval
         ]);
         const newUser = newUserRows[0];
         

@@ -22,7 +22,7 @@ html, body {
 body.dashboard-page {
     padding-top: 70px;
     padding-bottom: 85px; /* Enlarged bottom nav */
-    background-color: #f0f4ff;
+    background-color: #f4f5ee;
     min-height: 100vh;
 }
 
@@ -180,7 +180,7 @@ body.dashboard-page {
 }
 
 .status-scheduled {
-    background: rgba(56, 103, 255, 0.1);
+    background: rgba(95, 106, 45, 0.1);
     color: var(--brand-secondary);
 }
 

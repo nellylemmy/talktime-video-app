@@ -23,12 +23,15 @@ import meetingValidationRoutes from './api/v1/routes/meetingValidationRoutes.js'
 import meetingAccessRoutes from './routes/meetingAccess.js';
 import parentalApprovalRoutes from './routes/parentalApproval.js';
 import messageRoutes from './api/v1/routes/messageRoutes.js';
+import feedbackRoutes from './api/v1/routes/feedbackRoutes.js';
+import appealRoutes from './api/v1/routes/appealRoutes.js';
 // Notification routes REMOVED - handled by notification-service microservice
 // import notificationRoutes from './routes/notifications.js';
 // Newsletter routes REMOVED - handled by newsletter-service microservice
 // import newsletterRoutes from './routes/newsletter.js';
 // import uploadRoutes from './routes/upload.js';
 import mailchimpRoutes from './api/v1/routes/mailchimpRoutes.js';
+import newsletterRoutes from './api/v1/routes/newsletterRoutes.js';
 import uploadRoutes from './api/v1/routes/uploadRoutes.js';
 import pushNotificationRoutes from './routes/push-notifications.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -134,7 +137,10 @@ app.use('/api/v1/meeting', jwtAuthMiddleware, meetingAccessRoutes);
 // Notification routes REMOVED - handled by notification-service microservice
 // app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/mailchimp', mailchimpRoutes);
+app.use('/api/v1/newsletters', newsletterRoutes);
 app.use('/api/v1/messages', jwtAuthMiddleware, messageRoutes);
+app.use('/api/v1/feedback', jwtAuthMiddleware, feedbackRoutes);
+app.use('/api/v1/appeals', jwtAuthMiddleware, appealRoutes);
 // app.use('/api/v1/upload', uploadRoutes);
 
 // Health check endpoint

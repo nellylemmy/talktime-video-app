@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -15,8 +15,12 @@
     </script>
 
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
     <meta name="description" content="View and manage your TalkTime notifications">
     <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/notifications">
 
@@ -31,10 +35,11 @@
     <link rel="stylesheet" href="css/volunteer-dashboard.css">
 
     <!-- Deferred Scripts (non-render-blocking) -->
-    <script defer src="/shared/js/brand-config.js"></script>
-    <script defer src="js/dashboard-nav.js"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js"></script>
-    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/shared/js/brand-config.js?v=6"></script>
+    <script defer src="js/dashboard-nav.js?v=7"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
+    <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
     
     <style>
         /* Section heading - flat color, no gradient */
@@ -110,7 +115,7 @@
 
         /* Unread State - Blue accent (matches student design) */
         .notification-item.unread {
-            border: 1px solid #bfdbfe;
+            border: 1px solid #d3d7ba;
             background: rgba(239, 246, 255, 0.5);
         }
 
@@ -140,8 +145,8 @@
             color: #16a34a;
         }
         .notif-type-icon.reminder {
-            background: #dbeafe;
-            color: #2563eb;
+            background: #e7e9d9;
+            color: #54602a;
         }
         .notif-type-icon.system {
             background: #f3e8ff;
@@ -160,8 +165,8 @@
             color: #ea580c;
         }
         .notif-type-icon.message {
-            background: #dbeafe;
-            color: #2563eb;
+            background: #e7e9d9;
+            color: #54602a;
         }
 
         /* Unread Indicator - Blue dot on icon (matches student) */
@@ -171,7 +176,7 @@
             right: -2px;
             width: 12px;
             height: 12px;
-            background: #3b82f6;
+            background: #5f6a2d;
             border-radius: 50%;
             border: 2px solid #ffffff;
         }
@@ -205,8 +210,8 @@
         .notif-new-badge {
             font-size: 12px;
             font-weight: 500;
-            color: #2563eb;
-            background: #dbeafe;
+            color: #54602a;
+            background: #e7e9d9;
             padding: 2px 8px;
             border-radius: 9999px;
             flex-shrink: 0;
@@ -438,6 +443,7 @@
     </style>
 </head>
 <body class="dashboard-page" style="opacity:0">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
     <!-- Background Blobs - Hidden on mobile for performance -->
     <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
     <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
@@ -446,18 +452,19 @@
     <div id="dashboard-nav-container"></div>
 
     <main class="content-area">
-        <div class="w-full">
-            <!-- Page Header - Stacked layout for 600px width -->
+        <div class="max-w-3xl mx-auto w-full">
+            <!-- Page Header -->
             <div class="flex flex-col gap-4 mb-6">
-                <h1 class="text-2xl font-bold section-heading">
-                    <i class="fas fa-bell mr-2"></i>Notifications
-                </h1>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Notifications</h1>
+                    <p class="text-sm text-gray-500 mt-1">Reminders, meeting changes and messages - tap one to open it.</p>
+                </div>
                 <div class="flex flex-wrap gap-2">
-                    <button id="mark-all-read-btn" class="flex-1 min-w-0 inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    <button id="mark-all-read-btn" class="tt-btn-soft flex-1 min-w-0 justify-center" style="background:#fff;border:1px solid #e5e7eb;color:#374151;">
                         <i class="fas fa-check-double mr-2 text-gray-500"></i>
                         <span class="truncate">Mark All Read</span>
                     </button>
-                    <button id="refresh-btn" class="flex-1 min-w-0 inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-brand-primary hover:opacity-90 transition-all">
+                    <button id="refresh-btn" class="tt-btn-soft flex-1 min-w-0 justify-center" style="background:#D10100;color:#fff;">
                         <i id="refresh-icon" class="fas fa-sync-alt mr-2"></i>
                         <span class="truncate">Refresh</span>
                     </button>
@@ -547,514 +554,8 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
 
-    <script src="/shared/js/realtime-notifications.js"></script>
-    <script>
-        let currentPage = 1;
-        let totalPages = 1;
-        let currentFilters = {
-            status: 'all',
-            priority: 'all',
-            type: 'all'
-        };
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.body.classList.add('page-ready');
-            // Initialize TalkTimeAuth if not already done
-            if (!window.TalkTimeAuth && typeof TalkTimeJWTAuth !== 'undefined') {
-                window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-            }
-
-            // Short delay to ensure auth is ready
-            setTimeout(async () => {
-                if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
-                    await loadNotifications();
-                    setupEventListeners();
-                } else {
-                    console.error('User not authenticated');
-                    window.location.href = '/volunteer/login';
-                }
-            }, 500);
-        });
-
-        async function loadNotifications() {
-            try {
-                showLoading(true);
-                
-                const queryParams = new URLSearchParams({
-                    page: currentPage,
-                    limit: 20,
-                    ...currentFilters
-                });
-
-                const response = await window.TalkTimeAuth.authenticatedRequest(`/api/v1/notifications?${queryParams}`);
-                
-                if (!response.ok) {
-                    throw new Error('Failed to load notifications');
-                }
-
-                const data = await response.json();
-                displayNotifications(data.notifications);
-                updatePagination(data.pagination);
-                // Handle both field names (unreadCount from notification-service, unread_count from backend)
-                updateUnreadCount(data.unreadCount || data.unread_count || 0);
-                
-            } catch (error) {
-                console.error('Error loading notifications:', error);
-                showToast('Failed to load notifications', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Store all notifications for client-side filtering
-        let allNotifications = [];
-
-        function displayNotifications(notifications) {
-            const container = document.getElementById('notifications-list');
-            const emptyState = document.getElementById('empty-state');
-            const loadingState = document.getElementById('loading-state');
-
-            // Hide loading state immediately when displaying
-            if (loadingState) loadingState.classList.add('hidden');
-
-            // Store for filtering
-            allNotifications = notifications || [];
-
-            // Update filter counts
-            updateFilterCounts(allNotifications);
-
-            if (!notifications || notifications.length === 0) {
-                container.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-
-            // Group by date
-            const grouped = groupByDate(notifications);
-            let html = '';
-
-            const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older'];
-            groupOrder.forEach(groupName => {
-                if (!grouped[groupName] || grouped[groupName].length === 0) return;
-
-                html += `<div class="notif-date-group">${groupName}</div>`;
-
-                grouped[groupName].forEach(notification => {
-                    const typeIcon = getTypeIcon(notification.type);
-                    const isUnread = !notification.is_read;
-                    const stateClass = isUnread ? 'unread' : 'read';
-
-                    html += `
-                        <div class="notification-item ${stateClass}" data-id="${notification.id}">
-                            <div class="notif-type-icon ${typeIcon.class}">
-                                <i class="fas ${typeIcon.icon}"></i>
-                                ${isUnread ? '<span class="notif-unread-indicator"></span>' : ''}
-                            </div>
-                            <div class="notif-content">
-                                <div class="notif-title-row">
-                                    <div class="notif-title">${escapeHtml(notification.title || 'Notification')}</div>
-                                    ${isUnread ? '<span class="notif-new-badge">New</span>' : ''}
-                                </div>
-                                <div class="notif-message">${escapeHtml(notification.message || '')}</div>
-                                <div class="notif-time">
-                                    <i class="fas fa-clock"></i>
-                                    ${formatDate(notification.created_at)}
-                                </div>
-                            </div>
-                            <div class="notif-actions">
-                                <button class="notif-action-btn delete delete-btn" data-id="${notification.id}" title="Delete">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-            });
-
-            container.innerHTML = html;
-        }
-
-        function groupByDate(notifications) {
-            const groups = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Older': [] };
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const yesterday = new Date(today - 86400000);
-            const weekAgo = new Date(today - 7 * 86400000);
-
-            notifications.forEach(n => {
-                const date = new Date(n.created_at);
-                if (date >= today) {
-                    groups['Today'].push(n);
-                } else if (date >= yesterday) {
-                    groups['Yesterday'].push(n);
-                } else if (date >= weekAgo) {
-                    groups['This Week'].push(n);
-                } else {
-                    groups['Older'].push(n);
-                }
-            });
-
-            return groups;
-        }
-
-        function getTypeIcon(type) {
-            if (!type) return { icon: 'fa-bell', class: 'system' };
-            type = type.toLowerCase();
-
-            // Canceled meetings - red
-            if (type.includes('cancel')) {
-                return { icon: 'fa-calendar-times', class: 'canceled' };
-            }
-            // Rescheduled meetings - orange
-            if (type.includes('reschedul')) {
-                return { icon: 'fa-calendar-alt', class: 'rescheduled' };
-            }
-            // Messages - blue
-            if (type.includes('message')) {
-                return { icon: 'fa-comment-dots', class: 'message' };
-            }
-            // Missed calls - amber (check before generic 'call')
-            if (type.includes('missed')) {
-                return { icon: 'fa-phone-slash', class: 'rescheduled' }; // Use orange/amber style
-            }
-            // Scheduled meetings - green
-            if (type.includes('scheduled') || type.includes('meeting')) {
-                return { icon: 'fa-calendar-check', class: 'meeting' };
-            }
-            // Instant calls - green
-            if (type.includes('call') || type.includes('instant')) {
-                return { icon: 'fa-phone-alt', class: 'call' };
-            }
-            // Reminders - blue
-            if (type.includes('reminder')) {
-                return { icon: 'fa-clock', class: 'reminder' };
-            }
-            // System/default - purple
-            return { icon: 'fa-bullhorn', class: 'system' };
-        }
-
-        function getNotifCategory(type) {
-            if (!type) return 'system';
-            type = type.toLowerCase();
-            if (type.includes('message')) return 'message';
-            if (type.includes('meeting') || type.includes('call') || type.includes('scheduled')) return 'meeting';
-            if (type.includes('reminder')) return 'reminder';
-            return 'system';
-        }
-
-        function updateFilterCounts(notifications) {
-            const counts = {
-                all: notifications.length,
-                unread: notifications.filter(n => !n.is_read).length,
-                meeting: notifications.filter(n => getNotifCategory(n.type) === 'meeting').length,
-                reminder: notifications.filter(n => getNotifCategory(n.type) === 'reminder').length,
-                system: notifications.filter(n => getNotifCategory(n.type) === 'system').length
-            };
-
-            document.getElementById('count-all').textContent = counts.all;
-            document.getElementById('count-unread').textContent = counts.unread;
-            document.getElementById('count-meeting').textContent = counts.meeting;
-            document.getElementById('count-reminder').textContent = counts.reminder;
-            document.getElementById('count-system').textContent = counts.system;
-
-            // Also update the nav badge to keep it in sync
-            updateUnreadCount(counts.unread);
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function updatePagination(pagination) {
-            const container = document.getElementById('pagination-container');
-            const info = document.getElementById('pagination-info');
-            const prevBtn = document.getElementById('prev-page-btn');
-            const nextBtn = document.getElementById('next-page-btn');
-
-            // Handle missing or invalid pagination data
-            if (!pagination || !pagination.total_pages || pagination.total_pages <= 1) {
-                container.classList.add('hidden');
-                return;
-            }
-
-            container.classList.remove('hidden');
-            totalPages = pagination.total_pages || 1;
-
-            const currentPage = pagination.current_page || 1;
-            const perPage = pagination.per_page || 20;
-            const totalCount = pagination.total_count || 0;
-
-            const start = ((currentPage - 1) * perPage) + 1;
-            const end = Math.min(start + perPage - 1, totalCount);
-
-            info.textContent = `${start}-${end} of ${totalCount} notifications`;
-
-            prevBtn.disabled = !pagination.has_prev_page;
-            nextBtn.disabled = !pagination.has_next_page;
-        }
-
-        function updateUnreadCount(count) {
-            // Update all notification badges via the dashboard nav component
-            if (window.VolunteerDashboardNav) {
-                window.VolunteerDashboardNav.updateNotificationBadge(count);
-            } else {
-                // Fallback: Update header badge directly
-                const badge = document.getElementById('notification-badge');
-                if (badge) {
-                    if (count > 0) {
-                        badge.textContent = count > 99 ? '99+' : count;
-                        badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
-                }
-            }
-        }
-
-        let currentPillFilter = 'all';
-
-        function setupEventListeners() {
-            // Pill filter clicks
-            document.querySelectorAll('.filter-pill').forEach(pill => {
-                pill.addEventListener('click', () => {
-                    // Update active state
-                    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-                    pill.classList.add('active');
-
-                    // Apply filter
-                    currentPillFilter = pill.dataset.filter;
-                    applyClientSideFilter();
-                });
-            });
-
-            function applyClientSideFilter() {
-                let filtered = allNotifications;
-
-                if (currentPillFilter === 'unread') {
-                    filtered = allNotifications.filter(n => !n.is_read);
-                } else if (currentPillFilter === 'meeting') {
-                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'meeting');
-                } else if (currentPillFilter === 'reminder') {
-                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'reminder');
-                } else if (currentPillFilter === 'system') {
-                    filtered = allNotifications.filter(n => getNotifCategory(n.type) === 'system');
-                }
-
-                // Re-render with filtered data
-                const container = document.getElementById('notifications-list');
-                const emptyState = document.getElementById('empty-state');
-
-                if (filtered.length === 0) {
-                    container.innerHTML = '';
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-
-                emptyState.classList.add('hidden');
-
-                // Group and render
-                const grouped = groupByDate(filtered);
-                let html = '';
-
-                const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older'];
-                groupOrder.forEach(groupName => {
-                    if (!grouped[groupName] || grouped[groupName].length === 0) return;
-
-                    html += `<div class="notif-date-group">${groupName}</div>`;
-
-                    grouped[groupName].forEach(notification => {
-                        const typeIcon = getTypeIcon(notification.type);
-                        const isUnread = !notification.is_read;
-                        const stateClass = isUnread ? 'unread' : 'read';
-
-                        html += `
-                            <div class="notification-item ${stateClass}" data-id="${notification.id}">
-                                <div class="notif-type-icon ${typeIcon.class}">
-                                    <i class="fas ${typeIcon.icon}"></i>
-                                    ${isUnread ? '<span class="notif-unread-indicator"></span>' : ''}
-                                </div>
-                                <div class="notif-content">
-                                    <div class="notif-title-row">
-                                        <div class="notif-title">${escapeHtml(notification.title || 'Notification')}</div>
-                                        ${isUnread ? '<span class="notif-new-badge">New</span>' : ''}
-                                    </div>
-                                    <div class="notif-message">${escapeHtml(notification.message || '')}</div>
-                                    <div class="notif-time">
-                                        <i class="fas fa-clock"></i>
-                                        ${formatDate(notification.created_at)}
-                                    </div>
-                                </div>
-                                <div class="notif-actions">
-                                    <button class="notif-action-btn delete delete-btn" data-id="${notification.id}" title="Delete">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                });
-
-                container.innerHTML = html;
-            }
-
-            // Pagination
-            document.getElementById('prev-page-btn').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    loadNotifications();
-                }
-            });
-
-            document.getElementById('next-page-btn').addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    loadNotifications();
-                }
-            });
-
-            // Mark all as read
-            document.getElementById('mark-all-read-btn').addEventListener('click', async () => {
-                try {
-                    const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/notifications/read-all', {
-                        method: 'PUT'
-                    });
-
-                    if (response.ok) {
-                        showToast('All notifications marked as read', 'success');
-                        loadNotifications();
-                    }
-                } catch (error) {
-                    console.error('Error marking all as read:', error);
-                    showToast('Failed to mark notifications as read', 'error');
-                }
-            });
-
-            // Refresh
-            document.getElementById('refresh-btn').addEventListener('click', () => {
-                const icon = document.getElementById('refresh-icon');
-                icon.classList.add('loading');
-                
-                loadNotifications().finally(() => {
-                    setTimeout(() => icon.classList.remove('loading'), 500);
-                });
-            });
-
-            // Individual notification actions (delegated)
-            document.addEventListener('click', async (e) => {
-                const markReadBtn = e.target.closest('.mark-read-btn');
-                const deleteBtn = e.target.closest('.delete-btn');
-                const notifItem = e.target.closest('.notification-item');
-
-                if (markReadBtn) {
-                    e.stopPropagation();
-                    await markAsRead(markReadBtn.dataset.id);
-                } else if (deleteBtn) {
-                    e.stopPropagation();
-                    await deleteNotification(deleteBtn.dataset.id);
-                } else if (notifItem && notifItem.classList.contains('unread')) {
-                    // Mark as read when clicking an unread notification
-                    const id = notifItem.dataset.id;
-                    if (id) await markAsRead(id);
-                }
-            });
-        }
-
-        async function markAsRead(id) {
-            try {
-                const response = await window.TalkTimeAuth.authenticatedRequest(`/api/v1/notifications/${id}/read`, {
-                    method: 'PUT'
-                });
-
-                if (response.ok) {
-                    showToast('Notification marked as read', 'success');
-                    loadNotifications();
-                }
-            } catch (error) {
-                console.error('Error marking as read:', error);
-                showToast('Failed to mark notification as read', 'error');
-            }
-        }
-
-        async function deleteNotification(id) {
-            const confirmed = window.showConfirmation
-                ? await window.showConfirmation('Are you sure you want to delete this notification?', { title: 'Delete Notification', confirmText: 'Delete', cancelText: 'Cancel', type: 'warning' })
-                : confirm('Are you sure you want to delete this notification?');
-
-            if (!confirmed) {
-                return;
-            }
-
-            try {
-                const response = await window.TalkTimeAuth.authenticatedRequest(`/api/v1/notifications/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    showToast('Notification deleted', 'success');
-                    loadNotifications();
-                }
-            } catch (error) {
-                console.error('Error deleting notification:', error);
-                showToast('Failed to delete notification', 'error');
-            }
-        }
-
-        function showLoading(show) {
-            const loadingState = document.getElementById('loading-state');
-            const notificationsList = document.getElementById('notifications-list');
-            const emptyState = document.getElementById('empty-state');
-
-            if (show) {
-                // Show skeleton, hide content
-                loadingState.classList.remove('hidden');
-                if (notificationsList) notificationsList.innerHTML = '';
-                if (emptyState) emptyState.classList.add('hidden');
-            } else {
-                // Hide skeleton
-                loadingState.classList.add('hidden');
-            }
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
-            
-            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg mb-2 transform translate-x-full transition-transform duration-300`;
-            toast.textContent = message;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                setTimeout(() => container.removeChild(toast), 300);
-            }, 3000);
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 1) {
-                return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-            } else if (diffDays === 2) {
-                return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-            } else if (diffDays <= 7) {
-                return `${diffDays - 1} days ago`;
-            } else {
-                return date.toLocaleDateString();
-            }
-        }
-    </script>
+    <script src="/shared/js/realtime-notifications.js?v=4"></script>
+    <script src="/volunteer/js/pages/notifications-1.js?v=4"></script>
 
     <!-- Initialize TalkTimeAuth -->
     <script>

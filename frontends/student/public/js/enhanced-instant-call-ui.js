@@ -587,7 +587,7 @@ class EnhancedInstantCallUI {
                     border-radius: 50%;
                     border: 3px solid white;
                     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-                    background: linear-gradient(135deg, #3867FF, #1d4ed8);
+                    background: linear-gradient(135deg, #5f6a2d, #4d561f);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -776,9 +776,9 @@ class EnhancedInstantCallUI {
                 }
 
                 .quick-reply-btn:hover {
-                    background: #eff6ff;
-                    border-color: #3b82f6;
-                    color: #1d4ed8;
+                    background: #f4f5ee;
+                    border-color: #5f6a2d;
+                    color: #4d561f;
                 }
 
                 .quick-reply-btn:last-child {
@@ -1235,7 +1235,7 @@ class EnhancedInstantCallUI {
                 }
 
                 .modal-title svg {
-                    color: #3867FF;
+                    color: #5f6a2d;
                 }
 
                 .modal-close-btn {
@@ -1276,7 +1276,7 @@ class EnhancedInstantCallUI {
 
                 .message-textarea:focus {
                     outline: none;
-                    border-color: #3867FF;
+                    border-color: #5f6a2d;
                 }
 
                 .message-textarea::placeholder {
@@ -1328,7 +1328,7 @@ class EnhancedInstantCallUI {
                 }
 
                 .modal-btn-send {
-                    background: #3867FF;
+                    background: #5f6a2d;
                     color: white;
                 }
 

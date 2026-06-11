@@ -122,6 +122,9 @@ router.put('/settings', volunteerJWTMiddleware, async (req, res) => {
             updateFields.push(`primary_timezone = $${parameterIndex}`);
             updateValues.push(primary_timezone);
             parameterIndex++;
+            // Keep the canonical timezone in sync: scheduling and notifications
+            // read users.timezone, not volunteer_settings.primary_timezone
+            await pool.query('UPDATE users SET timezone = $1, updated_at = NOW() WHERE id = $2', [primary_timezone, volunteerId]);
         }
         
         if (display_timezone_preference !== undefined) {

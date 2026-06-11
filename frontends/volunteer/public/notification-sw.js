@@ -92,7 +92,13 @@ self.addEventListener('push', event => {
     console.log('📨 Push message received');
     
     if (event.data) {
-        const data = event.data.json();
+        let data;
+        try {
+            data = event.data.json();
+        } catch (e) {
+            // Non-JSON payload: show a generic notification instead of crashing
+            data = { title: 'TalkTime', message: event.data.text ? event.data.text() : 'You have a new notification' };
+        }
         event.waitUntil(handlePushMessage(data));
     }
 });
@@ -166,7 +172,7 @@ async function handleViewDashboard(data) {
 async function handleAddToCalendar(data) {
     if (data.scheduled_time) {
         const startDate = new Date(data.scheduled_time);
-        const endDate = new Date(startDate.getTime() + 40 * 60000); // 40 minutes
+        const endDate = new Date(startDate.getTime() + 30 * 60000); // 30 minutes
         
         const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=TalkTime Meeting&dates=${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=TalkTime conversation practice session&location=Online`;
         
@@ -194,23 +200,38 @@ async function handleScheduleNext(data) {
 }
 
 async function handleRemindLater(data) {
-    // Schedule a reminder for 5 minutes later
-    const remindTime = Date.now() + 5 * 60 * 1000;
-    
-    setTimeout(() => {
-        showNotification({
-            title: '⏰ Reminder',
-            body: 'This is your requested reminder about the notification.',
-            icon: '/favicon.ico',
-            tag: 'reminder-' + Date.now(),
-            requireInteraction: false,
-            actions: [
-                { action: 'acknowledge', title: '✅ Got it' },
-                { action: 'dismiss', title: '✕ Dismiss' }
-            ]
-        });
-    }, 5 * 60 * 1000);
-    
+    // Service workers are terminated within ~30s of idling, so a bare
+    // setTimeout dies silently. Delegate the timer to an open page (pages
+    // live as long as the tab); keep the SW timeout only as a fallback
+    // for the rare case the SW stays alive.
+    const reminder = {
+        type: 'talktime-remind-later',
+        delayMs: 5 * 60 * 1000,
+        title: '⏰ Reminder',
+        body: data && data.title ? `Reminder: ${data.title}` : 'This is your requested reminder.',
+        notification_id: data && data.notification_id
+    };
+
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (clientList.length > 0) {
+        clientList[0].postMessage(reminder);
+    } else {
+        // Best effort: only fires if the SW happens to survive 5 minutes
+        setTimeout(() => {
+            showNotification({
+                title: reminder.title,
+                body: reminder.body,
+                icon: '/favicon.ico',
+                tag: 'reminder-' + Date.now(),
+                requireInteraction: false,
+                actions: [
+                    { action: 'acknowledge', title: '✅ Got it' },
+                    { action: 'dismiss', title: '✕ Dismiss' }
+                ]
+            });
+        }, reminder.delayMs);
+    }
+
     trackNotificationEvent(data.notification_id, 'remind_later');
     
     // Show confirmation

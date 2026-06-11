@@ -19,51 +19,23 @@ class NewsletterDisplay {
     async fetchNewsletters() {
         this.isLoading = true;
         try {
-            // Check if user is authenticated
-            let headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
-                const token = window.TalkTimeAuth.getToken();
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-            }
-
-            const response = await fetch('/api/v1/mailchimp/campaigns/recent?limit=10&status=sent', {
-                method: 'GET',
-                headers: headers
-            });
+            // Public endpoint — latest 9 campaigns derived from the WP newsletter page
+            const response = await fetch('/api/v1/newsletters', { method: 'GET' });
 
             const data = await response.json();
 
-            if (data.success && data.campaigns) {
-                // Transform Mailchimp campaigns to newsletter format
-                this.newsletters = await Promise.all(data.campaigns.map(async (campaign, index) => {
-                    // Try to fetch campaign content for preview
-                    let preview = campaign.subject || 'Newsletter Update';
-                    let imageUrl = `/volunteer/kids-in-school.jpg`; // Default image
-
-                    // Rotate through available images for visual variety
-                    const images = [
-                        '/volunteer/kids-in-school.jpg',
-                        '/volunteer/shanga.png',
-                        '/volunteer/black-maasai.png',
-                        '/volunteer/kilimanjaro.jpg'
-                    ];
-                    imageUrl = images[index % images.length];
-
-                    return {
-                        id: campaign.id,
-                        title: campaign.subject || 'Newsletter Update',
-                        preview: this.extractPreview(campaign),
-                        date: this.formatDate(campaign.sendTime),
-                        imageUrl: imageUrl,
-                        emailsSent: campaign.emailsSent,
-                        openRate: campaign.openRate,
-                        clickRate: campaign.clickRate
-                    };
+            if (data.success && data.campaigns && data.campaigns.length) {
+                this.newsletters = data.campaigns.map((campaign) => ({
+                    id: campaign.id,
+                    title: campaign.subject || 'Newsletter Update',
+                    date: campaign.date || 'Recent',
+                    url: campaign.url,
+                    // Campaign image served through our proxy: shrunk to WebP,
+                    // disk-cached server-side, long browser cache (Mailchimp
+                    // originals are multi-MB and uncacheable third-party)
+                    imageUrl: campaign.image
+                        ? '/api/v1/newsletters/image?src=' + encodeURIComponent(campaign.image)
+                        : '/volunteer/kids-in-school.webp'
                 }));
             } else {
                 // Fallback to default newsletters if API fails
@@ -76,17 +48,6 @@ class NewsletterDisplay {
         } finally {
             this.isLoading = false;
         }
-    }
-
-    extractPreview(campaign) {
-        // Extract a preview from campaign data
-        // This could be enhanced by fetching actual content if needed
-        const defaultPreview = `Stay connected with the latest updates from our community. This newsletter brings you stories of impact and progress.`;
-
-        // You could enhance this by actually fetching campaign content:
-        // const content = await this.fetchCampaignContent(campaign.id);
-
-        return defaultPreview;
     }
 
     formatDate(dateString) {
@@ -104,21 +65,21 @@ class NewsletterDisplay {
                 title: 'NOW IS THE TIME FOR PRACTICALS',
                 preview: `Hello, and welcome to the Time of Maasai! We've been training 20 of the smartest kids but if the Maasai Issue is challenging to remember, you can call me Philip...`,
                 date: 'Recent',
-                imageUrl: '/volunteer/kids-in-school.jpg'
+                imageUrl: '/volunteer/kids-in-school.webp'
             },
             {
                 id: '2',
                 title: 'MEET OUR "BEADS FOR FEES" LEADERS AND TEACHERS',
                 preview: `Hope from 10 women who lead our Beads for Fees program. Our maternal and grandmother mothers (and some fathers) at this postnatal Maasai Items to participate in supporting their children...`,
                 date: 'Recent',
-                imageUrl: '/volunteer/shanga.png'
+                imageUrl: '/volunteer/shanga.webp'
             },
             {
                 id: '3',
                 title: 'IT IS TIME TO HEAD BACK TO ROMBO, KENYA',
                 preview: `We are in Nairobi to Kenya, where I'll be spending the rest of March. Last week, I took the CREW of recreational students for lunch within Unga Community. Last year, everyone was looking for work in Rombo AREA!`,
                 date: 'Recent',
-                imageUrl: '/volunteer/black-maasai.png'
+                imageUrl: '/volunteer/old-maasai.webp'
             }
         ];
     }
@@ -132,17 +93,16 @@ class NewsletterDisplay {
         }
 
         const newsletterHTML = this.newsletters.map((newsletter, index) => `
-            <div class="flex-none w-full md:w-1/3 newsletter-item" data-index="${index}">
-                <div class="bg-white border border-gray-300 overflow-hidden h-[380px] flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onclick="newsletterDisplay.viewNewsletter('${newsletter.id}')">
+            <div class="flex-none w-[300px] md:w-[340px] px-3 newsletter-item" data-index="${index}">
+                <div class="bg-white border border-gray-300 overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onclick="newsletterDisplay.openNewsletter(${index})">
                     <div class="p-6 pb-0">
-                        <img src="${newsletter.imageUrl}" alt="${newsletter.title}" class="w-full h-48 object-cover" onerror="this.src='/volunteer/kids-in-school.jpg'">
+                        <img src="${newsletter.imageUrl}" alt="${newsletter.title}" loading="lazy" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='/volunteer/kids-in-school.webp'">
                     </div>
                     <div class="p-6 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-bold text-lg text-gray-900 line-clamp-2 flex-1">${newsletter.title}</h3>
                         </div>
                         <p class="text-gray-500 text-xs mb-2">${newsletter.date}</p>
-                        <p class="text-gray-600 text-sm line-clamp-3 flex-1">${newsletter.preview}</p>
                         ${newsletter.openRate ? `
                             <div class="mt-3 pt-3 border-t border-gray-100 flex gap-4 text-xs text-gray-500">
                                 <span><i class="fas fa-envelope-open mr-1"></i> ${Math.round(newsletter.openRate * 100)}% opened</span>
@@ -154,18 +114,13 @@ class NewsletterDisplay {
             </div>
         `).join('');
 
-        // Duplicate items for infinite scroll effect if we have less than 4 items
-        let finalHTML = newsletterHTML;
-        if (this.newsletters.length < 4) {
-            finalHTML = newsletterHTML + newsletterHTML;
-        }
-
-        this.container.innerHTML = finalHTML;
+        // Duplicate the full set so the CSS marquee (translateX -50%) loops seamlessly
+        this.container.innerHTML = newsletterHTML + newsletterHTML;
     }
 
     getLoadingHTML() {
         return `
-            <div class="flex-none w-full md:w-1/3">
+            <div class="flex-none w-[300px] md:w-[340px] px-3">
                 <div class="bg-white border border-gray-300 overflow-hidden h-[380px] flex flex-col animate-pulse">
                     <div class="p-6 pb-0">
                         <div class="w-full h-48 bg-gray-200"></div>
@@ -177,7 +132,7 @@ class NewsletterDisplay {
                     </div>
                 </div>
             </div>
-            <div class="flex-none w-full md:w-1/3 hidden md:block">
+            <div class="flex-none w-[300px] md:w-[340px] px-3 hidden md:block">
                 <div class="bg-white border border-gray-300 overflow-hidden h-[380px] flex flex-col animate-pulse">
                     <div class="p-6 pb-0">
                         <div class="w-full h-48 bg-gray-200"></div>
@@ -189,7 +144,7 @@ class NewsletterDisplay {
                     </div>
                 </div>
             </div>
-            <div class="flex-none w-full md:w-1/3 hidden md:block">
+            <div class="flex-none w-[300px] md:w-[340px] px-3 hidden md:block">
                 <div class="bg-white border border-gray-300 overflow-hidden h-[380px] flex flex-col animate-pulse">
                     <div class="p-6 pb-0">
                         <div class="w-full h-48 bg-gray-200"></div>
@@ -235,8 +190,8 @@ class NewsletterDisplay {
             }
         };
 
-        // Auto-refresh newsletters every 5 minutes
-        setInterval(() => this.fetchNewsletters().then(() => this.renderNewsletters()), 5 * 60 * 1000);
+        // Auto-refresh newsletters every 30 minutes (kept long so it rarely resets the marquee)
+        setInterval(() => this.fetchNewsletters().then(() => this.renderNewsletters()), 30 * 60 * 1000);
     }
 
     previousSlide() {
@@ -260,36 +215,11 @@ class NewsletterDisplay {
         this.container.style.transform = `translateX(-${offset}%)`;
     }
 
-    async viewNewsletter(campaignId) {
-        // Optional: Implement newsletter viewing functionality
-        console.log('Viewing newsletter:', campaignId);
-
-        // You could open a modal or redirect to a dedicated view
-        // For now, we'll just log it
-        try {
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (window.TalkTimeAuth && window.TalkTimeAuth.isAuthenticated()) {
-                const token = window.TalkTimeAuth.getToken();
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-            }
-
-            const response = await fetch(`/api/v1/mailchimp/campaigns/${campaignId}/content`, {
-                headers: headers
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.content) {
-                // Could display in a modal
-                console.log('Newsletter content loaded:', data.content);
-            }
-        } catch (error) {
-            console.error('Error loading newsletter content:', error);
+    openNewsletter(index) {
+        // Open the campaign on Mailchimp in a new tab
+        const newsletter = this.newsletters[index];
+        if (newsletter && newsletter.url) {
+            window.open(newsletter.url, '_blank', 'noopener');
         }
     }
 

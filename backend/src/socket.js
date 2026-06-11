@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 import pool from './config/database.js';
 import Redis from 'ioredis';
+import { verifyToken } from './utils/jwt.js';
 
 // Socket.IO instance
 let io;
@@ -191,6 +192,26 @@ export const initializeSocket = (server) => {
     });
     console.log('✅ Socket.IO initialized successfully');
 
+    // Require a valid JWT on every connection; identity comes from the token, never the client payload
+    io.use((socket, next) => {
+        try {
+            const token = socket.handshake.auth && socket.handshake.auth.token;
+            if (!token) {
+                return next(new Error('Authentication required'));
+            }
+            const decoded = verifyToken(token);
+            const uid = decoded && (decoded.id || decoded.userId);
+            if (!uid) {
+                return next(new Error('Invalid token'));
+            }
+            socket.userId = String(uid);
+            socket.userRole = decoded.role;
+            next();
+        } catch (err) {
+            next(new Error('Invalid token'));
+        }
+    });
+
     // Initialize Redis subscriber for real-time notifications
     initializeNotificationSubscriber();
 
@@ -201,50 +222,38 @@ export const initializeSocket = (server) => {
         // Store rooms that socket is in
         const socketRooms = new Map();
 
-        // Join room for user-specific notifications (updated for meeting termination)
+        // Join room for user-specific notifications.
+        // Identity comes from the verified JWT (socket.userId/userRole), never the client payload.
         socket.on('join-user-room', (data) => {
-            const { userId, role, rooms } = data;
-            console.log(`🔌 Socket ${socket.id} joining user rooms:`, data);
-            
-            if (userId && role) {
-                // Join multiple rooms for comprehensive notification coverage
-                const roomsToJoin = rooms || [
-                    `user_${userId}`,
-                    `${role}_${userId}`
-                ];
-                
-                roomsToJoin.forEach(roomName => {
-                    socket.join(roomName);
-                    console.log(`✅ Socket ${socket.id} joined room: ${roomName}`);
-                });
-                
-                // Store user info on socket for debugging
-                socket.userId = userId;
-                socket.userRole = role;
-                
-                console.log(`🎯 Socket ${socket.id} ready for meeting termination notifications (user: ${userId}, role: ${role})`);
-            } else {
-                console.log(`❌ Invalid join-user-room data:`, data);
+            const userId = socket.userId;
+            const role = socket.userRole;
+            const requested = (data && data.userId !== undefined) ? String(data.userId) : userId;
+            if (requested !== userId) {
+                console.log(`❌ Socket ${socket.id} (user ${userId}) tried to join rooms for user ${requested} - denied`);
+                return;
             }
+            const roomsToJoin = [
+                `user_${userId}`,
+                `${role}_${userId}`
+            ];
+            roomsToJoin.forEach(roomName => {
+                socket.join(roomName);
+                console.log(`✅ Socket ${socket.id} joined room: ${roomName}`);
+            });
+            console.log(`🎯 Socket ${socket.id} ready for meeting termination notifications (user: ${userId}, role: ${role})`);
         });
 
-        // Simple join-room event for compatibility with enhanced-instant-call-ui.js and call.html
+        // Simple join-room event for compatibility with enhanced-instant-call-ui.js and call.html.
+        // Personal rooms (user_/volunteer_/student_/admin_) only joinable for the token's own identity.
         socket.on('join-room', (roomName) => {
-            if (roomName) {
-                socket.join(roomName);
-                console.log(`✅ Socket ${socket.id} joined room via join-room: ${roomName}`);
-
-                // Extract user info from room name if possible
-                if (roomName.includes('student_') || roomName.includes('student-')) {
-                    socket.userRole = 'student';
-                    socket.userId = roomName.replace('student_', '').replace('student-', '');
-                } else if (roomName.includes('volunteer_') || roomName.includes('volunteer-')) {
-                    socket.userRole = 'volunteer';
-                    socket.userId = roomName.replace('volunteer_', '').replace('volunteer-', '');
-                } else if (roomName.includes('user_')) {
-                    socket.userId = roomName.replace('user_', '');
-                }
+            if (!roomName) return;
+            const personal = roomName.match(/^(user|volunteer|student|admin)[_-](.+)$/);
+            if (personal && personal[2] !== socket.userId) {
+                console.log(`❌ Socket ${socket.id} (user ${socket.userId}) denied join-room ${roomName}`);
+                return;
             }
+            socket.join(roomName);
+            console.log(`✅ Socket ${socket.id} joined room via join-room: ${roomName}`);
         });
 
         // ===== WebRTC Signaling Implementation =====
@@ -758,16 +767,16 @@ export const initializeSocket = (server) => {
                     }
                 }
 
-                // If this is the second participant joining, start the 40-minute timer
+                // If this is the second participant joining, start the 30-minute timer
                 if (participantCount === 2 && meetingId) {
-                    console.log(`🚀 Starting 40-minute timer for meeting ${meetingId} - both participants joined`);
+                    console.log(`🚀 Starting 30-minute timer for meeting ${meetingId} - both participants joined`);
 
                     // Emit timer start event to all participants
                     io.to(`call-${roomId}`).emit('meeting-timer-start', {
                         meetingId,
-                        duration: 40 * 60, // 40 minutes in seconds
+                        duration: 30 * 60, // 30 minutes in seconds
                         startTime: new Date().toISOString(),
-                        message: '40-minute session timer started!'
+                        message: '30-minute session timer started!'
                     });
                 }
 
@@ -801,17 +810,18 @@ export const initializeSocket = (server) => {
 
         // Handle notification room join
         socket.on('join-notification-room', (data) => {
-            const { userId, role } = data;
-            if (userId && role) {
-                const notificationRoom = `notifications_${role}_${userId}`;
-                socket.join(notificationRoom);
-                console.log(`Socket ${socket.id} joined notification room: ${notificationRoom}`);
-                
-                // Store notification room info
-                socket.notificationRoom = notificationRoom;
-                socket.userId = userId;
-                socket.userRole = role;
+            // Identity comes from the verified JWT, never the client payload
+            const userId = socket.userId;
+            const role = socket.userRole;
+            const requested = (data && data.userId !== undefined) ? String(data.userId) : userId;
+            if (requested !== userId) {
+                console.log(`❌ Socket ${socket.id} (user ${userId}) denied notification room for user ${requested}`);
+                return;
             }
+            const notificationRoom = `notifications_${role}_${userId}`;
+            socket.join(notificationRoom);
+            console.log(`Socket ${socket.id} joined notification room: ${notificationRoom}`);
+            socket.notificationRoom = notificationRoom;
         });
 
         // Handle mark notification as read
@@ -863,7 +873,7 @@ export const initializeSocket = (server) => {
                 io.to(`call-${roomId}`).emit('meeting-auto-end', {
                     meetingId,
                     reason: 'timer_expired',
-                    message: '40-minute session completed. Thank you for your participation!',
+                    message: '30-minute session completed. Thank you for your participation!',
                     redirectUrl: '/dashboard',
                     timestamp: new Date().toISOString()
                 });

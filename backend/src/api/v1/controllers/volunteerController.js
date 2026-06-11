@@ -356,31 +356,38 @@ export const getDashboardData = async (req, res) => {
             return res.status(404).json({ error: 'Volunteer not found' });
         }
         
+        // Lightweight mode for pollers (?upcoming=1): only upcoming meetings
+        const upcomingOnly = req.query.upcoming === '1';
+
         // Get volunteer's upcoming and past meetings
         const upcomingMeetings = await Meeting.findUpcomingByVolunteerId(volunteerId);
-        const pastMeetings = await Meeting.findPastByVolunteerId(volunteerId);
-        
-        // Get cancelled meetings
-        const query = `
-            SELECT m.id, su.full_name as student_name, m.scheduled_time
-            FROM meetings m
-            JOIN users su ON m.student_id = su.id AND su.role = 'student'
-            WHERE m.volunteer_id = $1 AND m.status = 'canceled'
-            ORDER BY m.scheduled_time DESC;
-        `;
-        
-        const { rows: cancelledMeetings } = await pool.query(query, [volunteerId]);
-        
-        // Get missed meetings
-        const missedQuery = `
-            SELECT m.id, su.full_name as student_name, m.scheduled_time
-            FROM meetings m
-            JOIN users su ON m.student_id = su.id AND su.role = 'student'
-            WHERE m.volunteer_id = $1 AND m.status = 'missed'
-            ORDER BY m.scheduled_time DESC;
-        `;
-        
-        const { rows: missedMeetings } = await pool.query(missedQuery, [volunteerId]);
+        const pastMeetings = upcomingOnly ? [] : await Meeting.findPastByVolunteerId(volunteerId);
+
+        let cancelledMeetings = [];
+        let missedMeetings = [];
+        if (!upcomingOnly) {
+            // Get cancelled meetings (bounded - the dashboard only shows recent ones)
+            const query = `
+                SELECT m.id, su.full_name as student_name, m.scheduled_time
+                FROM meetings m
+                JOIN users su ON m.student_id = su.id AND su.role = 'student'
+                WHERE m.volunteer_id = $1 AND m.status IN ('canceled', 'cancelled')
+                ORDER BY m.scheduled_time DESC
+                LIMIT 50;
+            `;
+            ({ rows: cancelledMeetings } = await pool.query(query, [volunteerId]));
+
+            // Get missed meetings (bounded)
+            const missedQuery = `
+                SELECT m.id, su.full_name as student_name, m.scheduled_time
+                FROM meetings m
+                JOIN users su ON m.student_id = su.id AND su.role = 'student'
+                WHERE m.volunteer_id = $1 AND m.status = 'missed'
+                ORDER BY m.scheduled_time DESC
+                LIMIT 50;
+            `;
+            ({ rows: missedMeetings } = await pool.query(missedQuery, [volunteerId]));
+        }
         
         // Return volunteer data and meetings
         res.json({
@@ -494,23 +501,28 @@ export const getVolunteerPerformance = async (req, res) => {
             tierIcon = 'fas fa-warning';
         }
         
-        // Determine warning status and restrictions
+        // Count-based restriction thresholds
+        const MIN_MEETINGS_FOR_RESTRICTION = 5;
+        const CANCEL_COUNT_THRESHOLD = 5;
+        const MISSED_COUNT_THRESHOLD = 4;
+
+        // Determine warning status and restrictions (count-based)
         let warningStatus = 'none';
         let warningMessage = '';
         let isRestricted = false;
-        
-        // Check for restriction conditions
-        if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
+
+        if (totalScheduled >= MIN_MEETINGS_FOR_RESTRICTION &&
+            (cancelledCalls >= CANCEL_COUNT_THRESHOLD || missedCalls >= MISSED_COUNT_THRESHOLD)) {
             isRestricted = true;
             warningStatus = 'critical';
-            warningMessage = 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Contact support to resolve this.';
-        } else if (cancelledRate >= 30 || missedRate >= 20 || reputationScore < 50) {
+            warningMessage = `Your account is restricted due to ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Submit an appeal to request reinstatement.`;
+        } else if (cancelledCalls >= 4 || missedCalls >= 3) {
             warningStatus = 'severe';
-            warningMessage = 'WARNING: Your high cancellation/missed call rate is negatively impacting students. Immediate improvement required to avoid account restrictions.';
-        } else if (cancelledRate >= 20 || missedRate >= 15 || (recentCancelled + recentMissed) >= 3) {
+            warningMessage = `Warning: You have ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Restrictions apply at 5 cancellations or 4 missed calls.`;
+        } else if (cancelledCalls >= 3 || missedCalls >= 2) {
             warningStatus = 'moderate';
-            warningMessage = 'Notice: Your recent cancellations/missed calls are affecting your reliability score. Please prioritize committed calls.';
-        } else if (cancelledRate >= 10 || missedRate >= 10) {
+            warningMessage = 'Notice: Your cancellations/missed calls are approaching restriction thresholds. Please prioritize committed calls.';
+        } else if (cancelledCalls >= 2 || missedCalls >= 1) {
             warningStatus = 'minor';
             warningMessage = 'Tip: Maintaining consistent attendance helps build trust with students and improves learning outcomes.';
         }
@@ -542,6 +554,21 @@ export const getVolunteerPerformance = async (req, res) => {
             performanceTrend = 'declining';
         }
         
+        // Fetch latest appeal status
+        let latestAppeal = null;
+        try {
+            const appealResult = await pool.query(
+                `SELECT id, status, admin_response, created_at FROM appeals
+                 WHERE volunteer_id = $1 ORDER BY created_at DESC LIMIT 1`,
+                [volunteerId]
+            );
+            if (appealResult.rows.length > 0) {
+                latestAppeal = appealResult.rows[0];
+            }
+        } catch (appealErr) {
+            // appeals table may not exist yet — ignore
+        }
+
         // Response data
         res.json({
             performance: {
@@ -553,18 +580,20 @@ export const getVolunteerPerformance = async (req, res) => {
                 successRate,
                 cancelledRate,
                 missedRate,
-                
+
                 // Reputation and tier
                 reputationScore,
                 performanceTier,
                 tierColor,
                 tierIcon,
                 performanceTrend,
-                
+
                 // Warning system
                 warningStatus,
                 warningMessage,
                 isRestricted,
+                latestAppeal,
+                restrictionThresholds: { cancelCount: CANCEL_COUNT_THRESHOLD, missedCount: MISSED_COUNT_THRESHOLD, minMeetings: MIN_MEETINGS_FOR_RESTRICTION },
                 
                 // Impact metrics for motivation
                 learningHoursProvided,
@@ -1084,25 +1113,24 @@ export const createMeeting = async (req, res) => {
         const missedCalls = parseInt(metrics.missed_calls);
         const totalScheduled = parseInt(metrics.total_scheduled);
         
-        if (totalScheduled > 0) {
-            const cancelledRate = Math.round((cancelledCalls / totalScheduled) * 100);
-            const missedRate = Math.round((missedCalls / totalScheduled) * 100);
-            const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
-            
-            // Enforce restrictions based on performance
-            if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
-                return res.status(403).json({ 
-                    error: 'Account temporarily restricted',
-                    message: 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Please contact support to resolve this issue.',
-                    performanceData: {
-                        cancelledRate,
-                        missedRate,
-                        reputationScore,
-                        totalCalls: totalScheduled,
-                        restriction: 'critical'
-                    }
-                });
-            }
+        // Count-based restriction: 5 cancellations OR 4 missed calls (min 5 total meetings)
+        const MIN_MEETINGS_FOR_RESTRICTION = 5;
+        const CANCEL_COUNT_THRESHOLD = 5;
+        const MISSED_COUNT_THRESHOLD = 4;
+
+        if (totalScheduled >= MIN_MEETINGS_FOR_RESTRICTION &&
+            (cancelledCalls >= CANCEL_COUNT_THRESHOLD || missedCalls >= MISSED_COUNT_THRESHOLD)) {
+            return res.status(403).json({
+                error: 'Account temporarily restricted',
+                message: `Your account is restricted due to ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Submit an appeal to request reinstatement.`,
+                performanceData: {
+                    cancelledCalls,
+                    missedCalls,
+                    totalCalls: totalScheduled,
+                    restriction: 'critical',
+                    thresholds: { cancelCount: CANCEL_COUNT_THRESHOLD, missedCount: MISSED_COUNT_THRESHOLD, minMeetings: MIN_MEETINGS_FOR_RESTRICTION }
+                }
+            });
         }
         
         // Format the scheduled time from date and time fields
@@ -1215,6 +1243,41 @@ export const createMeeting = async (req, res) => {
             });
         }
 
+        // Business rules (manual mode; auto-assign round-robin already excludes maxed pairs):
+        // 3-meeting limit per volunteer-student pair, and 1 call per student per day
+        if (!autoAssigned) {
+            const pairCountQuery = `
+                SELECT COUNT(*) as meeting_count
+                FROM meetings
+                WHERE volunteer_id = $1
+                AND student_id = $2
+                AND status NOT IN ('missed', 'canceled', 'cancelled')
+                AND (cleared_by_admin IS NULL OR cleared_by_admin = FALSE)
+            `;
+            const { rows: [{ meeting_count }] } = await pool.query(pairCountQuery, [volunteerId, resolvedStudentId]);
+            if (parseInt(meeting_count) >= 3) {
+                return res.status(403).json({
+                    error: 'You have reached the 3-meeting limit with this student. Only missed and canceled meetings are excluded from this limit.',
+                    meetingCount: parseInt(meeting_count),
+                    limit: 3
+                });
+            }
+
+            const sameDayQuery = `
+                SELECT id FROM meetings
+                WHERE student_id = $1
+                AND status IN ('scheduled', 'in_progress')
+                AND (scheduled_time AT TIME ZONE 'Africa/Nairobi')::date = ($2::timestamptz AT TIME ZONE 'Africa/Nairobi')::date
+            `;
+            const { rows: sameDay } = await pool.query(sameDayQuery, [resolvedStudentId, scheduledTime]);
+            if (sameDay.length > 0) {
+                return res.status(409).json({
+                    error: 'This student already has a call scheduled that day. Students are limited to one call per day.',
+                    code: 'STUDENT_DAILY_LIMIT'
+                });
+            }
+        }
+
         // Check concurrent meeting capacity for this time slot
         const maxConcurrent = await configService.getMaxConcurrentPerSlot();
         const capacityQuery = `
@@ -1246,10 +1309,13 @@ export const createMeeting = async (req, res) => {
 
         const meeting = await Meeting.create(meetingData);
 
-        // Format meeting time for notification messages
-        const meetingDateObj = new Date(meeting.scheduled_time);
-        const dateStr = meetingDateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        const timeStr = meetingDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // Format meeting time per recipient timezone (server runs in UTC)
+        const volunteerTz = getSafeTimezone((await pool.query('SELECT timezone FROM users WHERE id = $1', [volunteerId])).rows[0]?.timezone);
+        const fmt = (tz) => new Date(meeting.scheduled_time).toLocaleString('en-US', {
+            timeZone: tz, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        const volunteerTimeStr = fmt(volunteerTz);
+        const studentTimeStr = fmt('Africa/Nairobi');
         const volunteerName = req.user.full_name || req.user.fullName || 'A volunteer';
         const studentName = student.full_name || 'Student';
 
@@ -1260,7 +1326,7 @@ export const createMeeting = async (req, res) => {
                 recipient_id: volunteerId,
                 recipient_role: 'volunteer',
                 title: 'Meeting Scheduled',
-                message: `Your meeting with ${studentName} is set for ${dateStr} at ${timeStr}.`,
+                message: `Your meeting with ${studentName} is set for ${volunteerTimeStr}.`,
                 type: 'meeting_scheduled',
                 priority: 'low',
                 metadata: { meeting_id: meeting.id, student_name: studentName, scheduled_time: meeting.scheduled_time }
@@ -1274,7 +1340,7 @@ export const createMeeting = async (req, res) => {
                 recipient_id: resolvedStudentId,
                 recipient_role: 'student',
                 title: 'New Meeting Scheduled',
-                message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
+                message: `${volunteerName} scheduled a meeting with you for ${studentTimeStr} (Kenya time).`,
                 type: 'meeting_scheduled',
                 priority: 'high',
                 metadata: { meeting_id: meeting.id, volunteer_name: volunteerName, scheduled_time: meeting.scheduled_time }
@@ -1288,7 +1354,7 @@ export const createMeeting = async (req, res) => {
             if (io) {
                 io.to(`user_${resolvedStudentId}`).emit('meeting-scheduled', {
                     meeting_id: meeting.id,
-                    message: `${volunteerName} scheduled a meeting with you for ${dateStr} at ${timeStr}.`,
+                    message: `${volunteerName} scheduled a meeting with you for ${studentTimeStr} (Kenya time).`,
                     scheduledTime: meeting.scheduled_time,
                     volunteerName
                 });

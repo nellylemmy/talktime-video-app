@@ -24,7 +24,7 @@ class VolunteerNavLoader {
         try {
             // Dynamically load modal utilities if not available
             const script = document.createElement('script');
-            script.src = '/js/modal-utils.js';
+            script.src = '/shared/js/modal-utils.js?v=4';
             script.async = true;
             
             return new Promise((resolve) => {
@@ -54,11 +54,11 @@ class VolunteerNavLoader {
      */
     async ensureNotificationSoundSystem() {
         const requiredScripts = [
-            { src: '/shared/js/notification-permission-modal.js', check: 'NotificationPermissionModal' },
-            { src: '/shared/js/notification-sound-manager.js', check: 'TalkTimeNotificationSoundManager' },
-            { src: '/shared/js/notification-enforcer.js', check: 'TalkTimeNotificationEnforcer' },
-            { src: '/shared/js/realtime-notifications.js', check: 'RealtimeNotifications' },
-            { src: '/shared/js/notification-sound-integration.js', check: 'TalkTimeNotificationSoundIntegration' }
+            { src: '/shared/js/notification-permission-modal.js?v=4', check: 'NotificationPermissionModal' },
+            { src: '/shared/js/notification-sound-manager.js?v=4', check: 'TalkTimeNotificationSoundManager' },
+            { src: '/shared/js/notification-enforcer.js?v=4', check: 'TalkTimeNotificationEnforcer' },
+            { src: '/shared/js/realtime-notifications.js?v=4', check: 'RealtimeNotifications' },
+            { src: '/shared/js/notification-sound-integration.js?v=4', check: 'TalkTimeNotificationSoundIntegration' }
         ];
 
         console.log('Loading notification sound system (parallel)...');
@@ -95,8 +95,8 @@ class VolunteerNavLoader {
             }
 
             const script = document.createElement('script');
-            // Add cache-busting timestamp
-            script.src = `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            // No cache-busting: nginx serves these with short max-age + ETag revalidation
+            script.src = src;
             script.async = true;
             
             script.onload = () => resolve();
@@ -216,12 +216,7 @@ class VolunteerNavLoader {
                 navPath = '/volunteer/partials/nav-unauthenticated.html';
             }
 
-            const response = await fetch(navPath, {
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache'
-                }
-            });
+            const response = await fetch(navPath);
             if (response.ok) {
                 const navHtml = await response.text();
                 navContainer.innerHTML = navHtml;
@@ -271,35 +266,26 @@ class VolunteerNavLoader {
 
         console.log('Updating navigation with user info:', this.userInfo);
 
-        // Update greeting text with prioritized field selection
+        // Show the full name, matching the dashboard header
         if (greetingElement) {
-            // Prioritize username, then name, then other fields
-            let displayName = this.userInfo.username || 
-                             this.userInfo.name || 
-                             this.userInfo.full_name || 
-                             this.userInfo.fullName || 
-                             this.userInfo.firstName || 
+            let displayName = this.userInfo.full_name ||
+                             this.userInfo.fullName ||
+                             this.userInfo.name ||
+                             this.userInfo.username ||
                              'Volunteer';
-            
-            // If using full name and it has spaces, use just the first name
-            if (!this.userInfo.username && displayName.includes(' ')) {
-                displayName = displayName.split(' ')[0]; // Use first name only
-            } else if (displayName.includes('@')) {
-                // If it's an email, use the part before @
+            if (displayName.includes('@')) {
                 displayName = displayName.split('@')[0];
             }
-            
-            greetingElement.textContent = `Welcome, ${displayName}!`;
-            // Removed: greetingElement.classList.remove('hidden'); // Let CSS handle visibility
-            console.log('Updated greeting to:', `Welcome, ${displayName}!`);
+            greetingElement.textContent = displayName;
         } else {
             console.log('Greeting element not found');
         }
 
-        // Update profile image or initial with correct API path
+        // Update profile image or initial. Stored value is already a servable
+        // path (/uploads/profiles/...) - there is no GET API route for images.
         if ((this.userInfo.profile_image || this.userInfo.profileImage) && navProfileImage) {
             const profileImagePath = this.userInfo.profile_image || this.userInfo.profileImage;
-            navProfileImage.src = `/api/v1/volunteer/profile/image/${profileImagePath}`;
+            navProfileImage.src = profileImagePath.startsWith('/') ? profileImagePath : `/${profileImagePath}`;
             navProfileImage.classList.remove('hidden');
             if (initialElement) {
                 initialElement.classList.add('hidden');
@@ -556,11 +542,11 @@ class VolunteerNavLoader {
                         
                         // Redirect after a short delay
                         setTimeout(() => {
-                            window.location.href = '/volunteer/';
+                            window.location.href = '/';
                         }, 1500);
                     } else {
                         // Immediate redirect if no modal utilities
-                        window.location.href = '/volunteer/';
+                        window.location.href = '/';
                     }
                 }
             });
@@ -672,7 +658,12 @@ class VolunteerNavLoader {
 
             if (!loader.isAuthenticated) {
                 // User is not authenticated, skip loading nav
-                // Page will show its own unauthenticated navigation
+                // Page will show its own unauthenticated navigation - confirm the
+                // state so anti-FOUC CSS actually reveals it (visibility:hidden
+                // stays forever without this)
+                if (typeof window.confirmUnauthenticated === 'function') {
+                    window.confirmUnauthenticated();
+                }
                 console.log('Nav-loader: User not authenticated, skipping nav load (skipUnauthenticated=true)');
                 return { authenticated: false, loader };
             }

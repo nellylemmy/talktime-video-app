@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -15,8 +15,12 @@
     </script>
 
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
     <meta name="description" content="View and manage your upcoming TalkTime English practice sessions with Maasai students. Join calls, reschedule, or cancel meetings.">
     <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/dashboard/upcoming">
     <meta name="robots" content="index, follow">
@@ -32,13 +36,15 @@
     <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
 
     <!-- Deferred Scripts (non-render-blocking) -->
-    <script defer src="/shared/js/brand-config.js"></script>
-    <script defer src="/volunteer/partials/nav-loader.js"></script>
-    <script defer src="/volunteer/js/dashboard-nav.js"></script>
-    <script defer src="/volunteer/js/modal-utils.js"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js"></script>
-    <script defer src="/shared/js/newsletter-widget.js"></script>
-    
+    <script defer src="/shared/js/brand-config.js?v=6"></script>
+    <script defer src="/volunteer/partials/nav-loader.js?v=7"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
+    <script defer src="/shared/js/modal-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
+    <script defer src="/common/js/restriction-banner.js?v=4"></script>
+    <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
+
     <style>
         /* Compact meeting card */
         .meeting-card {
@@ -198,6 +204,7 @@
     </style>
 </head>
 <body class="dashboard-page" style="opacity:0">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
     <!-- Background Blobs - Hidden on mobile for performance -->
     <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
     <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
@@ -207,11 +214,13 @@
 
     <!-- Main Content Area -->
     <main class="content-area">
-        <div class="section-header">
-            <i class="fas fa-calendar-alt text-brand-primary"></i>
-            Upcoming Meetings
+        <div class="max-w-3xl mx-auto w-full">
+        <div class="mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Upcoming Meetings</h1>
+            <p class="text-sm text-gray-500 mt-1">Join, reschedule or cancel your scheduled meetings.</p>
         </div>
         <div id="upcoming-meetings" class="meetings-grid"></div>
+        </div>
     </main>
     
     <!-- Notification Toast -->
@@ -228,9 +237,9 @@
         // --- Utility Functions ---
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
-            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg ${type === 'success' ? 'bg-success text-white' : 'bg-error text-white'}`;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`;
             notificationEl.classList.remove('hidden');
-            
+
             setTimeout(() => {
                 notificationEl.classList.add('hidden');
             }, 5000);
@@ -308,9 +317,6 @@
         const countdownIntervals = new Map();
         const JOIN_WINDOW_MINUTES = 5;
 
-        // --- Track which meetings have already triggered auto-launch ---
-        const autoLaunchedMeetings = new Set();
-
         // --- Countdown Timer Logic (synced with student side) ---
         function initializeCountdown(meetingId, scheduledTime, roomId, studentName, studentId) {
             const countdownElement = document.getElementById(`countdown-timer-${meetingId}`);
@@ -334,16 +340,11 @@
                 if (distance <= 0) {
                     const minutesPast = Math.abs(minutesUntil);
 
-                    if (minutesPast < 40) {
+                    if (minutesPast < 30) {
                         // Meeting is in progress
                         countdownElement.textContent = 'In progress';
                         showJoinButton();
-
-                        // AUTO-LAUNCH: Automatically redirect volunteer to call when meeting time arrives
-                        if (!autoLaunchedMeetings.has(meetingId) && minutesPast < 2) {
-                            autoLaunchedMeetings.add(meetingId);
-                            triggerAutoLaunch(meetingId, roomId, studentName, studentId);
-                        }
+                        // Auto-launch is handled centrally by MeetingAutoLauncher (shared module)
                     } else {
                         // Meeting window has passed
                         countdownElement.textContent = 'Expired';
@@ -404,93 +405,7 @@
             countdownIntervals.set(meetingId, intervalId);
         }
 
-        /**
-         * AUTO-LAUNCH: Show overlay and auto-redirect volunteer to call
-         * This triggers when meeting time arrives (countdown reaches 0)
-         */
-        function triggerAutoLaunch(meetingId, roomId, studentName, studentId) {
-            console.log('🚀 AUTO-LAUNCH: Meeting time reached, starting call automatically');
-            console.log('📋 Meeting data:', { meetingId, roomId, studentName, studentId });
-
-            // Remove any existing overlay
-            const existingOverlay = document.getElementById('auto-launch-redirect-overlay');
-            if (existingOverlay) existingOverlay.remove();
-
-            // Get volunteer info from auth
-            const volunteer = window.TalkTimeAuth ? window.TalkTimeAuth.getUser() : null;
-            const volunteerName = volunteer ? (volunteer.fullName || volunteer.full_name || volunteer.name || 'Volunteer') : 'Volunteer';
-
-            // Build call URL with all necessary parameters for student notification
-            const callUrl = `/call/call.html?room=${roomId || meetingId}&role=volunteer&studentId=${studentId || ''}&studentName=${encodeURIComponent(studentName || 'Student')}&volunteerName=${encodeURIComponent(volunteerName)}`;
-
-            // Create auto-launch overlay with countdown
-            const overlay = document.createElement('div');
-            overlay.id = 'auto-launch-redirect-overlay';
-            overlay.style.cssText = `
-                position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
-                z-index: 10000; display: flex; align-items: center; justify-content: center;
-                animation: fadeIn 0.3s ease;
-            `;
-            overlay.innerHTML = `
-                <div style="background: white; padding: 40px; border-radius: 24px; max-width: 420px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
-                    <div style="width: 90px; height: 90px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; animation: pulse 1.5s ease-in-out infinite;">
-                        <i class="fas fa-video" style="font-size: 40px; color: white;"></i>
-                    </div>
-                    <h2 style="font-size: 26px; font-weight: 700; color: #111827; margin-bottom: 12px;">Meeting Time!</h2>
-                    <p style="color: #6b7280; margin-bottom: 8px; font-size: 16px;">Your meeting with <strong>${studentName || 'your student'}</strong> is starting now.</p>
-                    <p style="color: #9ca3af; margin-bottom: 28px; font-size: 14px;">Connecting you automatically...</p>
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="background: #f3f4f6; border-radius: 12px; padding: 16px;">
-                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">Joining in</div>
-                            <div id="auto-launch-countdown" style="font-size: 36px; font-weight: 700; color: #10b981;">5</div>
-                        </div>
-                        <a href="${callUrl}" id="join-now-btn"
-                           style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 16px 32px; border-radius: 12px; font-weight: 600; text-decoration: none; font-size: 16px; transition: transform 0.2s;">
-                            <i class="fas fa-video" style="margin-right: 8px;"></i>Join Now
-                        </a>
-                        <button onclick="document.getElementById('auto-launch-redirect-overlay').remove()"
-                                style="color: #6b7280; background: none; border: none; cursor: pointer; font-size: 14px; padding: 8px;">
-                            Not now
-                        </button>
-                    </div>
-                </div>
-                <style>
-                    @keyframes pulse {
-                        0%, 100% { transform: scale(1); }
-                        50% { transform: scale(1.05); }
-                    }
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
-                    }
-                </style>
-            `;
-            document.body.appendChild(overlay);
-
-            // Play notification sound
-            try {
-                const audio = new Audio('/sounds/notification.mp3');
-                audio.volume = 0.6;
-                audio.play().catch(() => {});
-            } catch (e) {}
-
-            // Countdown and auto-redirect
-            let countdown = 5;
-            const countdownEl = document.getElementById('auto-launch-countdown');
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                if (countdownEl) countdownEl.textContent = countdown;
-
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    // Auto-redirect to call
-                    window.location.href = callUrl;
-                }
-            }, 1000);
-
-            // Store interval so it can be cleared if user clicks away
-            overlay.dataset.countdownInterval = countdownInterval;
-        }
+        // triggerAutoLaunch + auto-launch engine now live in /shared/js/meeting-auto-launch.js
 
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
@@ -532,8 +447,12 @@
                             window.VolunteerDashboardNav.updateUpcomingBadge(data.meetings.upcoming.length);
                         }
                     } else if (upcomingMeetingsContainer) {
-                        upcomingMeetingsContainer.innerHTML = 
-                            '<p class="text-gray-500 text-center py-4">No upcoming meetings scheduled. Book a call with a student to get started!</p>';
+                        upcomingMeetingsContainer.innerHTML =
+                            '<div class="text-center py-8">' +
+                            '<p class="text-gray-500 mb-4">No upcoming meetings scheduled.</p>' +
+                            '<a href="/volunteer/dashboard/schedule.html" class="inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-semibold text-sm" style="background: var(--brand-primary, #D10100);">' +
+                            '<i class="fas fa-calendar-plus"></i>Schedule a Meeting</a>' +
+                            '</div>';
                     }
                 })
                 .catch(error => {
@@ -595,7 +514,7 @@
                                 <span>${dayName}, ${day} ${month} ${year}</span>
                             </div>
                             <div class="mc-actions">
-                                <a href="/call/call.html?room=${meeting.roomId || meeting.id}&role=volunteer&studentId=${meeting.studentId || meeting.studentid}&studentName=${encodeURIComponent(studentName)}"
+                                <a href="/call/call.html?room=${meeting.roomId || meeting.roomid || meeting.id}&role=volunteer&studentId=${meeting.studentId || meeting.studentid}&studentName=${encodeURIComponent(studentName)}"
                                    class="join-btn" id="join-btn-${meeting.id}" style="display:none;">
                                     <i class="fas fa-video"></i>Join
                                 </a>
@@ -613,7 +532,7 @@
             
             // Initialize countdown timers for each meeting
             meetings.forEach(meeting => {
-                initializeCountdown(meeting.id, meeting.time, meeting.roomId, meeting.name, meeting.studentId || meeting.studentid);
+                initializeCountdown(meeting.id, meeting.time, meeting.roomId || meeting.roomid, meeting.name, meeting.studentId || meeting.studentid);
             });
         }
 
@@ -646,7 +565,10 @@
         
         // --- Initialize Authentication ---
         window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
-        
+
+        // Always-on auto-launch across dashboard pages
+        if (window.MeetingAutoLauncher) window.MeetingAutoLauncher.start();
+
         // --- Initial Load ---
         loadDashboardData();
     });
@@ -661,7 +583,7 @@
     </script>
 
     <!-- Socket.IO for real-time meeting notifications -->
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/shared/js/vendor/socket.io.min.js?v=2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Socket.IO for auto-launch events
@@ -672,14 +594,16 @@
             const userId = user.id || user.userId;
 
             if (userId) {
-                // Join user-specific rooms for notifications
-                socket.emit('join-user-room', {
-                    userId: userId,
-                    role: 'volunteer',
-                    rooms: [`user_${userId}`, `volunteer_${userId}`, `notifications_volunteer_${userId}`]
+                // Join rooms on every (re)connect so reconnections after a network
+                // drop re-establish room membership on the new server-side socket
+                socket.on('connect', () => {
+                    socket.emit('join-user-room', {
+                        userId: userId,
+                        role: 'volunteer',
+                        rooms: [`user_${userId}`, `volunteer_${userId}`, `notifications_volunteer_${userId}`]
+                    });
+                    console.log('✅ Volunteer socket connected for meeting notifications');
                 });
-
-                console.log('✅ Volunteer socket connected for meeting notifications');
             }
 
             // Handle meeting auto-launch (5-minute reminder)
@@ -728,7 +652,7 @@
 
             socket.on('meeting-canceled', (data) => {
                 console.log('Meeting canceled:', data);
-                showNotification(data.message || 'A meeting has been canceled', 'error');
+                showNotification(data.message || 'A meeting has been canceled', 'success');
                 if (typeof window.loadDashboardData === 'function') window.loadDashboardData();
             });
 
@@ -755,11 +679,6 @@
                     clearInterval(countdownIntervals.get(meetingId));
                     countdownIntervals.delete(meetingId);
                     console.log(`⏱️ Cleared countdown timer for meeting ${meetingId}`);
-                }
-
-                // Remove from auto-launched set so it can be displayed differently
-                if (meetingId) {
-                    autoLaunchedMeetings.delete(meetingId);
                 }
 
                 // Update the meeting card UI immediately

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkTime - Terms and Conditions</title>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <script src="/shared/js/brand-config.js"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #111827;
+        }
+
+        /* Main container */
+        .terms-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            width: 100%;
+        }
+
+        /* Logo section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--brand-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .powered-by img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .powered-by a {
+            font-size: 12px;
+            color: #6b7280;
+            text-decoration: none;
+        }
+
+        .powered-by a:hover {
+            color: var(--brand-primary);
+        }
+
+        /* Content card */
+        .terms-card {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 32px;
+        }
+
+        .terms-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .effective-date {
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .terms-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .terms-card h2:first-of-type {
+            margin-top: 0;
+        }
+
+        .terms-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .terms-card ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .terms-card li {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .terms-card strong {
+            color: #111827;
+        }
+
+        /* Footer */
+        .terms-footer {
+            text-align: center;
+            padding: 24px 16px;
+            border-top: 1px solid #e5e7eb;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .terms-footer p {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .terms-footer a {
+            color: var(--brand-primary);
+            text-decoration: none;
+        }
+
+        .terms-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .terms-card {
+                padding: 48px 40px;
+            }
+
+            .terms-card h1 {
+                font-size: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .terms-container {
+                padding: 16px 12px;
+            }
+
+            .terms-card {
+                padding: 24px 16px;
+                border-radius: 12px;
+            }
+
+            .terms-card h1 {
+                font-size: 24px;
+            }
+
+            .terms-card h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terms-container">
+        <!-- Logo -->
+        <div class="logo-section">
+            <a href="/" class="logo-link" aria-label="TalkTime Home">
+                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <path stroke="var(--brand-primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="logo-text">TALK TIME</span>
+            </a>
+            <div class="powered-by">
+                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
+            </div>
+        </div>
+
+        <!-- Terms Content -->
+        <div class="terms-card">
+            <h1>Terms and Conditions</h1>
+            <p class="effective-date">Effective Date: May 2026</p>
+
+            <h2>1. Introduction</h2>
+            <p>TalkTime is a video mentoring platform operated by ADEA Foundation, a non-profit organization registered in Kenya. The platform connects international volunteers with Maasai students in Kenya for English language practice through live video sessions.</p>
+            <p>By accessing or using TalkTime, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use the platform.</p>
+
+            <h2>2. Eligibility</h2>
+            <p>To use TalkTime as a volunteer, you must meet the following requirements:</p>
+            <ul>
+                <li>You must be at least 18 years of age, or have verified parental or guardian approval if under 18.</li>
+                <li>You must be able to communicate in English at a conversational level.</li>
+                <li>You must have access to a device with a camera, microphone, and stable internet connection.</li>
+            </ul>
+            <p>Students participate in TalkTime through school-based programs. Student access is managed through institutional consent provided by partnering schools, and parental or guardian approval is obtained as part of the enrollment process.</p>
+
+            <h2>3. Account Registration</h2>
+            <p>When creating an account on TalkTime, you agree to:</p>
+            <ul>
+                <li>Provide accurate, current, and complete information during registration.</li>
+                <li>Maintain only one account per person. Duplicate accounts may be removed without notice.</li>
+                <li>Keep your password secure and confidential. You are responsible for all activity that occurs under your account.</li>
+                <li>Notify ADEA Foundation immediately if you suspect unauthorized access to your account.</li>
+            </ul>
+            <p>ADEA Foundation reserves the right to refuse registration or suspend accounts that provide false or misleading information.</p>
+
+            <h2>4. User Obligations</h2>
+            <p>All users of TalkTime are expected to:</p>
+            <ul>
+                <li>Attend scheduled sessions on time. Repeated no-shows negatively impact students and may result in account restrictions.</li>
+                <li>Maintain respectful, professional, and encouraging conduct during all interactions on the platform.</li>
+                <li>Protect the privacy of students at all times. Do not share, store, or distribute any personal information about students outside the platform.</li>
+                <li>Use the platform solely for its intended educational purpose.</li>
+                <li>Report any concerns about student safety or inappropriate behavior through the platform's reporting mechanisms.</li>
+            </ul>
+
+            <h2>5. Acceptable Use</h2>
+            <p>You agree not to use TalkTime to:</p>
+            <ul>
+                <li>Harass, bully, intimidate, or threaten any user.</li>
+                <li>Share, display, or transmit inappropriate, offensive, or sexually explicit content.</li>
+                <li>Record video or audio sessions without the explicit prior consent of all participants.</li>
+                <li>Solicit donations, sell products, promote services, or engage in any commercial activity.</li>
+                <li>Share personal contact information (phone numbers, social media accounts, email addresses, or physical addresses) with students.</li>
+                <li>Attempt to contact students outside the TalkTime platform.</li>
+                <li>Circumvent, disable, or interfere with security features of the platform.</li>
+                <li>Use automated scripts, bots, or other tools to access or interact with the platform.</li>
+            </ul>
+            <p>Violation of these rules may result in immediate account termination and, where applicable, referral to relevant authorities.</p>
+
+            <h2>6. Video Mentoring Sessions</h2>
+            <p>TalkTime video mentoring sessions operate under the following rules:</p>
+            <ul>
+                <li>Each session has a standard duration of 30 minutes. Sessions automatically end when the time limit is reached.</li>
+                <li>Students are limited to one session per day.</li>
+                <li>A maximum of 3 active (scheduled) meetings may exist between the same volunteer-student pair at any given time.</li>
+                <li>Sessions cannot be scheduled more than 3 months in advance.</li>
+                <li>If a session is not joined within 30 minutes of its scheduled start time, it is automatically marked as missed.</li>
+            </ul>
+            <p>Volunteers are expected to maintain reliable attendance. The following performance thresholds apply:</p>
+            <ul>
+                <li>A cancellation rate of 40% or higher may result in account restriction.</li>
+                <li>A missed session rate of 30% or higher may result in account restriction.</li>
+            </ul>
+            <p>These thresholds exist to protect students from unreliable scheduling and to maintain the quality of the mentoring experience.</p>
+
+            <h2>7. Data Handling</h2>
+            <p>ADEA Foundation collects and processes the following data to operate TalkTime:</p>
+            <ul>
+                <li>Personal information provided during registration (name, email address, country, and profile details).</li>
+                <li>Session logs including scheduled times, attendance records, and session durations.</li>
+                <li>Technical data such as browser type, device information, and IP addresses for security and troubleshooting purposes.</li>
+            </ul>
+            <p>Authentication is handled using JSON Web Tokens (JWT). No session cookies are stored on your device for authentication purposes.</p>
+            <p>ADEA Foundation does not sell, rent, or trade your personal data to third parties. Data is retained for as long as your account remains active. Upon account deletion, personal data is removed within 30 days, except where retention is required by law.</p>
+
+            <h2>8. Child Protection</h2>
+            <p>TalkTime serves minors. The safety of students is our highest priority. The following safeguards are in place:</p>
+            <ul>
+                <li>Parental or guardian approval is required for all student participants under 18 years of age.</li>
+                <li>Session duration is limited to 30 minutes with automatic termination.</li>
+                <li>All volunteers undergo a review process before being granted access to schedule sessions with students.</li>
+                <li>The platform provides reporting mechanisms for any user to flag concerning behavior.</li>
+                <li>ADEA Foundation reserves the right to immediately suspend any account and review session records if a child safety concern is raised.</li>
+            </ul>
+            <p>Any user who becomes aware of behavior that may endanger a child is obligated to report it immediately through the platform or by contacting ADEA Foundation directly.</p>
+
+            <h2>9. Intellectual Property</h2>
+            <p>ADEA Foundation owns all rights, title, and interest in and to the TalkTime platform, including but not limited to:</p>
+            <ul>
+                <li>The TalkTime name, logo, and brand materials.</li>
+                <li>The platform software, interface design, and underlying code.</li>
+                <li>Educational materials and resources provided through the platform.</li>
+            </ul>
+            <p>Users may not reproduce, distribute, modify, or create derivative works from any TalkTime materials without prior written permission from ADEA Foundation.</p>
+
+            <h2>10. Account Termination</h2>
+            <p>Accounts may be terminated or restricted under the following circumstances:</p>
+            <ul>
+                <li>Performance thresholds are not met (cancellation rate at or above 40%, or missed session rate at or above 30%).</li>
+                <li>Violation of acceptable use policies or user obligations outlined in these terms.</li>
+                <li>At the discretion of ADEA Foundation administrators for any conduct deemed harmful to students, other users, or the platform.</li>
+            </ul>
+            <p>Users may request deletion of their own account at any time by contacting ADEA Foundation. Upon deletion, access to the platform is immediately revoked and personal data is processed in accordance with the Data Handling section above.</p>
+
+            <h2>11. Limitation of Liability</h2>
+            <p>TalkTime is provided on an "as is" and "as available" basis for educational and social development purposes. To the fullest extent permitted by applicable law:</p>
+            <ul>
+                <li>ADEA Foundation makes no warranties, express or implied, regarding the availability, reliability, or fitness of the platform for any particular purpose.</li>
+                <li>ADEA Foundation is not liable for technical failures, internet connectivity issues, or video/audio quality problems experienced during sessions.</li>
+                <li>ADEA Foundation is not responsible for the content of conversations between users during sessions.</li>
+                <li>In no event shall ADEA Foundation be liable for any indirect, incidental, special, or consequential damages arising from use of the platform.</li>
+            </ul>
+
+            <h2>12. Changes to Terms</h2>
+            <p>ADEA Foundation reserves the right to modify these Terms and Conditions at any time. When material changes are made:</p>
+            <ul>
+                <li>Users will be notified via the email address associated with their account.</li>
+                <li>A notice will be displayed on the platform indicating that terms have been updated.</li>
+                <li>Continued use of TalkTime after notification constitutes acceptance of the revised terms.</li>
+            </ul>
+            <p>If you do not agree with the updated terms, you must discontinue use of the platform and may request account deletion.</p>
+
+            <h2>13. Contact</h2>
+            <p>For questions, concerns, or requests related to these Terms and Conditions, please contact:</p>
+            <p><strong>ADEA Foundation</strong><br>
+            Nairobi, Kenya<br>
+            Website: <a href="https://adeafoundation.org" target="_blank" rel="noopener">adeafoundation.org</a></p>
+        </div>
+
+        <!-- Footer -->
+        <footer class="terms-footer">
+            <p>ADEA Foundation -- Connecting volunteers with Maasai students for English practice through video mentoring.</p>
+            <p><a href="https://adeafoundation.org" target="_blank" rel="noopener">adeafoundation.org</a></p>
+        </footer>
+    </div>
+</body>
+</html>

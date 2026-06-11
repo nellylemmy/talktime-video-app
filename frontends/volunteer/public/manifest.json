@@ -1,0 +1,31 @@
+{
+  "name": "TalkTime Volunteer",
+  "short_name": "TalkTime",
+  "description": "Mentor Maasai students through free one-on-one English practice calls.",
+  "start_url": "/volunteer/dashboard/students.html",
+  "scope": "/volunteer/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#D10100",
+  "background_color": "#f0f4ff",
+  "icons": [
+    {
+      "src": "/volunteer/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/volunteer/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/volunteer/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

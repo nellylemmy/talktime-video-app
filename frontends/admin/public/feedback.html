@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Management | TalkTime Admin</title>
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link href="/shared/css/tailwind2.min.css" rel="stylesheet">
+    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <style>
+        .btn-primary {
+            background: linear-gradient(to right, #f56565, #ed8936);
+        }
+        .btn-secondary {
+            background-color: #4CAF50;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+        }
+        body {
+            padding-top: 72px;
+        }
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 50;
+            padding: 16px;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 560px;
+            max-height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            gap: 12px;
+        }
+        .badge-general { background: #dbeafe; color: #1d4ed8; }
+        .badge-video_quality { background: #ede9fe; color: #6d28d9; }
+        .badge-scheduling { background: #ffedd5; color: #c2410c; }
+        .badge-ui_ux { background: #e0e7ff; color: #4338ca; }
+        .badge-suggestion { background: #ccfbf1; color: #0f766e; }
+        .badge-bug_report { background: #fee2e2; color: #b91c1c; }
+        .status-new { background: #dbeafe; color: #1d4ed8; }
+        .status-reviewed { background: #dcfce7; color: #15803d; }
+        .status-archived { background: #f3f4f6; color: #4b5563; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header Navigation -->
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-40" style="background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.08); height: 56px;">
+        <div class="w-full h-full px-4 flex items-center justify-between" style="max-width: 100%; margin: 0 auto;">
+            <!-- Logo (non-clickable) -->
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none">
+                    <path stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                </svg>
+                <span class="font-bold text-gray-900 tracking-tight" style="font-size: 14px;">TALKTIME</span>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="relative">
+                <button id="profile-btn" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none">
+                    <span id="admin-greeting" class="text-sm font-medium text-gray-700 hidden sm:inline">Admin</span>
+                    <div id="admin-initial" class="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-sm">A</div>
+                </button>
+                <div id="profile-dropdown" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg py-2 hidden opacity-0 transform -translate-y-2 transition-all border border-gray-100" style="z-index: 9999">
+                    <div class="px-4 py-3 border-b border-gray-100">
+                        <div class="font-semibold text-gray-900" id="dropdown-admin-name">Admin</div>
+                        <div class="text-sm text-gray-500">Administrator</div>
+                    </div>
+                    <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-tachometer-alt text-gray-400"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/admin/analytics" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-chart-bar text-gray-400"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="/admin/settings" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-cog text-gray-400"></i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin/feedback" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-comment-dots text-gray-400"></i>
+                        <span>Feedback</span>
+                    </a>
+                    <hr class="my-1 border-gray-100">
+                    <a href="#" id="logout-link" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <!-- Page Title -->
+            <div class="border-b border-gray-200 pb-5 mb-5">
+                <h1 class="text-2xl font-bold text-gray-900">Feedback Management</h1>
+                <p class="mt-2 text-sm text-gray-500">Review and manage volunteer feedback</p>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <select id="filter-status" class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm">
+                    <option value="">All Statuses</option>
+                    <option value="new" selected>New</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="archived">Archived</option>
+                </select>
+                <select id="filter-category" class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm">
+                    <option value="">All Categories</option>
+                    <option value="general">General</option>
+                    <option value="video_quality">Video Quality</option>
+                    <option value="scheduling">Scheduling</option>
+                    <option value="ui_ux">UI/UX</option>
+                    <option value="suggestion">Suggestion</option>
+                    <option value="bug_report">Bug Report</option>
+                </select>
+                <input type="text" id="filter-search" placeholder="Search feedback..." class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm flex-1 min-w-0">
+            </div>
+
+            <!-- Results Count -->
+            <p id="results-count" class="text-sm text-gray-500 mb-4">Showing 0 of 0 feedback entries</p>
+
+            <!-- Feedback Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">Loading feedback...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="flex items-center justify-between mt-4 hidden">
+                <button id="btn-prev" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-chevron-left mr-1"></i> Previous
+                </button>
+                <span id="page-indicator" class="text-sm text-gray-600">Page 1 of 1</span>
+                <button id="btn-next" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Next <i class="fas fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="text-lg font-semibold text-gray-900">Feedback Detail</h3>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm" id="modal-user-initial">U</div>
+                        <div>
+                            <div class="font-medium text-gray-900" id="modal-user-name">--</div>
+                            <div class="text-sm text-gray-500" id="modal-date">--</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-gray-600">Category:</span>
+                        <span id="modal-category" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">--</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-600">Rating:</span>
+                        <span id="modal-rating" class="text-yellow-400">--</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-600">Message:</span>
+                        <p id="modal-message" class="mt-1 text-gray-800 whitespace-pre-wrap">--</p>
+                    </div>
+                    <div>
+                        <label for="modal-admin-notes" class="block text-sm font-medium text-gray-600 mb-1">Admin Notes</label>
+                        <textarea id="modal-admin-notes" rows="3" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm" placeholder="Add notes about this feedback..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-archive-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-archive mr-1"></i> Archive
+                </button>
+                <button id="modal-review-btn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors">
+                    <i class="fas fa-check mr-1"></i> Mark Reviewed
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize admin authentication
+            window.TalkTimeAuth = new TalkTimeJWTAuth('admin');
+
+            // Check authentication on page load
+            checkAdminAuth();
+
+            // State
+            let feedbackData = [];
+            let currentPage = 1;
+            let totalPages = 1;
+            let totalCount = 0;
+            let currentFeedbackId = null;
+            const pageSize = 20;
+
+            // Elements
+            const filterStatus = document.getElementById('filter-status');
+            const filterCategory = document.getElementById('filter-category');
+            const filterSearch = document.getElementById('filter-search');
+            const tableBody = document.getElementById('feedback-table-body');
+            const resultsCount = document.getElementById('results-count');
+            const pagination = document.getElementById('pagination');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const pageIndicator = document.getElementById('page-indicator');
+            const detailModal = document.getElementById('detail-modal');
+
+            // Filter event listeners
+            filterStatus.addEventListener('change', function() { currentPage = 1; loadFeedback(); });
+            filterCategory.addEventListener('change', function() { currentPage = 1; loadFeedback(); });
+
+            let searchTimeout;
+            filterSearch.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() { currentPage = 1; loadFeedback(); }, 300);
+            });
+
+            // Pagination
+            btnPrev.addEventListener('click', function() {
+                if (currentPage > 1) { currentPage--; loadFeedback(); }
+            });
+            btnNext.addEventListener('click', function() {
+                if (currentPage < totalPages) { currentPage++; loadFeedback(); }
+            });
+
+            // Modal controls
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+            document.getElementById('modal-review-btn').addEventListener('click', function() { updateFeedbackStatus('reviewed'); });
+            document.getElementById('modal-archive-btn').addEventListener('click', function() { updateFeedbackStatus('archived'); });
+
+            // Close modal on overlay click
+            detailModal.addEventListener('click', function(e) {
+                if (e.target === detailModal) closeModal();
+            });
+
+            // Initial load
+            loadFeedback();
+
+            function loadFeedback() {
+                const status = filterStatus.value;
+                const category = filterCategory.value;
+                const search = filterSearch.value.trim();
+
+                let url = '/api/v1/feedback?page=' + currentPage + '&limit=' + pageSize;
+                if (status) url += '&status=' + encodeURIComponent(status);
+                if (category) url += '&category=' + encodeURIComponent(category);
+                if (search) url += '&search=' + encodeURIComponent(search);
+
+                tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading feedback...</td></tr>';
+
+                window.TalkTimeAuth.makeAuthenticatedRequest(url, { method: 'GET' })
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch feedback');
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        feedbackData = data.feedback || data.data || [];
+                        totalCount = data.total || feedbackData.length;
+                        totalPages = Math.ceil(totalCount / pageSize) || 1;
+                        renderTable();
+                        renderPagination();
+                    })
+                    .catch(function(error) {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-red-500"><i class="fas fa-exclamation-circle mr-2"></i>Failed to load feedback. Please try again.</td></tr>';
+                    });
+            }
+
+            function renderTable() {
+                if (feedbackData.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-inbox mr-2"></i>No feedback entries found.</td></tr>';
+                    resultsCount.textContent = 'Showing 0 of 0 feedback entries';
+                    return;
+                }
+
+                var start = (currentPage - 1) * pageSize + 1;
+                var end = Math.min(currentPage * pageSize, totalCount);
+                resultsCount.textContent = 'Showing ' + start + '-' + end + ' of ' + totalCount + ' feedback entries';
+
+                var html = '';
+                feedbackData.forEach(function(item) {
+                    var truncatedMsg = item.message ? (item.message.length > 100 ? item.message.substring(0, 100) + '...' : item.message) : '--';
+                    var dateStr = formatDate(item.created_at);
+                    var stars = renderStars(item.rating);
+                    var categoryClass = 'badge-' + (item.category || 'general');
+                    var categoryLabel = formatCategory(item.category);
+                    var statusClass = 'status-' + (item.status || 'new');
+                    var statusLabel = (item.status || 'new').charAt(0).toUpperCase() + (item.status || 'new').slice(1);
+
+                    html += '<tr class="hover:bg-gray-50">';
+                    html += '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + escapeHtml(item.user_name || 'Unknown') + '</td>';
+                    html += '<td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + categoryClass + '">' + categoryLabel + '</span></td>';
+                    html += '<td class="px-6 py-4 whitespace-nowrap text-sm">' + stars + '</td>';
+                    html += '<td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">' + escapeHtml(truncatedMsg) + '</td>';
+                    html += '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + dateStr + '</td>';
+                    html += '<td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + statusClass + '">' + statusLabel + '</span></td>';
+                    html += '<td class="px-6 py-4 whitespace-nowrap"><button onclick="viewFeedback(\'' + item.id + '\')" class="text-sm text-blue-600 hover:text-blue-800 font-medium"><i class="fas fa-eye mr-1"></i>View</button></td>';
+                    html += '</tr>';
+                });
+                tableBody.innerHTML = html;
+            }
+
+            function renderPagination() {
+                if (totalPages <= 1) {
+                    pagination.classList.add('hidden');
+                    return;
+                }
+                pagination.classList.remove('hidden');
+                pageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+                btnPrev.disabled = currentPage <= 1;
+                btnNext.disabled = currentPage >= totalPages;
+            }
+
+            // Make viewFeedback accessible globally
+            window.viewFeedback = function(id) {
+                var item = feedbackData.find(function(f) { return String(f.id) === String(id); });
+                if (!item) return;
+
+                currentFeedbackId = id;
+                document.getElementById('modal-user-name').textContent = item.user_name || 'Unknown';
+                document.getElementById('modal-user-initial').textContent = (item.user_name || 'U').charAt(0).toUpperCase();
+                document.getElementById('modal-date').textContent = formatDate(item.created_at);
+                document.getElementById('modal-message').textContent = item.message || '--';
+                document.getElementById('modal-admin-notes').value = item.admin_notes || '';
+
+                var categoryEl = document.getElementById('modal-category');
+                categoryEl.textContent = formatCategory(item.category);
+                categoryEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-' + (item.category || 'general');
+
+                document.getElementById('modal-rating').innerHTML = renderStars(item.rating);
+
+                detailModal.classList.add('show');
+            };
+
+            function closeModal() {
+                detailModal.classList.remove('show');
+                currentFeedbackId = null;
+            }
+
+            function updateFeedbackStatus(newStatus) {
+                if (!currentFeedbackId) return;
+
+                var adminNotes = document.getElementById('modal-admin-notes').value.trim();
+                var body = { status: newStatus };
+                if (adminNotes) body.admin_notes = adminNotes;
+
+                window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/feedback/' + currentFeedbackId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Failed to update feedback');
+                    return response.json();
+                })
+                .then(function() {
+                    closeModal();
+                    loadFeedback();
+                })
+                .catch(function(error) {
+                    alert('Failed to update feedback status. Please try again.');
+                });
+            }
+
+            function renderStars(rating) {
+                var r = parseInt(rating) || 0;
+                var html = '';
+                for (var i = 1; i <= 5; i++) {
+                    if (i <= r) {
+                        html += '<i class="fas fa-star text-yellow-400"></i>';
+                    } else {
+                        html += '<i class="far fa-star text-gray-300"></i>';
+                    }
+                }
+                return html;
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr) return '--';
+                var d = new Date(dateStr);
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+            }
+
+            function formatCategory(cat) {
+                if (!cat) return 'General';
+                var map = {
+                    'general': 'General',
+                    'video_quality': 'Video Quality',
+                    'scheduling': 'Scheduling',
+                    'ui_ux': 'UI/UX',
+                    'suggestion': 'Suggestion',
+                    'bug_report': 'Bug Report'
+                };
+                return map[cat] || cat;
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                var div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+        });
+
+        // Authentication check with personalized greeting
+        function checkAdminAuth() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/jwt-auth/verify', {
+                method: 'GET'
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (!data || !data.success || !data.authenticated || data.user.role !== 'admin') {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
+                // Personalized greeting
+                var fullName = data.user.full_name || data.user.fullName || data.user.name || 'Admin';
+                var firstName = fullName.split(' ')[0];
+                var greetingEl = document.getElementById('admin-greeting');
+                var initialEl = document.getElementById('admin-initial');
+                if (greetingEl) greetingEl.textContent = firstName;
+                if (initialEl) initialEl.textContent = fullName.charAt(0).toUpperCase();
+                var dropdownNameEl = document.getElementById('dropdown-admin-name');
+                if (dropdownNameEl) dropdownNameEl.textContent = fullName;
+            })
+            .catch(function(error) {
+                window.location.href = '/admin/login.html';
+            });
+        }
+
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Profile dropdown
+            var profileBtn = document.getElementById('profile-btn');
+            var profileDropdown = document.getElementById('profile-dropdown');
+
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var isOpen = !profileDropdown.classList.contains('hidden');
+                    if (isOpen) {
+                        profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
+                    } else {
+                        profileDropdown.classList.remove('hidden');
+                        requestAnimationFrame(function() {
+                            profileDropdown.classList.remove('opacity-0', '-translate-y-2');
+                        });
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.add('hidden', 'opacity-0', '-translate-y-2');
+                    }
+                });
+            }
+
+            // Logout event listener
+            var logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+        });
+
+        // Logout function
+        function logout() {
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/jwt-auth/logout', {
+                method: 'POST'
+            })
+            .then(function() {
+                window.TalkTimeAuth.clearAuth();
+                window.location.href = '/admin/login.html';
+            })
+            .catch(function(error) {
+                window.TalkTimeAuth.clearAuth();
+                window.location.href = '/admin/login.html';
+            });
+        }
+    </script>
+</body>
+</html>

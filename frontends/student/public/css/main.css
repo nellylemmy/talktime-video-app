@@ -4,7 +4,7 @@
 /* Custom styles for the page - Mobile First Approach */
 body {
     font-family: var(--brand-body-family, 'Poppins', sans-serif);
-    background-color: #f0f4ff; /* Fallback color */
+    background-color: #f4f5ee; /* Fallback color */
     overflow-x: hidden;
     width: 100%;
     margin: 0;
@@ -17,7 +17,7 @@ body {
 
 /* UPDATED: Clean professional background */
 .gradient-bg {
-    background-color: #f0f4ff;
+    background-color: #f4f5ee;
     /* No gradient for professional look */
 }
 

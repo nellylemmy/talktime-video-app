@@ -57,8 +57,14 @@ class TalkTimeJWTAuth {
      * Get stored user data
      */
     getUser() {
-        const userData = localStorage.getItem(this.userKey);
-        return userData ? JSON.parse(userData) : null;
+        try {
+            const userData = localStorage.getItem(this.userKey);
+            return userData ? JSON.parse(userData) : null;
+        } catch (e) {
+            // Corrupted stored value must not break page init
+            localStorage.removeItem(this.userKey);
+            return null;
+        }
     }
 
     /**
@@ -90,6 +96,14 @@ class TalkTimeJWTAuth {
         localStorage.removeItem(this.accessTokenKey);
         localStorage.removeItem(this.refreshTokenKey);
         localStorage.removeItem(this.userKey);
+        // Clear notification/user-id state so the next user on a shared device
+        // does not inherit this user's identity or push registration
+        ['talktime_user_id', 'talktime_notification_status',
+         'talktime_notification_granted_at', 'talktime_notification_denied_at'].forEach(k => {
+            localStorage.removeItem(k);
+        });
+        sessionStorage.removeItem('talktime_user_id');
+        sessionStorage.removeItem('talktime_current_role');
     }
 
     /**
@@ -116,29 +130,40 @@ class TalkTimeJWTAuth {
     }
 
     /**
-     * Make authenticated API request with JWT token (internal method)
+     * Make authenticated API request with JWT token (internal method).
+     * On 401: tries one token refresh (single-flight) and retries the request
+     * before giving up and logging the user out.
      */
     async authenticatedRequest(url, options = {}) {
         const token = this.getAccessToken();
-        
+
         if (!token) {
             throw new Error('No authentication token available');
         }
 
-        const headers = {
+        const buildHeaders = (t) => ({
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${t}`,
             ...options.headers
-        };
+        });
 
         try {
-            const response = await fetch(url, {
+            let response = await fetch(url, {
                 ...options,
-                headers
+                headers: buildHeaders(token)
             });
 
-            // If token expired, try to refresh or redirect to login
             if (response.status === 401) {
+                const newToken = await this.tryRefreshToken();
+                if (newToken) {
+                    response = await fetch(url, {
+                        ...options,
+                        headers: buildHeaders(newToken)
+                    });
+                    if (response.status !== 401) {
+                        return response;
+                    }
+                }
                 console.log('JWT token expired or invalid');
                 this.handleAuthenticationFailure();
                 throw new Error('Authentication failed');
@@ -149,6 +174,41 @@ class TalkTimeJWTAuth {
             console.error('Authenticated request failed:', error);
             throw error;
         }
+    }
+
+    /**
+     * Exchange the stored refresh token for new tokens.
+     * Single-flight: concurrent 401s share one refresh request.
+     * Returns the new access token, or null if refresh is impossible/failed.
+     */
+    async tryRefreshToken() {
+        const refreshToken = localStorage.getItem(this.refreshTokenKey);
+        if (!refreshToken) return null;
+
+        if (!this._refreshPromise) {
+            this._refreshPromise = (async () => {
+                try {
+                    const res = await fetch('/api/v1/jwt-auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                    if (!res.ok) return null;
+                    const data = await res.json();
+                    if (!data.success || !data.accessToken) return null;
+                    localStorage.setItem(this.accessTokenKey, data.accessToken);
+                    if (data.refreshToken) {
+                        localStorage.setItem(this.refreshTokenKey, data.refreshToken);
+                    }
+                    return data.accessToken;
+                } catch (e) {
+                    return null;
+                } finally {
+                    this._refreshPromise = null;
+                }
+            })();
+        }
+        return this._refreshPromise;
     }
 
     /**
@@ -231,6 +291,18 @@ class TalkTimeJWTAuth {
             return false;
         }
 
+        // Single-flight with a short cache: multiple page components
+        // (nav-loader, approval status, header) share one verify call
+        if (this._verifyCache && (Date.now() - this._verifyCache.at) < 10000) {
+            return this._verifyCache.promise;
+        }
+        const promise = this._verifyTokenUncached();
+        this._verifyCache = { at: Date.now(), promise };
+        promise.then((ok) => { if (!ok) this._verifyCache = null; });
+        return promise;
+    }
+
+    async _verifyTokenUncached() {
         try {
             const response = await this.authenticatedRequest('/api/v1/jwt-auth/verify');
             

@@ -206,7 +206,7 @@ export const getVolunteerCredits = async (req, res) => {
         
         // Calculate credits
         const totalMeetings = completedMeetings.length;
-        const totalMinutes = totalMeetings * 40; // Default 40 minutes per meeting
+        const totalMinutes = totalMeetings * 30; // Default 30 minutes per meeting
         
         // Calculate impact score based on consistency (since we don't have rating data yet)
         let impactScore = 0;
@@ -242,7 +242,7 @@ export const getVolunteerCredits = async (req, res) => {
                 date: meeting.scheduled_time,
                 status: meeting.status,
                 studentName: meeting.student_name,
-                duration: 40 // Default 40 minutes per meeting
+                duration: 30 // Default 30 minutes per meeting
             })),
             eligibleForCertificate: totalMeetings >= 1, // At least 1 completed call
             lastUpdated: new Date().toISOString()
@@ -1113,8 +1113,8 @@ async function getVolunteerCreditData(volunteerId) {
     
     return {
         completedCalls: completedCalls,
-        totalMinutes: completedCalls * 40, // 40 minutes per meeting
-        totalHours: Math.floor((completedCalls * 40) / 60),
+        totalMinutes: completedCalls * 30, // 30 minutes per meeting
+        totalHours: Math.floor((completedCalls * 30) / 60),
         averageRating: completedCalls > 0 ? '4.0' : '0.0'
     };
 }
@@ -1617,25 +1617,45 @@ export const getVolunteerPerformance = async (req, res) => {
             tierIcon = 'fas fa-warning';
         }
         
-        // Determine warning status and restrictions
+        // Count-based restriction thresholds
+        const MIN_MEETINGS_FOR_RESTRICTION = 5;
+        const CANCEL_COUNT_THRESHOLD = 5;
+        const MISSED_COUNT_THRESHOLD = 4;
+
+        // Determine warning status and restrictions (count-based)
         let warningStatus = 'none';
         let warningMessage = '';
         let isRestricted = false;
-        
-        // Check for restriction conditions
-        if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
+
+        if (totalScheduled >= MIN_MEETINGS_FOR_RESTRICTION &&
+            (cancelledCalls >= CANCEL_COUNT_THRESHOLD || missedCalls >= MISSED_COUNT_THRESHOLD)) {
             isRestricted = true;
             warningStatus = 'critical';
-            warningMessage = 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Contact support to resolve this.';
-        } else if (cancelledRate >= 30 || missedRate >= 20 || reputationScore < 50) {
+            warningMessage = `Your account is restricted due to ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Submit an appeal to request reinstatement.`;
+        } else if (cancelledCalls >= 4 || missedCalls >= 3) {
             warningStatus = 'severe';
-            warningMessage = 'WARNING: Your high cancellation/missed call rate is negatively impacting students. Immediate improvement required to avoid account restrictions.';
-        } else if (cancelledRate >= 20 || missedRate >= 15 || (recentCancelled + recentMissed) >= 3) {
+            warningMessage = `Warning: You have ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Restrictions apply at 5 cancellations or 4 missed calls.`;
+        } else if (cancelledCalls >= 3 || missedCalls >= 2) {
             warningStatus = 'moderate';
-            warningMessage = 'Notice: Your recent cancellations/missed calls are affecting your reliability score. Please prioritize committed calls.';
-        } else if (cancelledRate >= 10 || missedRate >= 10) {
+            warningMessage = 'Notice: Your cancellations/missed calls are approaching restriction thresholds. Please prioritize committed calls.';
+        } else if (cancelledCalls >= 2 || missedCalls >= 1) {
             warningStatus = 'minor';
             warningMessage = 'Tip: Maintaining consistent attendance helps build trust with students and improves learning outcomes.';
+        }
+
+        // Fetch latest appeal status
+        let latestAppeal = null;
+        try {
+            const appealResult = await pool.query(
+                `SELECT id, status, admin_response, created_at FROM appeals
+                 WHERE volunteer_id = $1 ORDER BY created_at DESC LIMIT 1`,
+                [volunteerId]
+            );
+            if (appealResult.rows.length > 0) {
+                latestAppeal = appealResult.rows[0];
+            }
+        } catch (appealErr) {
+            // appeals table may not exist yet — ignore
         }
         
         // Calculate impact metrics for psychological motivation
@@ -1690,6 +1710,8 @@ export const getVolunteerPerformance = async (req, res) => {
                 warningStatus,
                 warningMessage,
                 isRestricted,
+                latestAppeal,
+                restrictionThresholds: { cancelCount: 5, missedCount: 4, minMeetings: 5 },
                 
                 // Impact metrics for motivation
                 learningHoursProvided,

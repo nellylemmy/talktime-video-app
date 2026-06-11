@@ -2,26 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TalkTime - Volunteer Signup</title>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
 
     <!-- Google Fonts: Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
 
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
 
     <!-- JWT Authentication -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
-    <script src="/shared/js/realtime-notifications.js"></script>
-    <script src="/shared/js/newsletter-widget.js"></script>
-    <script src="/volunteer/js/modal-utils.js"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/realtime-notifications.js?v=4"></script>
+    <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
+    <script defer src="/shared/js/modal-utils.js?v=4"></script>
 
     <style>
         * {
@@ -34,6 +36,7 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: #f8fafc;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
         }
@@ -133,15 +136,18 @@
 
         .progress-steps {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            align-items: flex-start;
             justify-content: center;
-            gap: 8px;
         }
 
         .progress-step {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            flex: 0 0 auto;
+            min-width: 56px;
         }
 
         .step-indicator {
@@ -172,14 +178,20 @@
         }
 
         .step-label {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 500;
             color: #374151;
+            text-align: center;
+            line-height: 1.2;
+            max-width: 76px;
         }
 
         .step-line {
-            width: 24px;
+            flex: 1 1 0;
+            min-width: 12px;
+            max-width: 56px;
             height: 2px;
+            margin-top: 15px; /* centers on the 32px step circle */
             background-color: #e5e7eb;
             transition: background-color 0.2s ease;
         }
@@ -326,7 +338,7 @@
 
         .radio-option.student-option {
             border-color: var(--brand-secondary);
-            background-color: rgba(56, 103, 255, 0.03);
+            background-color: rgba(95, 106, 45, 0.03);
         }
 
         .radio-option input[type="radio"] {
@@ -400,6 +412,72 @@
             color: #6b7280;
             margin-bottom: 16px;
             line-height: 1.5;
+        }
+
+        /* Password requirements checklist */
+        .password-requirements {
+            margin-top: 8px;
+        }
+
+        .password-requirements .req {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 4px 0;
+            transition: color 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .password-requirements .req.valid {
+            color: #116C00;
+        }
+
+        .password-requirements .req.invalid {
+            color: #7d0000;
+        }
+
+        .password-requirements .req i {
+            font-size: 10px;
+            width: 12px;
+            text-align: center;
+        }
+
+        .field-feedback {
+            font-size: 12px;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+
+        .field-feedback.error {
+            color: #7d0000;
+        }
+
+        .field-feedback.success {
+            color: #116C00;
+        }
+
+        /* Persistent input validation states */
+        .form-input.input-error,
+        .form-select.input-error {
+            border-color: #7d0000;
+        }
+
+        .form-input.input-error:focus,
+        .form-select.input-error:focus {
+            border-color: #7d0000;
+            box-shadow: 0 0 0 3px rgba(125, 0, 0, 0.1);
+        }
+
+        .form-input.input-success,
+        .form-select.input-success {
+            border-color: #116C00;
+        }
+
+        .form-input.input-success:focus,
+        .form-select.input-success:focus {
+            border-color: #116C00;
+            box-shadow: 0 0 0 3px rgba(17, 108, 0, 0.1);
         }
 
         /* Security questions */
@@ -562,18 +640,12 @@
             }
 
             .step-line {
-                width: 40px;
+                max-width: 72px;
+                margin-top: 17px; /* centers on the 36px step circle */
             }
-        }
 
-        /* Hide mobile-specific on desktop */
-        @media (max-width: 479px) {
             .step-label {
-                display: none;
-            }
-
-            .progress-steps {
-                gap: 4px;
+                font-size: 13px;
             }
         }
 
@@ -602,9 +674,9 @@
         .bg-green-100 { background-color: #dcfce7; }
         .bg-red-100 { background-color: #fee2e2; }
         .bg-yellow-100 { background-color: #fef9c3; }
-        .bg-blue-100 { background-color: #dbeafe; }
+        .bg-blue-100 { background-color: #e7e9d9; }
         .bg-gray-100 { background-color: #f3f4f6; }
-        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-600 { background-color: #54602a; }
         .bg-green-600 { background-color: #16a34a; }
         .bg-red-600 { background-color: #dc2626; }
         .text-white { color: #fff; }
@@ -615,7 +687,7 @@
         .text-green-600 { color: #16a34a; }
         .text-red-600 { color: #dc2626; }
         .text-yellow-600 { color: #ca8a04; }
-        .text-blue-600 { color: #2563eb; }
+        .text-blue-600 { color: #54602a; }
         .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
         .font-medium { font-weight: 500; }
         .font-semibold { font-weight: 600; }
@@ -647,16 +719,16 @@
         .w-8 { width: 2rem; }
         .h-8 { height: 2rem; }
         .flex-shrink-0 { flex-shrink: 0; }
-        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-blue-700:hover { background-color: #4d561f; }
         .hover\:bg-green-700:hover { background-color: #15803d; }
         .hover\:bg-red-700:hover { background-color: #b91c1c; }
         .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
         .hover\:text-gray-600:hover { color: #4b5563; }
         .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
         .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
-        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:border-blue-500:focus { border-color: #3b82f6; }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:border-blue-500:focus { border-color: #5f6a2d; }
 
         /* Modal input field override */
         #talktime-modal-container input[type="text"],
@@ -690,7 +762,7 @@
                 <span class="logo-text">TALK TIME</span>
             </a>
             <div class="powered-by">
-                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <img src="/shared/images/adea-logo.jpg" alt="ADEA Foundation">
                 <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
             </div>
         </div>
@@ -722,7 +794,7 @@
                     <div class="step-line" id="step-line-3"></div>
                     <div class="progress-step">
                         <div class="step-indicator pending" id="step-indicator-4">4</div>
-                        <span class="step-label">Complete</span>
+                        <span class="step-label">Review & Submit</span>
                     </div>
                 </div>
             </div>
@@ -741,11 +813,13 @@
                             <label for="first-name" class="form-label">First Name<span class="required-star">*</span></label>
                             <p class="form-hint">Your first name</p>
                             <input type="text" id="first-name" name="first-name" required class="form-input" placeholder="John">
+                            <div class="field-feedback" id="first-name-feedback"></div>
                         </div>
                         <div class="form-group">
                             <label for="last-name" class="form-label">Last Name<span class="required-star">*</span></label>
                             <p class="form-hint">Your last name</p>
                             <input type="text" id="last-name" name="last-name" required class="form-input" placeholder="Doe">
+                            <div class="field-feedback" id="last-name-feedback"></div>
                         </div>
                     </div>
                     <p class="form-hint" style="margin-top: -8px; margin-bottom: 16px;">Your legal name for official certificates and community service documentation</p>
@@ -754,11 +828,13 @@
                         <label for="username" class="form-label">How would you like us to call you?<span class="required-star">*</span></label>
                         <p class="form-hint">Your preferred name or nickname for casual conversations</p>
                         <input type="text" id="username" name="username" required class="form-input" placeholder="e.g., John, Johnny, J">
+                        <div class="field-feedback" id="username-feedback"></div>
                     </div>
 
                     <div class="form-group">
                         <label for="email" class="form-label">Email Address<span class="required-star">*</span></label>
                         <input type="email" id="email" name="email" required class="form-input" placeholder="you@example.com">
+                        <div class="field-feedback" id="email-feedback"></div>
                     </div>
 
                     <div class="form-group">
@@ -782,6 +858,7 @@
                         <div class="form-group">
                             <label for="age" class="form-label">Age<span class="required-star">*</span></label>
                             <input type="number" id="age" name="age" required class="form-input" placeholder="e.g., 17" min="10">
+                            <div class="field-feedback" id="age-feedback"></div>
                         </div>
                         <div class="form-group">
                             <label for="gender" class="form-label">Gender<span class="required-star">*</span></label>
@@ -792,6 +869,7 @@
                                 <option value="other">Other</option>
                                 <option value="prefer_not_to_say">Prefer not to say</option>
                             </select>
+                            <div class="field-feedback" id="gender-feedback"></div>
                         </div>
                     </div>
 
@@ -803,6 +881,7 @@
                             </select>
                             <input type="tel" id="phone" name="phone" required class="form-input phone-input" placeholder="e.g. 712 345678">
                         </div>
+                        <div class="field-feedback" id="phone-feedback"></div>
                     </div>
 
                     <div class="form-group">
@@ -839,10 +918,17 @@
                         <div class="form-group">
                             <label for="password" class="form-label">Password<span class="required-star">*</span></label>
                             <input type="password" id="password" name="password" required class="form-input" placeholder="Create a password">
+                            <div class="password-requirements" id="password-requirements">
+                                <div class="req" id="req-length"><i class="fas fa-circle"></i> At least 8 characters</div>
+                                <div class="req" id="req-upper"><i class="fas fa-circle"></i> One uppercase letter</div>
+                                <div class="req" id="req-number"><i class="fas fa-circle"></i> One number</div>
+                                <div class="req" id="req-special"><i class="fas fa-circle"></i> One special character (!@#$%^&*)</div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="confirm-password" class="form-label">Confirm Password<span class="required-star">*</span></label>
                             <input type="password" id="confirm-password" name="confirm-password" required class="form-input" placeholder="Confirm your password">
+                            <div class="field-feedback" id="confirm-password-feedback"></div>
                         </div>
                     </div>
 
@@ -862,6 +948,7 @@
                             <option value="What is your favorite color?">What is your favorite color?</option>
                         </select>
                         <input type="text" id="security-answer-1" name="security-answer-1" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                        <div class="field-feedback" id="security-1-feedback"></div>
                     </div>
 
                     <div class="form-group">
@@ -875,6 +962,7 @@
                             <option value="What is your favorite food?">What is your favorite food?</option>
                         </select>
                         <input type="text" id="security-answer-2" name="security-answer-2" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                        <div class="field-feedback" id="security-2-feedback"></div>
                     </div>
 
                     <div class="form-group">
@@ -888,6 +976,7 @@
                             <option value="What is your favorite movie?">What is your favorite movie?</option>
                         </select>
                         <input type="text" id="security-answer-3" name="security-answer-3" required class="form-input" placeholder="Your answer" style="margin-top: 8px;">
+                        <div class="field-feedback" id="security-3-feedback"></div>
                     </div>
                 </div>
 
@@ -896,6 +985,15 @@
                     <div class="step-header">
                         <h2>Additional Information</h2>
                         <p>Final details based on your selections</p>
+                    </div>
+
+                    <!-- Shown when no conditional sections apply (adult standard volunteers) -->
+                    <div id="ready-to-submit-note" style="display:none; text-align:center; padding: 24px 8px;">
+                        <div style="width:56px;height:56px;border-radius:9999px;background:rgba(17,108,0,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                            <i class="fas fa-check" style="font-size:24px;color:#116C00;"></i>
+                        </div>
+                        <p style="font-weight:600;color:#111827;margin-bottom:4px;">You're all set!</p>
+                        <p style="color:#6b7280;font-size:14px;">Accept the terms below and create your account.</p>
                     </div>
 
                     <!-- Parental Consent Section (Initially Hidden) -->
@@ -911,6 +1009,7 @@
                             <div class="form-group">
                                 <label for="parent-email" class="form-label">Parent/Guardian Email<span class="required-star">*</span></label>
                                 <input type="email" id="parent-email" name="parent-email" class="form-input" placeholder="parent@example.com">
+                                <div class="field-feedback" id="parent-email-feedback"></div>
                             </div>
                             <div class="form-group">
                                 <label for="parent-phone" class="form-label">Parent/Guardian Phone<span class="required-star">*</span></label>
@@ -920,6 +1019,7 @@
                                     </select>
                                     <input type="tel" id="parent-phone" name="parent-phone" class="form-input phone-input" placeholder="Parent's phone number">
                                 </div>
+                                <div class="field-feedback" id="parent-phone-feedback"></div>
                             </div>
                         </div>
                     </div>
@@ -929,6 +1029,7 @@
                         <div class="form-group">
                             <label for="school-name" class="form-label">School Name<span class="required-star">*</span></label>
                             <input type="text" id="school-name" name="school-name" class="form-input" placeholder="e.g., Maasai High School">
+                            <div class="field-feedback" id="school-name-feedback"></div>
                         </div>
                     </div>
                 </div>
@@ -963,564 +1064,6 @@
     </div>
 
     <!-- ALL JAVASCRIPT PRESERVED EXACTLY AS ORIGINAL -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            document.body.classList.add('page-ready');
-            // --- NAME AUTO-CAPITALIZATION ---
-            function capitalizeName(name) {
-                if (!name || typeof name !== 'string') return name;
-                const trimmed = name.trim().replace(/\s+/g, ' ');
-                if (!trimmed) return trimmed;
-                return trimmed.split(' ').map(word => {
-                    if (!word) return word;
-                    // Handle hyphens: mary-jane -> Mary-Jane
-                    if (word.includes('-')) {
-                        return word.split('-').map(part =>
-                            part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part
-                        ).join('-');
-                    }
-                    // Handle apostrophes: o'brien -> O'Brien
-                    if (word.includes("'")) {
-                        return word.split("'").map(part =>
-                            part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part
-                        ).join("'");
-                    }
-                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-                }).join(' ');
-            }
-
-            // Auto-capitalize first and last name on blur
-            const firstNameInput = document.getElementById('first-name');
-            const lastNameInput = document.getElementById('last-name');
-
-            if (firstNameInput) {
-                firstNameInput.addEventListener('blur', function() {
-                    this.value = capitalizeName(this.value);
-                });
-            }
-
-            if (lastNameInput) {
-                lastNameInput.addEventListener('blur', function() {
-                    this.value = capitalizeName(this.value);
-                });
-            }
-
-            // --- COUNTRY CODE POPULATION ---
-            const countries = [
-                { name: "United States", shortName: "US", code: "+1", flag: "\u{1F1FA}\u{1F1F8}" },
-                { name: "Afghanistan", shortName: "AF", code: "+93", flag: "\u{1F1E6}\u{1F1EB}" },
-                { name: "Albania", shortName: "AL", code: "+355", flag: "\u{1F1E6}\u{1F1F1}" },
-                { name: "Algeria", shortName: "DZ", code: "+213", flag: "\u{1F1E9}\u{1F1FF}" },
-                { name: "American Samoa", shortName: "AS", code: "+1684", flag: "\u{1F1E6}\u{1F1F8}" },
-                { name: "Andorra", shortName: "AD", code: "+376", flag: "\u{1F1E6}\u{1F1E9}" },
-                { name: "Angola", shortName: "AO", code: "+244", flag: "\u{1F1E6}\u{1F1F4}" },
-                { name: "Anguilla", shortName: "AI", code: "+1264", flag: "\u{1F1E6}\u{1F1EE}" },
-                { name: "Antarctica", shortName: "AQ", code: "+672", flag: "\u{1F1E6}\u{1F1F6}" },
-                { name: "Antigua and Barbuda", shortName: "AG", code: "+1268", flag: "\u{1F1E6}\u{1F1EC}" },
-                { name: "Argentina", shortName: "AR", code: "+54", flag: "\u{1F1E6}\u{1F1F7}" },
-                { name: "Armenia", shortName: "AM", code: "+374", flag: "\u{1F1E6}\u{1F1F2}" },
-                { name: "Aruba", shortName: "AW", code: "+297", flag: "\u{1F1E6}\u{1F1FC}" },
-                { name: "Australia", shortName: "AU", code: "+61", flag: "\u{1F1E6}\u{1F1FA}" },
-                { name: "Austria", shortName: "AT", code: "+43", flag: "\u{1F1E6}\u{1F1F9}" },
-                { name: "Azerbaijan", shortName: "AZ", code: "+994", flag: "\u{1F1E6}\u{1F1FF}" },
-                { name: "Bahamas", shortName: "BS", code: "+1242", flag: "\u{1F1E7}\u{1F1F8}" },
-                { name: "Bahrain", shortName: "BH", code: "+973", flag: "\u{1F1E7}\u{1F1ED}" },
-                { name: "Bangladesh", shortName: "BD", code: "+880", flag: "\u{1F1E7}\u{1F1E9}" },
-                { name: "Barbados", shortName: "BB", code: "+1246", flag: "\u{1F1E7}\u{1F1E7}" },
-                { name: "Belarus", shortName: "BY", code: "+375", flag: "\u{1F1E7}\u{1F1FE}" },
-                { name: "Belgium", shortName: "BE", code: "+32", flag: "\u{1F1E7}\u{1F1EA}" },
-                { name: "Belize", shortName: "BZ", code: "+501", flag: "\u{1F1E7}\u{1F1FF}" },
-                { name: "Benin", shortName: "BJ", code: "+229", flag: "\u{1F1E7}\u{1F1EF}" },
-                { name: "Bermuda", shortName: "BM", code: "+1441", flag: "\u{1F1E7}\u{1F1F2}" },
-                { name: "Bhutan", shortName: "BT", code: "+975", flag: "\u{1F1E7}\u{1F1F9}" },
-                { name: "Bolivia", shortName: "BO", code: "+591", flag: "\u{1F1E7}\u{1F1F4}" },
-                { name: "Bosnia and Herzegovina", shortName: "BA", code: "+387", flag: "\u{1F1E7}\u{1F1E6}" },
-                { name: "Botswana", shortName: "BW", code: "+267", flag: "\u{1F1E7}\u{1F1FC}" },
-                { name: "Brazil", shortName: "BR", code: "+55", flag: "\u{1F1E7}\u{1F1F7}" },
-                { name: "British Virgin Islands", shortName: "VG", code: "+1284", flag: "\u{1F1FB}\u{1F1EC}" },
-                { name: "Brunei", shortName: "BN", code: "+673", flag: "\u{1F1E7}\u{1F1F3}" },
-                { name: "Bulgaria", shortName: "BG", code: "+359", flag: "\u{1F1E7}\u{1F1EC}" },
-                { name: "Burkina Faso", shortName: "BF", code: "+226", flag: "\u{1F1E7}\u{1F1EB}" },
-                { name: "Burundi", shortName: "BI", code: "+257", flag: "\u{1F1E7}\u{1F1EE}" },
-                { name: "Cambodia", shortName: "KH", code: "+855", flag: "\u{1F1F0}\u{1F1ED}" },
-                { name: "Cameroon", shortName: "CM", code: "+237", flag: "\u{1F1E8}\u{1F1F2}" },
-                { name: "Canada", shortName: "CA", code: "+1", flag: "\u{1F1E8}\u{1F1E6}" },
-                { name: "Cape Verde", shortName: "CV", code: "+238", flag: "\u{1F1E8}\u{1F1FB}" },
-                { name: "Cayman Islands", shortName: "KY", code: "+1345", flag: "\u{1F1F0}\u{1F1FE}" },
-                { name: "Central African Republic", shortName: "CF", code: "+236", flag: "\u{1F1E8}\u{1F1EB}" },
-                { name: "Chad", shortName: "TD", code: "+235", flag: "\u{1F1F9}\u{1F1E9}" },
-                { name: "Chile", shortName: "CL", code: "+56", flag: "\u{1F1E8}\u{1F1F1}" },
-                { name: "China", shortName: "CN", code: "+86", flag: "\u{1F1E8}\u{1F1F3}" },
-                { name: "Colombia", shortName: "CO", code: "+57", flag: "\u{1F1E8}\u{1F1F4}" },
-                { name: "Congo", shortName: "CD", code: "+243", flag: "\u{1F1E8}\u{1F1E9}" },
-                { name: "Costa Rica", shortName: "CR", code: "+506", flag: "\u{1F1E8}\u{1F1F7}" },
-                { name: "Croatia", shortName: "HR", code: "+385", flag: "\u{1F1ED}\u{1F1F7}" },
-                { name: "Cuba", shortName: "CU", code: "+53", flag: "\u{1F1E8}\u{1F1FA}" },
-                { name: "Cyprus", shortName: "CY", code: "+357", flag: "\u{1F1E8}\u{1F1FE}" },
-                { name: "Czech Republic", shortName: "CZ", code: "+420", flag: "\u{1F1E8}\u{1F1FF}" },
-                { name: "Denmark", shortName: "DK", code: "+45", flag: "\u{1F1E9}\u{1F1F0}" },
-                { name: "Ecuador", shortName: "EC", code: "+593", flag: "\u{1F1EA}\u{1F1E8}" },
-                { name: "Egypt", shortName: "EG", code: "+20", flag: "\u{1F1EA}\u{1F1EC}" },
-                { name: "Estonia", shortName: "EE", code: "+372", flag: "\u{1F1EA}\u{1F1EA}" },
-                { name: "Ethiopia", shortName: "ET", code: "+251", flag: "\u{1F1EA}\u{1F1F9}" },
-                { name: "Finland", shortName: "FI", code: "+358", flag: "\u{1F1EB}\u{1F1EE}" },
-                { name: "France", shortName: "FR", code: "+33", flag: "\u{1F1EB}\u{1F1F7}" },
-                { name: "Germany", shortName: "DE", code: "+49", flag: "\u{1F1E9}\u{1F1EA}" },
-                { name: "Ghana", shortName: "GH", code: "+233", flag: "\u{1F1EC}\u{1F1ED}" },
-                { name: "Greece", shortName: "GR", code: "+30", flag: "\u{1F1EC}\u{1F1F7}" },
-                { name: "Hong Kong", shortName: "HK", code: "+852", flag: "\u{1F1ED}\u{1F1F0}" },
-                { name: "Hungary", shortName: "HU", code: "+36", flag: "\u{1F1ED}\u{1F1FA}" },
-                { name: "India", shortName: "IN", code: "+91", flag: "\u{1F1EE}\u{1F1F3}" },
-                { name: "Indonesia", shortName: "ID", code: "+62", flag: "\u{1F1EE}\u{1F1E9}" },
-                { name: "Ireland", shortName: "IE", code: "+353", flag: "\u{1F1EE}\u{1F1EA}" },
-                { name: "Israel", shortName: "IL", code: "+972", flag: "\u{1F1EE}\u{1F1F1}" },
-                { name: "Italy", shortName: "IT", code: "+39", flag: "\u{1F1EE}\u{1F1F9}" },
-                { name: "Jamaica", shortName: "JM", code: "+1876", flag: "\u{1F1EF}\u{1F1F2}" },
-                { name: "Japan", shortName: "JP", code: "+81", flag: "\u{1F1EF}\u{1F1F5}" },
-                { name: "Kenya", shortName: "KE", code: "+254", flag: "\u{1F1F0}\u{1F1EA}" },
-                { name: "Malaysia", shortName: "MY", code: "+60", flag: "\u{1F1F2}\u{1F1FE}" },
-                { name: "Mexico", shortName: "MX", code: "+52", flag: "\u{1F1F2}\u{1F1FD}" },
-                { name: "Netherlands", shortName: "NL", code: "+31", flag: "\u{1F1F3}\u{1F1F1}" },
-                { name: "New Zealand", shortName: "NZ", code: "+64", flag: "\u{1F1F3}\u{1F1FF}" },
-                { name: "Nigeria", shortName: "NG", code: "+234", flag: "\u{1F1F3}\u{1F1EC}" },
-                { name: "Norway", shortName: "NO", code: "+47", flag: "\u{1F1F3}\u{1F1F4}" },
-                { name: "Pakistan", shortName: "PK", code: "+92", flag: "\u{1F1F5}\u{1F1F0}" },
-                { name: "Philippines", shortName: "PH", code: "+63", flag: "\u{1F1F5}\u{1F1ED}" },
-                { name: "Poland", shortName: "PL", code: "+48", flag: "\u{1F1F5}\u{1F1F1}" },
-                { name: "Portugal", shortName: "PT", code: "+351", flag: "\u{1F1F5}\u{1F1F9}" },
-                { name: "Russia", shortName: "RU", code: "+7", flag: "\u{1F1F7}\u{1F1FA}" },
-                { name: "Saudi Arabia", shortName: "SA", code: "+966", flag: "\u{1F1F8}\u{1F1E6}" },
-                { name: "Singapore", shortName: "SG", code: "+65", flag: "\u{1F1F8}\u{1F1EC}" },
-                { name: "South Africa", shortName: "ZA", code: "+27", flag: "\u{1F1FF}\u{1F1E6}" },
-                { name: "South Korea", shortName: "KR", code: "+82", flag: "\u{1F1F0}\u{1F1F7}" },
-                { name: "Spain", shortName: "ES", code: "+34", flag: "\u{1F1EA}\u{1F1F8}" },
-                { name: "Sweden", shortName: "SE", code: "+46", flag: "\u{1F1F8}\u{1F1EA}" },
-                { name: "Switzerland", shortName: "CH", code: "+41", flag: "\u{1F1E8}\u{1F1ED}" },
-                { name: "Tanzania", shortName: "TZ", code: "+255", flag: "\u{1F1F9}\u{1F1FF}" },
-                { name: "Thailand", shortName: "TH", code: "+66", flag: "\u{1F1F9}\u{1F1ED}" },
-                { name: "Turkey", shortName: "TR", code: "+90", flag: "\u{1F1F9}\u{1F1F7}" },
-                { name: "Uganda", shortName: "UG", code: "+256", flag: "\u{1F1FA}\u{1F1EC}" },
-                { name: "Ukraine", shortName: "UA", code: "+380", flag: "\u{1F1FA}\u{1F1E6}" },
-                { name: "United Arab Emirates", shortName: "AE", code: "+971", flag: "\u{1F1E6}\u{1F1EA}" },
-                { name: "United Kingdom", shortName: "GB", code: "+44", flag: "\u{1F1EC}\u{1F1E7}" },
-                { name: "Vietnam", shortName: "VN", code: "+84", flag: "\u{1F1FB}\u{1F1F3}" },
-                { name: "Zimbabwe", shortName: "ZW", code: "+263", flag: "\u{1F1FF}\u{1F1FC}" }
-            ];
-
-            function populateCountrySelector(selectElement) {
-                countries.forEach(country => {
-                    const option = document.createElement('option');
-                    option.value = country.code;
-                    option.textContent = `${country.flag} ${country.code} ${country.shortName}`;
-                    option.setAttribute('data-name', country.name);
-                    selectElement.appendChild(option);
-                });
-                selectElement.value = "+1";
-            }
-
-            const countryCodeSelect = document.getElementById('country-code');
-            const parentCountryCodeSelect = document.getElementById('parent-country-code');
-
-            populateCountrySelector(countryCodeSelect);
-            populateCountrySelector(parentCountryCodeSelect);
-
-            // --- TIMEZONE DETECTION AND POPULATION ---
-            const commonTimezones = [
-                { value: 'America/New_York', label: 'Eastern Time (US & Canada)', region: 'North America' },
-                { value: 'America/Chicago', label: 'Central Time (US & Canada)', region: 'North America' },
-                { value: 'America/Denver', label: 'Mountain Time (US & Canada)', region: 'North America' },
-                { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)', region: 'North America' },
-                { value: 'America/Phoenix', label: 'Arizona', region: 'North America' },
-                { value: 'America/Anchorage', label: 'Alaska', region: 'North America' },
-                { value: 'America/Honolulu', label: 'Hawaii', region: 'North America' },
-                { value: 'America/Toronto', label: 'Toronto, Montreal', region: 'North America' },
-                { value: 'America/Mexico_City', label: 'Mexico City', region: 'North America' },
-                { value: 'America/Sao_Paulo', label: 'Sao Paulo, Brazil', region: 'South America' },
-                { value: 'America/Buenos_Aires', label: 'Buenos Aires, Argentina', region: 'South America' },
-                { value: 'Europe/London', label: 'London, Dublin', region: 'Europe' },
-                { value: 'Europe/Paris', label: 'Paris, Berlin, Rome, Madrid', region: 'Europe' },
-                { value: 'Europe/Amsterdam', label: 'Amsterdam, Brussels', region: 'Europe' },
-                { value: 'Europe/Stockholm', label: 'Stockholm, Copenhagen', region: 'Europe' },
-                { value: 'Europe/Moscow', label: 'Moscow', region: 'Europe' },
-                { value: 'Africa/Cairo', label: 'Cairo', region: 'Africa' },
-                { value: 'Africa/Nairobi', label: 'Nairobi, Kenya (EAT)', region: 'Africa' },
-                { value: 'Africa/Lagos', label: 'Lagos, Nigeria', region: 'Africa' },
-                { value: 'Africa/Johannesburg', label: 'Johannesburg, Cape Town', region: 'Africa' },
-                { value: 'Asia/Dubai', label: 'Dubai, Abu Dhabi', region: 'Middle East' },
-                { value: 'Asia/Kolkata', label: 'Mumbai, Delhi, Kolkata', region: 'Asia' },
-                { value: 'Asia/Shanghai', label: 'Beijing, Shanghai', region: 'Asia' },
-                { value: 'Asia/Tokyo', label: 'Tokyo, Osaka', region: 'Asia' },
-                { value: 'Asia/Seoul', label: 'Seoul', region: 'Asia' },
-                { value: 'Asia/Singapore', label: 'Singapore, Kuala Lumpur', region: 'Asia' },
-                { value: 'Asia/Bangkok', label: 'Bangkok, Jakarta', region: 'Asia' },
-                { value: 'Australia/Sydney', label: 'Sydney, Melbourne', region: 'Australia' },
-                { value: 'Australia/Perth', label: 'Perth', region: 'Australia' },
-                { value: 'Pacific/Auckland', label: 'Auckland, New Zealand', region: 'Pacific' }
-            ];
-
-            function detectCurrentTimezone() {
-                try {
-                    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-                } catch (error) {
-                    console.warn('Timezone detection failed:', error);
-                    return 'America/New_York';
-                }
-            }
-
-            function populateTimezoneSelector() {
-                const timezoneSelect = document.getElementById('timezone');
-                const detectedTimezone = detectCurrentTimezone();
-
-                timezoneSelect.innerHTML = '';
-
-                const regionGroups = {};
-                commonTimezones.forEach(tz => {
-                    if (!regionGroups[tz.region]) {
-                        regionGroups[tz.region] = [];
-                    }
-                    regionGroups[tz.region].push(tz);
-                });
-
-                Object.keys(regionGroups).forEach(region => {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = region;
-
-                    regionGroups[region].forEach(timezone => {
-                        const option = document.createElement('option');
-                        option.value = timezone.value;
-                        option.textContent = timezone.label;
-
-                        if (timezone.value === detectedTimezone) {
-                            option.selected = true;
-                        }
-
-                        optgroup.appendChild(option);
-                    });
-
-                    timezoneSelect.appendChild(optgroup);
-                });
-
-                const detectionNote = document.getElementById('timezone-detection-note');
-                const selectedTimezone = commonTimezones.find(tz => tz.value === detectedTimezone);
-                if (selectedTimezone) {
-                    detectionNote.textContent = `Detected: ${selectedTimezone.label}. You can change this if needed.`;
-                    detectionNote.style.color = '#10b981';
-                } else {
-                    detectionNote.textContent = `Detected timezone: ${detectedTimezone}. Please select your preferred timezone from the list.`;
-                }
-            }
-
-            function validateTimezone(timezone) {
-                if (!timezone) return false;
-                try {
-                    new Intl.DateTimeFormat('en', { timeZone: timezone });
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            }
-
-            populateTimezoneSelector();
-
-            document.getElementById('timezone').addEventListener('change', function() {
-                const selectedTimezone = this.value;
-                if (!validateTimezone(selectedTimezone)) {
-                    this.setCustomValidity('Please select a valid timezone');
-                } else {
-                    this.setCustomValidity('');
-                }
-            });
-
-            // --- CONDITIONAL SECTIONS LOGIC ---
-            function updateConditionalSections() {
-                const age = parseInt(document.getElementById('age').value) || 0;
-                const volunteerType = document.querySelector('input[name="volunteer-type"]:checked')?.value;
-
-                const parentalConsentSection = document.getElementById('parental-consent-section');
-                const schoolInfoSection = document.getElementById('school-info-section');
-                const consentReasonText = document.getElementById('consent-reason-text');
-
-                const isUnder18 = age > 0 && age < 18;
-                const isStudentVolunteer = volunteerType === 'student';
-                const needsParentalApproval = isUnder18 || isStudentVolunteer;
-
-                if (needsParentalApproval) {
-                    parentalConsentSection.classList.add('show');
-                    document.getElementById('parent-email').required = true;
-                    document.getElementById('parent-phone').required = true;
-
-                    // Update the reason text based on condition
-                    if (isUnder18 && isStudentVolunteer) {
-                        consentReasonText.textContent = 'As a student volunteer under 18, we require parental/guardian approval for your safety and to verify your community service participation.';
-                    } else if (isUnder18) {
-                        consentReasonText.textContent = 'For your safety, we require parental/guardian approval for all volunteers under 18 years old.';
-                    } else if (isStudentVolunteer) {
-                        consentReasonText.textContent = 'As a student volunteer, we require parental/guardian approval to verify your community service participation and provide official documentation to your school.';
-                    }
-                } else {
-                    parentalConsentSection.classList.remove('show');
-                    document.getElementById('parent-email').required = false;
-                    document.getElementById('parent-phone').required = false;
-                }
-
-                if (isStudentVolunteer) {
-                    schoolInfoSection.classList.add('show');
-                    document.getElementById('school-name').required = true;
-                } else {
-                    schoolInfoSection.classList.remove('show');
-                    document.getElementById('school-name').required = false;
-                }
-            }
-
-            document.getElementById('age').addEventListener('change', updateConditionalSections);
-            document.querySelectorAll('input[name="volunteer-type"]').forEach(radio => {
-                radio.addEventListener('change', updateConditionalSections);
-            });
-
-            // --- MULTI-STEP FORM NAVIGATION ---
-            let currentStep = 1;
-            const totalSteps = 4;
-
-            const form = document.getElementById('signup-form');
-            const formSubmitButton = document.getElementById('submit-button');
-            const nextButton = document.getElementById('next-button');
-            const prevButton = document.getElementById('prev-button');
-            const termsSection = document.getElementById('terms-section');
-
-            function showStep(stepNumber) {
-                for (let i = 1; i <= totalSteps; i++) {
-                    const step = document.getElementById(`step-${i}`);
-                    const indicator = document.getElementById(`step-indicator-${i}`);
-                    const line = document.getElementById(`step-line-${i}`);
-
-                    if (step) step.classList.remove('active');
-
-                    if (indicator) {
-                        indicator.classList.remove('current', 'completed', 'pending');
-                        if (i < stepNumber) {
-                            indicator.classList.add('completed');
-                            indicator.innerHTML = '<i class="fas fa-check"></i>';
-                        } else if (i === stepNumber) {
-                            indicator.classList.add('current');
-                            indicator.textContent = i;
-                        } else {
-                            indicator.classList.add('pending');
-                            indicator.textContent = i;
-                        }
-                    }
-
-                    if (line) {
-                        line.classList.remove('completed');
-                        if (i < stepNumber) {
-                            line.classList.add('completed');
-                        }
-                    }
-                }
-
-                const currentStepElement = document.getElementById(`step-${stepNumber}`);
-                if (currentStepElement) {
-                    currentStepElement.classList.add('active');
-                }
-
-                prevButton.style.display = stepNumber > 1 ? 'flex' : 'none';
-                nextButton.style.display = stepNumber < totalSteps ? 'flex' : 'none';
-                formSubmitButton.style.display = stepNumber === totalSteps ? 'flex' : 'none';
-                termsSection.style.display = stepNumber === totalSteps ? 'block' : 'none';
-            }
-
-            function validateCurrentStep() {
-                const currentStepElement = document.getElementById(`step-${currentStep}`);
-                const inputs = currentStepElement.querySelectorAll('input[required], select[required]');
-
-                for (let input of inputs) {
-                    if (!input.value.trim()) {
-                        input.focus();
-                        input.style.borderColor = '#ef4444';
-                        setTimeout(() => input.style.borderColor = '#e5e7eb', 3000);
-                        return false;
-                    }
-                }
-
-                if (currentStep === 1) {
-                    const firstName = document.getElementById('first-name').value.trim();
-                    const lastName = document.getElementById('last-name').value.trim();
-
-                    if (!firstName) {
-                        document.getElementById('first-name').focus();
-                        document.getElementById('first-name').style.borderColor = '#ef4444';
-                        setTimeout(() => document.getElementById('first-name').style.borderColor = '#e5e7eb', 3000);
-                        return false;
-                    }
-
-                    if (!lastName) {
-                        document.getElementById('last-name').focus();
-                        document.getElementById('last-name').style.borderColor = '#ef4444';
-                        setTimeout(() => document.getElementById('last-name').style.borderColor = '#e5e7eb', 3000);
-                        return false;
-                    }
-                }
-
-                if (currentStep === 3) {
-                    const password = document.getElementById('password').value;
-                    const confirmPassword = document.getElementById('confirm-password').value;
-
-                    if (password !== confirmPassword) {
-                        document.getElementById('confirm-password').focus();
-                        document.getElementById('confirm-password').style.borderColor = '#ef4444';
-                        setTimeout(() => document.getElementById('confirm-password').style.borderColor = '#e5e7eb', 3000);
-                        return false;
-                    }
-
-                    if (password.length < 8) {
-                        document.getElementById('password').focus();
-                        document.getElementById('password').style.borderColor = '#ef4444';
-                        setTimeout(() => document.getElementById('password').style.borderColor = '#e5e7eb', 3000);
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            nextButton.addEventListener('click', () => {
-                if (validateCurrentStep()) {
-                    if (currentStep < totalSteps) {
-                        currentStep++;
-                        showStep(currentStep);
-
-                        if (currentStep === 4) {
-                            updateConditionalSections();
-                        }
-                    }
-                }
-            });
-
-            prevButton.addEventListener('click', () => {
-                if (currentStep > 1) {
-                    currentStep--;
-                    showStep(currentStep);
-                }
-            });
-
-            showStep(1);
-
-            // --- FORM SUBMISSION ---
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                if (!document.getElementById('terms').checked) {
-                    if (window.showNotification) {
-                        window.showNotification('Please accept the Terms and Conditions before creating your account.', 'warning', { title: 'Terms Required', autoClose: false });
-                    }
-                    return;
-                }
-
-                const firstName = document.getElementById('first-name').value.trim();
-                const lastName = document.getElementById('last-name').value.trim();
-                const fullName = `${firstName} ${lastName}`.trim();
-
-                if (!firstName || !lastName) {
-                    if (window.showNotification) {
-                        window.showNotification('Please provide both your first name and last name.', 'warning', { title: 'Name Required', autoClose: false });
-                    }
-                    return;
-                }
-
-                const formData = {
-                    username: document.getElementById('username').value,
-                    full_name: fullName,
-                    email: document.getElementById('email').value,
-                    password: document.getElementById('password').value,
-                    age: parseInt(document.getElementById('age').value),
-                    gender: document.getElementById('gender').value,
-                    phone: `${document.getElementById('country-code').value}${document.getElementById('phone').value}`,
-                    timezone: document.getElementById('timezone').value,
-                    volunteer_type: document.querySelector('input[name="volunteer-type"]:checked').value === 'student' ? 'student_volunteer' : 'standard'
-                };
-
-                const parentEmail = document.getElementById('parent-email').value;
-                const parentPhone = document.getElementById('parent-phone').value;
-                const schoolName = document.getElementById('school-name').value;
-
-                if (parentEmail) formData.parent_email = parentEmail;
-                if (parentPhone) formData.parent_phone = parentPhone;
-                if (schoolName) formData.school_name = schoolName;
-
-                formData.security_questions = [
-                    {
-                        question: document.getElementById('security-question-1').value,
-                        answer: document.getElementById('security-answer-1').value
-                    },
-                    {
-                        question: document.getElementById('security-question-2').value,
-                        answer: document.getElementById('security-answer-2').value
-                    },
-                    {
-                        question: document.getElementById('security-question-3').value,
-                        answer: document.getElementById('security-answer-3').value
-                    }
-                ];
-
-                console.log('Form submission data:', formData);
-
-                formSubmitButton.disabled = true;
-                formSubmitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Creating Account...';
-
-                try {
-                    const response = await fetch('/api/v1/jwt-auth/volunteer/signup', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        localStorage.setItem('accessToken', data.accessToken);
-                        localStorage.setItem('refreshToken', data.refreshToken);
-
-                        if (window.showNotification) {
-                            window.showNotification('Your account has been created successfully! Welcome to TalkTime.', 'success', { title: 'Account Created', autoClose: true, duration: 2000 });
-                        }
-
-                        setTimeout(() => {
-                            if (formData.volunteer_type === 'student_volunteer' && (formData.age < 18 || formData.parent_email)) {
-                                window.location.href = '/volunteer/pending-approval.html';
-                            } else {
-                                window.location.href = '/volunteer/dashboard/students.html';
-                            }
-                        }, 1500);
-                    } else {
-                        throw new Error(data.error || 'Registration failed');
-                    }
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    if (window.showNotification) {
-                        window.showNotification(error.message || 'Registration failed. Please try again.', 'error', { title: 'Registration Error', autoClose: false });
-                    }
-                } finally {
-                    formSubmitButton.disabled = false;
-                    formSubmitButton.innerHTML = '<i class="fas fa-user-plus"></i>Create Account';
-                }
-            });
-        });
-
-        // Keyboard navigation support
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type !== 'submit') {
-                e.preventDefault();
-                const nextBtn = document.getElementById('next-button');
-                const submitBtn = document.getElementById('submit-button');
-
-                if (nextBtn.style.display !== 'none') {
-                    nextBtn.click();
-                } else if (submitBtn.style.display !== 'none') {
-                    submitBtn.click();
-                }
-            }
-        });
-    </script>
+    <script src="/volunteer/js/pages/signup-1.js?v=4"></script>
 </body>
 </html>

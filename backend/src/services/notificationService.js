@@ -527,7 +527,8 @@ const sendPushNotification = async (user, title, message, metadata = {}) => {
             const pushResponse = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3001'}/api/v1/push-notifications/send`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-internal-key': process.env.INTERNAL_API_KEY || process.env.JWT_SECRET || ''
                 },
                 body: JSON.stringify({
                     userId: user.id,

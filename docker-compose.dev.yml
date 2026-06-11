@@ -24,7 +24,7 @@ services:
       - backend
     networks:
       - talktime-net
-    restart: unless-stopped
+    restart: "no"
 
   # Backend Service (Development)
   backend:
@@ -61,7 +61,7 @@ services:
       - redis
     networks:
       - talktime-net
-    restart: unless-stopped
+    restart: "no"
 
   # Database Service (Development)
   db:
@@ -78,7 +78,7 @@ services:
       - ./db/init:/docker-entrypoint-initdb.d
     networks:
       - talktime-net
-    restart: unless-stopped
+    restart: "no"
 
   # Redis Service (Development)
   redis:
@@ -91,7 +91,7 @@ services:
       - redis_dev_data:/data
     networks:
       - talktime-net
-    restart: unless-stopped
+    restart: "no"
 
   # Optional: Hot-reload development servers for each frontend
   volunteer-dev:

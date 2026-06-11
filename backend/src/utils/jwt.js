@@ -1,11 +1,33 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import pool from '../config/database.js';
 
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+
+// Approval-state cache: lets the middleware revoke unapproved volunteers
+// mid-session without a DB query on every request (60s staleness window)
+const approvalCache = new Map(); // userId -> { approved, at }
+const APPROVAL_CACHE_TTL_MS = 60 * 1000;
+
+const isVolunteerApproved = async (userId) => {
+    const cached = approvalCache.get(userId);
+    if (cached && (Date.now() - cached.at) < APPROVAL_CACHE_TTL_MS) {
+        return cached.approved;
+    }
+    try {
+        const { rows } = await pool.query('SELECT is_approved FROM users WHERE id = $1', [userId]);
+        const approved = rows.length === 0 ? false : rows[0].is_approved !== false;
+        approvalCache.set(userId, { approved, at: Date.now() });
+        return approved;
+    } catch (e) {
+        // DB hiccup: fail open (the login gate is the primary control)
+        return true;
+    }
+};
 
 /**
  * Generate JWT access token
@@ -112,7 +134,7 @@ export const extractTokenFromHeader = (authHeader) => {
  * @returns {Function} Express middleware function
  */
 export const createJWTMiddleware = (allowedRoles = []) => {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         try {
             const authHeader = req.headers.authorization;
             const token = extractTokenFromHeader(authHeader);
@@ -126,7 +148,7 @@ export const createJWTMiddleware = (allowedRoles = []) => {
             }
 
             const decoded = verifyToken(token);
-            
+
             // Check if user role is allowed
             if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
                 return res.status(403).json({
@@ -136,10 +158,21 @@ export const createJWTMiddleware = (allowedRoles = []) => {
                 });
             }
 
+            // Volunteers must still be approved - covers approval being revoked
+            // after the token was issued (60s-cached DB check)
+            if (decoded.role === 'volunteer' && !(await isVolunteerApproved(decoded.id))) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'PENDING_APPROVAL',
+                    error: 'Account pending approval',
+                    message: 'Your account is waiting for parent or guardian approval.'
+                });
+            }
+
             // Add user info to request
             req.user = decoded;
             req.token = token;
-            
+
             next();
         } catch (error) {
             console.error('JWT Middleware Error:', error);

@@ -148,11 +148,9 @@ export const checkVolunteerPerformance = async (volunteerId) => {
     const missedRate = Math.round((missedCalls / totalScheduled) * 100);
     const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
 
-    // Enforce restrictions based on configurable thresholds
-    const isRestricted =
-        cancelledRate >= thresholds.cancellationRate ||
-        missedRate >= thresholds.missedRate ||
-        reputationScore < thresholds.minScore;
+    // Enforce restrictions based on count-based thresholds (with minimum meeting grace period)
+    const isRestricted = totalScheduled >= thresholds.minMeetingsForRestriction &&
+        (cancelledCalls >= thresholds.cancelCountThreshold || missedCalls >= thresholds.missedCountThreshold);
 
     return {
         isRestricted,
@@ -271,7 +269,7 @@ export const getRealTimeStatus = async (meeting) => {
  * @param {number} durationMinutes - Optional duration, defaults to 40
  * @returns {string} Real-time status
  */
-export const getRealTimeStatusSync = (meeting, timeoutMinutes = 40, durationMinutes = 40) => {
+export const getRealTimeStatusSync = (meeting, timeoutMinutes = 30, durationMinutes = 30) => {
     const now = new Date();
     const meetingStart = new Date(meeting.scheduled_time);
     const meetingEnd = new Date(meetingStart.getTime() + (durationMinutes * 60 * 1000));

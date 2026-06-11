@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>TalkTime - Send Feedback | Volunteer Dashboard</title>
+    <!-- Early auth redirect - prevents FOUC on protected pages -->
+    <script>
+        if (!localStorage.getItem('volunteer_talktime_access_token')) {
+            window.location.replace('/volunteer/login');
+        }
+    </script>
+
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
+    <meta name="description" content="Submit feedback to help improve TalkTime. Share your experience and suggestions.">
+    <meta name="robots" content="index, follow">
+
+    <!-- CSS (all sync to prevent layout shift) -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-framework.css">
+    <link rel="stylesheet" href="/volunteer/css/responsive-forms.css">
+    <link rel="stylesheet" href="/volunteer/css/enhanced-mobile-nav.css">
+    <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
+
+    <!-- Deferred Scripts (non-render-blocking) -->
+    <script defer src="/shared/js/brand-config.js?v=6"></script>
+    <script defer src="/volunteer/partials/nav-loader.js?v=7"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
+    <script defer src="/shared/js/modal-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/common/js/restriction-banner.js?v=4"></script>
+    <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
+
+    <style>
+        .star-rating {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .star-rating .star {
+            font-size: 28px;
+            cursor: pointer;
+            color: #e5e7eb;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .star-rating .star:hover,
+        .star-rating .star.active {
+            color: #FFB800;
+        }
+        .star-rating .star:hover {
+            transform: scale(1.15);
+        }
+
+        .feedback-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s ease;
+        }
+        .feedback-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .category-badge.general { background: #EEF2FF; color: #5f6a2d; }
+        .category-badge.video-quality { background: #ECFDF5; color: #116C00; }
+        .category-badge.scheduling { background: #FFF7ED; color: #c2410c; }
+        .category-badge.ui-ux { background: #FDF2F8; color: #9d174d; }
+        .category-badge.suggestion { background: #FEF9C3; color: #854d0e; }
+        .category-badge.bug-report { background: #FEF2F2; color: #7d0000; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .status-badge.new { background: #EEF2FF; color: #5f6a2d; }
+        .status-badge.reviewed { background: #ECFDF5; color: #116C00; }
+        .status-badge.archived { background: #f3f4f6; color: #6b7280; }
+
+        .stars-display .fa-star {
+            font-size: 14px;
+            color: #e5e7eb;
+        }
+        .stars-display .fa-star.filled {
+            color: #FFB800;
+        }
+
+        .char-counter {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .submit-btn {
+            background: #D10100;
+            color: white;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .submit-btn:hover {
+            background: #b00000;
+            transform: translateY(-1px);
+        }
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (min-width: 768px) {
+            .submit-btn {
+                width: auto;
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body class="dashboard-page" style="opacity:0">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
+    <!-- Background Blobs - Hidden on mobile for performance -->
+    <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+    <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
+
+    <!-- Dashboard Navigation Container -->
+    <div id="dashboard-nav-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+        <div class="max-w-3xl mx-auto w-full">
+        <div class="mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Send Feedback</h1>
+            <p class="text-sm text-gray-500 mt-1">Help us improve TalkTime by sharing your experience.</p>
+        </div>
+
+        <!-- Feedback Form Card -->
+        <div class="settings-card">
+            <form id="feedback-form">
+                <!-- Category Select -->
+                <div class="mb-4">
+                    <label for="feedback-category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select id="feedback-category" name="category" required
+                            class="w-full px-4 border border-gray-300 rounded-lg text-base text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                            style="height: 56px; line-height: 56px;">
+                        <option value="">Select a category</option>
+                        <option value="general">General</option>
+                        <option value="video_quality">Video Quality</option>
+                        <option value="scheduling">Scheduling</option>
+                        <option value="ui_ux">UI/UX</option>
+                        <option value="suggestion">Suggestion</option>
+                        <option value="bug_report">Bug Report</option>
+                    </select>
+                </div>
+
+                <!-- Star Rating -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating (optional)</label>
+                    <div class="star-rating" id="star-rating">
+                        <i class="fas fa-star star" data-value="1"></i>
+                        <i class="fas fa-star star" data-value="2"></i>
+                        <i class="fas fa-star star" data-value="3"></i>
+                        <i class="fas fa-star star" data-value="4"></i>
+                        <i class="fas fa-star star" data-value="5"></i>
+                    </div>
+                    <input type="hidden" id="rating-value" name="rating" value="">
+                </div>
+
+                <!-- Message Textarea -->
+                <div class="mb-4">
+                    <label for="feedback-message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea id="feedback-message" name="message" required
+                              minlength="10" maxlength="5000" rows="5"
+                              placeholder="Tell us what you think..."
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 resize-y focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"></textarea>
+                    <div class="char-counter"><span id="char-count">0</span> / 5000</div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-end">
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <i class="fas fa-paper-plane mr-2"></i>Submit Feedback
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Previous Feedback Section -->
+        <div class="section-header">
+            <i class="fas fa-history text-brand-primary"></i>
+            Your Previous Feedback
+        </div>
+        <div id="previous-feedback" class="mt-4">
+            <div class="text-center py-8 text-gray-400">
+                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <p>Loading feedback...</p>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="hidden fixed bottom-5 right-5 bg-success text-white px-6 py-3 rounded-lg shadow-lg z-50"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('page-ready');
+
+        // --- DOM Elements ---
+        const form = document.getElementById('feedback-form');
+        const categorySelect = document.getElementById('feedback-category');
+        const messageTextarea = document.getElementById('feedback-message');
+        const charCount = document.getElementById('char-count');
+        const starRating = document.getElementById('star-rating');
+        const ratingInput = document.getElementById('rating-value');
+        const submitBtn = document.getElementById('submit-btn');
+        const previousFeedbackContainer = document.getElementById('previous-feedback');
+        const notificationEl = document.getElementById('notification');
+
+        // --- Initialize Auth ---
+        window.TalkTimeAuth = new TalkTimeJWTAuth('volunteer');
+
+        // --- Notification ---
+        function showNotification(message, type = 'success') {
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`;
+            notificationEl.classList.remove('hidden');
+            setTimeout(() => { notificationEl.classList.add('hidden'); }, 5000);
+        }
+        window.showNotification = showNotification;
+
+        // --- Star Rating ---
+        let selectedRating = 0;
+        const stars = starRating.querySelectorAll('.star');
+
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const value = parseInt(star.dataset.value);
+                if (selectedRating === value) {
+                    // Deselect if clicking the same star
+                    selectedRating = 0;
+                    ratingInput.value = '';
+                    updateStars(0);
+                } else {
+                    selectedRating = value;
+                    ratingInput.value = value;
+                    updateStars(value);
+                }
+            });
+
+            star.addEventListener('mouseenter', () => {
+                updateStars(parseInt(star.dataset.value));
+            });
+
+            star.addEventListener('mouseleave', () => {
+                updateStars(selectedRating);
+            });
+        });
+
+        function updateStars(value) {
+            stars.forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.value) <= value);
+            });
+        }
+
+        // --- Character Counter ---
+        messageTextarea.addEventListener('input', () => {
+            charCount.textContent = messageTextarea.value.length;
+        });
+
+        // --- Form Submit ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!window.TalkTimeAuth.isAuthenticated()) {
+                showNotification('Please log in to submit feedback.', 'error');
+                return;
+            }
+
+            const category = categorySelect.value;
+            const message = messageTextarea.value.trim();
+            const rating = ratingInput.value ? parseInt(ratingInput.value) : null;
+
+            if (!category) {
+                showNotification('Please select a category.', 'error');
+                return;
+            }
+            if (message.length < 10) {
+                showNotification('Message must be at least 10 characters.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+
+            try {
+                const body = { category, message };
+                if (rating) body.rating = rating;
+
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || 'Failed to submit feedback');
+                }
+
+                const data = await response.json();
+                showNotification('Feedback submitted successfully. Thank you!', 'success');
+
+                // Reset form
+                form.reset();
+                selectedRating = 0;
+                ratingInput.value = '';
+                updateStars(0);
+                charCount.textContent = '0';
+
+                // Prepend new feedback to the list
+                const newFeedback = data.feedback || data.data || data;
+                if (newFeedback && newFeedback.id) {
+                    prependFeedbackCard(newFeedback);
+                } else {
+                    loadPreviousFeedback();
+                }
+            } catch (error) {
+                showNotification(error.message || 'Failed to submit feedback. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Feedback';
+            }
+        });
+
+        // --- Load Previous Feedback ---
+        async function loadPreviousFeedback() {
+            if (!window.TalkTimeAuth.isAuthenticated()) {
+                previousFeedbackContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Please log in to view your feedback.</p>';
+                return;
+            }
+
+            try {
+                const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/feedback/mine', {
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load feedback');
+                }
+
+                const data = await response.json();
+                const feedbackList = data.feedback || data.data || data || [];
+
+                if (!Array.isArray(feedbackList) || feedbackList.length === 0) {
+                    previousFeedbackContainer.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="far fa-comment-dots text-4xl mb-3"></i>
+                            <p>You haven't submitted any feedback yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                previousFeedbackContainer.innerHTML = feedbackList.map(renderFeedbackCard).join('');
+            } catch (error) {
+                previousFeedbackContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                        <p>Failed to load previous feedback.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // --- Render a single feedback card ---
+        function renderFeedbackCard(item) {
+            const categoryLabel = (item.category || 'general').replace(/_/g, ' ');
+            const categoryClass = (item.category || 'general').replace(/_/g, '-');
+            const status = item.status || 'new';
+            const date = item.created_at || item.createdAt;
+            const formattedDate = date ? new Date(date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+            const message = item.message || '';
+            const truncatedMessage = message.length > 200 ? message.substring(0, 200) + '...' : message;
+            const rating = item.rating || 0;
+
+            let starsHtml = '';
+            if (rating > 0) {
+                starsHtml = '<div class="stars-display mt-1 mb-2">';
+                for (let i = 1; i <= 5; i++) {
+                    starsHtml += `<i class="fas fa-star ${i <= rating ? 'filled' : ''}"></i>`;
+                }
+                starsHtml += '</div>';
+            }
+
+            return `
+                <div class="feedback-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="category-badge ${categoryClass}">${categoryLabel}</span>
+                        <span class="status-badge ${status}">${status}</span>
+                    </div>
+                    ${starsHtml}
+                    <p class="text-gray-700 text-sm mb-2">${truncatedMessage}</p>
+                    <div class="flex items-center text-xs text-gray-400">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        <span>${formattedDate}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Prepend a new feedback card ---
+        function prependFeedbackCard(item) {
+            const emptyState = previousFeedbackContainer.querySelector('.text-center');
+            if (emptyState) {
+                previousFeedbackContainer.innerHTML = '';
+            }
+            previousFeedbackContainer.insertAdjacentHTML('afterbegin', renderFeedbackCard(item));
+        }
+
+        // --- Initial Load ---
+        loadPreviousFeedback();
+    });
+    </script>
+
+    <!-- Initialize Navigation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await VolunteerNavLoader.init(true);
+        });
+    </script>
+</body>
+</html>

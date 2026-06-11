@@ -92,12 +92,25 @@ class NotificationPermissionModal {
      * We combine signals for high confidence across Safari, Chrome, Firefox, Edge.
      */
     async detectPrivateBrowsing() {
-        // Heuristic 1: Storage quota (Chrome/Edge incognito = ~120MB vs 60GB+ normal)
+        // Heuristic 1: Storage quota. Low quota ALONE is not proof - Chrome derives
+        // quota from free disk, so a nearly-full budget phone reports a small quota
+        // in normal browsing. Treat it as a weak signal that needs corroboration.
+        let lowQuota = false;
         if (navigator.storage && navigator.storage.estimate) {
             try {
                 const { quota } = await navigator.storage.estimate();
                 if (quota && quota < 200 * 1024 * 1024) {
-                    console.log('[TalkTime] Private browsing detected via storage quota:', quota);
+                    lowQuota = true;
+                    console.log('[TalkTime] Low storage quota (weak private-mode signal):', quota);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        // Very small quotas (<= 25MB) only occur in private modes in practice
+        if (lowQuota) {
+            try {
+                const { quota } = await navigator.storage.estimate();
+                if (quota && quota <= 25 * 1024 * 1024) {
+                    console.log('[TalkTime] Private browsing detected via very low quota');
                     return true;
                 }
             } catch (e) { /* ignore */ }
@@ -364,7 +377,7 @@ class NotificationPermissionModal {
         return `
             <div style="text-align: center;">
                 <!-- Bell Icon -->
-                <div style="width: 64px; height: 64px; background: #3867FF; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 64px; height: 64px; background: #5f6a2d; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -386,19 +399,19 @@ class NotificationPermissionModal {
                     </h3>
                     <ul style="margin: 0; padding: 0; list-style: none; color: #4b5563; font-size: 13px; line-height: 1.5;">
                         <li style="margin: 8px 0; display: flex; align-items: center; gap: 10px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                             Meeting reminders before each session
                         </li>
                         <li style="margin: 8px 0; display: flex; align-items: center; gap: 10px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             Instant call notifications
                         </li>
                         <li style="margin: 8px 0; display: flex; align-items: center; gap: 10px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             Schedule changes and confirmations
                         </li>
                         <li style="margin: 8px 0; display: flex; align-items: center; gap: 10px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                             Important system updates
                         </li>
                     </ul>
@@ -409,7 +422,7 @@ class NotificationPermissionModal {
                     <button
                         id="allow-notifications-btn"
                         style="
-                            background: #3867FF;
+                            background: #5f6a2d;
                             color: white;
                             border: none;
                             border-radius: 10px;
@@ -424,7 +437,7 @@ class NotificationPermissionModal {
                             gap: 8px;
                         "
                         onmouseover="this.style.background='#2d55d4'"
-                        onmouseout="this.style.background='#3867FF'"
+                        onmouseout="this.style.background='#5f6a2d'"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         ${this.options.allowButtonText}
@@ -470,7 +483,7 @@ class NotificationPermissionModal {
         // Build numbered steps HTML
         const stepsHtml = instructions.steps.map((step, i) => `
             <div style="display: flex; gap: 12px; align-items: flex-start; margin: 0 0 12px 0;">
-                <div style="width: 26px; height: 26px; background: #3867FF; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-top: 1px;">${i + 1}</div>
+                <div style="width: 26px; height: 26px; background: #5f6a2d; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-top: 1px;">${i + 1}</div>
                 <span style="font-size: 14px; color: #374151; line-height: 1.6;">${step}</span>
             </div>
         `).join('');
@@ -529,7 +542,7 @@ class NotificationPermissionModal {
                 <!-- Browser-specific instructions -->
                 <div style="text-align: left; background: #f9fafb; border-radius: 10px; padding: 16px; margin: 0 0 20px 0;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                         <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0;">
                             How to enable — ${instructions.title}
                         </h3>
@@ -547,7 +560,7 @@ class NotificationPermissionModal {
                     <button
                         id="check-permission-btn"
                         style="
-                            background: #3867FF;
+                            background: #5f6a2d;
                             color: white;
                             border: none;
                             border-radius: 10px;
@@ -562,7 +575,7 @@ class NotificationPermissionModal {
                             gap: 8px;
                         "
                         onmouseover="this.style.background='#2d55d4'"
-                        onmouseout="this.style.background='#3867FF'"
+                        onmouseout="this.style.background='#5f6a2d'"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                         Done — Check Again
@@ -642,19 +655,19 @@ class NotificationPermissionModal {
                 <!-- How to fix -->
                 <div style="text-align: left; background: #f9fafb; border-radius: 10px; padding: 16px; margin: 0 0 20px 0;">
                     <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3867FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6a2d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         How to fix this
                     </h3>
                     <div style="display: flex; gap: 12px; align-items: flex-start; margin: 0 0 10px 0;">
-                        <div style="width: 26px; height: 26px; background: #3867FF; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">1</div>
+                        <div style="width: 26px; height: 26px; background: #5f6a2d; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">1</div>
                         <span style="font-size: 14px; color: #374151; line-height: 1.6;">Copy this page's address from the address bar</span>
                     </div>
                     <div style="display: flex; gap: 12px; align-items: flex-start; margin: 0 0 10px 0;">
-                        <div style="width: 26px; height: 26px; background: #3867FF; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">2</div>
+                        <div style="width: 26px; height: 26px; background: #5f6a2d; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">2</div>
                         <span style="font-size: 14px; color: #374151; line-height: 1.6;">Open a <strong>regular (non-private)</strong> browser window</span>
                     </div>
                     <div style="display: flex; gap: 12px; align-items: flex-start;">
-                        <div style="width: 26px; height: 26px; background: #3867FF; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">3</div>
+                        <div style="width: 26px; height: 26px; background: #5f6a2d; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;">3</div>
                         <span style="font-size: 14px; color: #374151; line-height: 1.6;">Paste the address and sign in to TalkTime there</span>
                     </div>
                 </div>
@@ -664,7 +677,7 @@ class NotificationPermissionModal {
                     <button
                         id="copy-url-btn"
                         style="
-                            background: #3867FF;
+                            background: #5f6a2d;
                             color: white;
                             border: none;
                             border-radius: 10px;
@@ -679,7 +692,7 @@ class NotificationPermissionModal {
                             gap: 8px;
                         "
                         onmouseover="this.style.background='#2d55d4'"
-                        onmouseout="this.style.background='#3867FF'"
+                        onmouseout="this.style.background='#5f6a2d'"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         Copy Page Address
@@ -961,9 +974,12 @@ class NotificationPermissionModal {
     denyPermission() {
         console.log('[TalkTime] User chose to continue without notifications');
 
+        // Always persist the dismissal so the user is not re-nagged on every page load.
+        // Re-prompt after 7 days instead of blocking forever.
+        localStorage.setItem('talktime_notification_permission', 'denied');
+        localStorage.setItem('talktime_notification_dismissed_until', String(Date.now() + 7 * 24 * 60 * 60 * 1000));
         if (!this.options.mandatory) {
             localStorage.setItem('talktime_notification_dismissed', 'true');
-            localStorage.setItem('talktime_notification_permission', 'denied');
         }
 
         this.cleanup();
@@ -992,7 +1008,7 @@ class NotificationPermissionModal {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             Copy Page Address
                         `;
-                        copyBtn.style.background = '#3867FF';
+                        copyBtn.style.background = '#5f6a2d';
                     }
                 }, 2000);
             }

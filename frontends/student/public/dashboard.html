@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Student Dashboard - TalkTime</title>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <script defer src="/shared/js/vendor/socket.io.min.js?v=2"></script>
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="./css/instant-call.css">
     <!-- Real-time Notifications -->
-    <script src="/shared/js/realtime-notifications.js"></script>
+    <script defer src="/shared/js/realtime-notifications.js?v=4"></script>
 
     <style>
         * {
@@ -33,7 +33,7 @@
         body {
             padding-top: 70px;
             padding-bottom: 85px; /* Enlarged bottom nav */
-            background-color: #f0f4ff;
+            background-color: #f4f5ee;
             min-height: 100vh;
         }
 
@@ -227,7 +227,7 @@
         }
 
         .status-scheduled {
-            background: rgba(56, 103, 255, 0.1);
+            background: rgba(95, 106, 45, 0.1);
             color: var(--brand-secondary);
         }
 
@@ -1373,7 +1373,7 @@
     </nav>
 
     <!-- Scripts -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
 
     <script>
     // Initialize TalkTime Auth for students
@@ -1381,7 +1381,7 @@
 
     // Load enhanced instant call UI
     const script = document.createElement('script');
-    script.src = './js/enhanced-instant-call-ui.js?v=' + Date.now();
+    script.src = './js/enhanced-instant-call-ui.js';
     document.head.appendChild(script);
 
     // Global variables
@@ -1601,7 +1601,7 @@
                 console.log('Incoming enhanced instant call:', data);
                 playNotificationSound('instant_call');
                 if (window.enhancedInstantCallUI) {
-                    window.enhancedInstantCallUI.handleIncomingCall(data);
+                    window.enhancedInstantCallUI.handleIncomingEnhancedCall(data);
                 }
                 updateNotificationBadge(1);
             });
@@ -1610,7 +1610,7 @@
                 console.log('Instant call request received:', data);
                 playNotificationSound('instant_call');
                 if (window.enhancedInstantCallUI) {
-                    window.enhancedInstantCallUI.handleIncomingCall(data);
+                    window.enhancedInstantCallUI.handleIncomingEnhancedCall(data);
                 }
                 updateNotificationBadge(1);
             });
@@ -1848,7 +1848,7 @@
             success: { bg: '#ecfdf5', border: '#10b981', icon: 'fa-check-circle', iconColor: '#059669' },
             warning: { bg: '#fffbeb', border: '#f59e0b', icon: 'fa-exclamation-triangle', iconColor: '#d97706' },
             error: { bg: '#fef2f2', border: '#ef4444', icon: 'fa-times-circle', iconColor: '#dc2626' },
-            info: { bg: '#eff6ff', border: '#3b82f6', icon: 'fa-info-circle', iconColor: '#2563eb' }
+            info: { bg: '#f4f5ee', border: '#5f6a2d', icon: 'fa-info-circle', iconColor: '#54602a' }
         };
         const style = colors[type] || colors.info;
 
@@ -2309,7 +2309,7 @@
                             Calculating...
                         </div>
                         <div class="session-info">
-                            <i class="fas fa-info-circle mr-1"></i>40-minute session
+                            <i class="fas fa-info-circle mr-1"></i>30-minute session
                         </div>
                     </div>
 
@@ -2325,7 +2325,7 @@
                     <!-- Waiting message (shown when meeting is not yet joinable) -->
                     <div class="waiting-btn" id="waiting-btn-${meeting.id}">
                         <i class="fas fa-hourglass-half"></i>
-                        <span id="waiting-text-${meeting.id}">Available 5 min before</span>
+                        <span id="waiting-text-${meeting.id}">Join opens 5 minutes before start</span>
                     </div>
                 </div>
             `).join('')}</div>`;
@@ -3102,12 +3102,17 @@
             } else {
                 hideJoinButton();
                 if (waitingText) {
-                    if (days > 0) {
-                        waitingText.textContent = `Available in ${days}d ${hours}h`;
-                    } else if (hours > 0) {
-                        waitingText.textContent = `Available in ${hours}h ${minutes}m`;
+                    // Time until the join button unlocks (5 min before the meeting)
+                    const unlockDistance = distance - JOIN_WINDOW_MINUTES * 60 * 1000;
+                    const unlockDays = Math.floor(unlockDistance / (1000 * 60 * 60 * 24));
+                    const unlockHours = Math.floor((unlockDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const unlockMinutes = Math.ceil((unlockDistance % (1000 * 60 * 60)) / (1000 * 60));
+                    if (unlockDays > 0) {
+                        waitingText.textContent = `Join opens in ${unlockDays}d ${unlockHours}h`;
+                    } else if (unlockHours > 0) {
+                        waitingText.textContent = `Join opens in ${unlockHours}h ${unlockMinutes}m`;
                     } else {
-                        waitingText.textContent = `Available in ${minutes} min`;
+                        waitingText.textContent = `Join opens in ${unlockMinutes} min`;
                     }
                 }
             }

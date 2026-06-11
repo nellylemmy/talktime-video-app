@@ -1,8 +1,21 @@
 import express from 'express';
 import webpush from 'web-push';
 import pool from '../config/database.js';
+import { createJWTMiddleware } from '../utils/jwt.js';
 
 const router = express.Router();
+
+// Auth for user-facing routes: any valid JWT; userId always comes from the token
+const requireAuth = createJWTMiddleware();
+
+// /send is for internal services (notificationService) and admins only
+const INTERNAL_KEY = process.env.INTERNAL_API_KEY || process.env.JWT_SECRET || '';
+const requireInternalOrAdmin = (req, res, next) => {
+    if (INTERNAL_KEY && req.headers['x-internal-key'] === INTERNAL_KEY) {
+        return next();
+    }
+    return createJWTMiddleware(['admin'])(req, res, next);
+};
 
 // Generate or use existing VAPID keys
 let VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -47,10 +60,12 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // POST /subscribe - Subscribe to push notifications
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', requireAuth, async (req, res) => {
     try {
-        const { subscription, userId } = req.body;
-        
+        const { subscription } = req.body;
+        // Identity comes from the verified token, never the request body
+        const userId = req.user.id;
+
         if (!subscription || !userId) {
             return res.status(400).json({
                 error: 'Missing required fields',
@@ -96,10 +111,11 @@ router.post('/subscribe', async (req, res) => {
 });
 
 // POST /unsubscribe - Unsubscribe from push notifications
-router.post('/unsubscribe', async (req, res) => {
+router.post('/unsubscribe', requireAuth, async (req, res) => {
     try {
-        const { endpoint, userId } = req.body;
-        
+        const { endpoint } = req.body;
+        const userId = req.user.id;
+
         if (!endpoint || !userId) {
             return res.status(400).json({
                 error: 'Missing required fields',
@@ -137,8 +153,8 @@ router.post('/unsubscribe', async (req, res) => {
     }
 });
 
-// POST /send - Send push notification
-router.post('/send', async (req, res) => {
+// POST /send - Send push notification (internal services and admins only)
+router.post('/send', requireInternalOrAdmin, async (req, res) => {
     try {
         const { userId, title, body, data = {} } = req.body;
         
@@ -240,10 +256,13 @@ router.post('/send', async (req, res) => {
     }
 });
 
-// GET /subscriptions/:userId - Get user's subscriptions
-router.get('/subscriptions/:userId', async (req, res) => {
+// GET /subscriptions/:userId - Get user's subscriptions (own data or admin)
+router.get('/subscriptions/:userId', requireAuth, async (req, res) => {
     try {
         const { userId } = req.params;
+        if (String(req.user.id) !== String(userId) && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         const query = `
             SELECT id, endpoint, created_at, updated_at, is_active
@@ -268,10 +287,13 @@ router.get('/subscriptions/:userId', async (req, res) => {
     }
 });
 
-// GET /logs/:userId - Get notification logs for user
-router.get('/logs/:userId', async (req, res) => {
+// GET /logs/:userId - Get notification logs for user (own data or admin)
+router.get('/logs/:userId', requireAuth, async (req, res) => {
     try {
         const { userId } = req.params;
+        if (String(req.user.id) !== String(userId) && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
         const { limit = 50, offset = 0 } = req.query;
 
         const query = `

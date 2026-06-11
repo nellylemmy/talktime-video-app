@@ -83,21 +83,17 @@ class EnhancedMobileNav {
                         <i class="fas fa-home"></i>
                         <span>Home</span>
                     </a>
-                    <a href="/volunteer/dashboard/students.html" class="nav-item auth-required hidden">
+                    <a href="/volunteer/dashboard/students" class="nav-item auth-required hidden">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="/volunteer/dashboard/students.html" class="nav-item auth-required hidden">
+                    <a href="/volunteer/dashboard/students" class="nav-item auth-required hidden">
                         <i class="fas fa-users"></i>
-                        <span>Students</span>
+                        <span>Schedules</span>
                     </a>
-                    <a href="/volunteer/dashboard/schedule.html" class="nav-item auth-required hidden">
+                    <a href="/volunteer/dashboard/schedule" class="nav-item auth-required hidden">
                         <i class="fas fa-calendar-alt"></i>
                         <span>Schedule</span>
-                    </a>
-                    <a href="/volunteer/who-we-are.html" class="nav-item">
-                        <i class="fas fa-heart"></i>
-                        <span>Who We Are</span>
                     </a>
                 </nav>
 
@@ -141,7 +137,7 @@ class EnhancedMobileNav {
 
             <div class="drawer-footer">
                 <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="adea-link">
-                    <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA" class="adea-logo">
+                    <img src="/shared/images/adea-logo.jpg" alt="ADEA" class="adea-logo">
                     <span>Powered by ADEA Foundation</span>
                 </a>
             </div>

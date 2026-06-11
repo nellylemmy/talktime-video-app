@@ -15,31 +15,39 @@ class JWTAuth {
      * Store tokens in localStorage
      */
     storeTokens(accessToken, refreshToken, user) {
-        localStorage.setItem(this.accessTokenKey, accessToken);
-        localStorage.setItem(this.refreshTokenKey, refreshToken);
-        localStorage.setItem(this.userKey, JSON.stringify(user));
+        try {
+            localStorage.setItem(this.accessTokenKey, accessToken);
+            localStorage.setItem(this.refreshTokenKey, refreshToken);
+            localStorage.setItem(this.userKey, JSON.stringify(user));
+        } catch (e) {
+            console.warn('Storage blocked - login will not persist:', e);
+        }
     }
 
     /**
      * Get access token from localStorage
      */
     getAccessToken() {
-        return localStorage.getItem(this.accessTokenKey);
+        try { return localStorage.getItem(this.accessTokenKey); } catch (e) { return null; }
     }
 
     /**
      * Get refresh token from localStorage
      */
     getRefreshToken() {
-        return localStorage.getItem(this.refreshTokenKey);
+        try { return localStorage.getItem(this.refreshTokenKey); } catch (e) { return null; }
     }
 
     /**
      * Get stored user data
      */
     getUser() {
-        const userData = localStorage.getItem(this.userKey);
-        return userData ? JSON.parse(userData) : null;
+        try {
+            const userData = localStorage.getItem(this.userKey);
+            return userData ? JSON.parse(userData) : null;
+        } catch (e) {
+            return null;
+        }
     }
 
     /**

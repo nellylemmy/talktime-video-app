@@ -11,9 +11,9 @@ const CACHE_TTL = 60 * 1000; // 1 minute cache
 
 // Default values (fallback if database is unavailable)
 const DEFAULT_CONFIG = {
-    'meeting.duration_minutes': 40,
+    'meeting.duration_minutes': 30,
     'meeting.min_duration_minutes': 5,
-    'meeting.auto_timeout_minutes': 40,
+    'meeting.auto_timeout_minutes': 30,
     'meeting.max_future_months': 3,
     'meeting.calls_per_student_per_day': 1,
     'meeting.meetings_per_volunteer_student_pair': 3,
@@ -23,7 +23,10 @@ const DEFAULT_CONFIG = {
     'call_timer.warning_2_minutes': 1,
     'volunteer.cancellation_rate_threshold': 40,
     'volunteer.missed_rate_threshold': 30,
-    'volunteer.min_reputation_score': 30
+    'volunteer.min_reputation_score': 30,
+    'volunteer.cancel_count_threshold': 5,
+    'volunteer.missed_count_threshold': 4,
+    'volunteer.min_meetings_for_restriction': 5
 };
 
 /**
@@ -123,7 +126,10 @@ export async function getVolunteerThresholds() {
     return {
         cancellationRate: await getConfig('volunteer.cancellation_rate_threshold'),
         missedRate: await getConfig('volunteer.missed_rate_threshold'),
-        minScore: await getConfig('volunteer.min_reputation_score')
+        minScore: await getConfig('volunteer.min_reputation_score'),
+        cancelCountThreshold: await getConfig('volunteer.cancel_count_threshold'),
+        missedCountThreshold: await getConfig('volunteer.missed_count_threshold'),
+        minMeetingsForRestriction: await getConfig('volunteer.min_meetings_for_restriction')
     };
 }
 

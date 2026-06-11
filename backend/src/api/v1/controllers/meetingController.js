@@ -8,6 +8,7 @@ import User from '../../../models/User.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as notificationService from '../../../services/notificationService.js';
 import pool from '../../../config/database.js';
+import * as configService from '../../../services/configService.js';
 // import { generateSecureAccessToken, createMeetingAccessUrl } from '../../../utils/secureTokens.js'; // Temporarily disabled
 import { getIO } from '../../../socket.js';
 import { getUserTimezone, getDayBoundariesInTimezone, getSafeTimezone, formatInTimezone } from '../../../utils/timezoneUtils.js';
@@ -157,32 +158,37 @@ export const createMeeting = async (req, res) => {
         const missedCalls = parseInt(metrics.missed_calls);
         const totalScheduled = parseInt(metrics.total_scheduled);
         
-        if (totalScheduled > 0) {
-            const cancelledRate = Math.round((cancelledCalls / totalScheduled) * 100);
-            const missedRate = Math.round((missedCalls / totalScheduled) * 100);
+        // Count-based restriction thresholds
+        const MIN_MEETINGS_FOR_RESTRICTION = 5;
+        const CANCEL_COUNT_THRESHOLD = 5;
+        const MISSED_COUNT_THRESHOLD = 4;
+
+        if (totalScheduled >= MIN_MEETINGS_FOR_RESTRICTION &&
+            (cancelledCalls >= CANCEL_COUNT_THRESHOLD || missedCalls >= MISSED_COUNT_THRESHOLD)) {
+            const cancelledRate = totalScheduled > 0 ? Math.round((cancelledCalls / totalScheduled) * 100) : 0;
+            const missedRate = totalScheduled > 0 ? Math.round((missedCalls / totalScheduled) * 100) : 0;
             const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
-            
-            // Enforce restrictions based on performance
-            if (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30) {
-                console.error('Volunteer account restricted due to poor performance:', {
-                    volunteerId,
+
+            console.error('Volunteer account restricted due to poor performance:', {
+                volunteerId,
+                cancelledCalls,
+                missedCalls,
+                totalScheduled
+            });
+            return res.status(403).json({
+                error: 'Account temporarily restricted',
+                message: `Your account is restricted due to ${cancelledCalls} cancellation(s) and ${missedCalls} missed call(s). Submit an appeal to request reinstatement.`,
+                performanceData: {
+                    cancelledCalls,
+                    missedCalls,
                     cancelledRate,
                     missedRate,
                     reputationScore,
-                    totalScheduled
-                });
-                return res.status(403).json({ 
-                    error: 'Account temporarily restricted',
-                    message: 'Your account is temporarily restricted from scheduling new calls due to high cancellation/missed call rates. Please contact support to resolve this issue.',
-                    performanceData: {
-                        cancelledRate,
-                        missedRate,
-                        reputationScore,
-                        totalCalls: totalScheduled,
-                        restriction: 'critical'
-                    }
-                });
-            }
+                    totalCalls: totalScheduled,
+                    restriction: 'critical',
+                    thresholds: { cancelCount: CANCEL_COUNT_THRESHOLD, missedCount: MISSED_COUNT_THRESHOLD, minMeetings: MIN_MEETINGS_FOR_RESTRICTION }
+                }
+            });
         }
         
         // CRITICAL: Enforce 1-call-per-day rule - Check if student already has a meeting on this date
@@ -245,7 +251,7 @@ export const createMeeting = async (req, res) => {
             WHERE volunteer_id = $1 
             AND student_id = $2
             AND status = 'scheduled' 
-            AND scheduled_time < NOW() - INTERVAL '40 minutes'
+            AND scheduled_time < NOW() - INTERVAL '30 minutes'
         `, [volunteerId, studentId]);
 
         // IMPORTANT: Count all active meetings (scheduled, completed, in_progress)
@@ -290,7 +296,7 @@ export const createMeeting = async (req, res) => {
             studentId,
             volunteerId,
             scheduledTime,
-            duration: 40, // Default 40 minutes
+            duration: 30, // Default 30 minutes
             status: 'scheduled',
             roomId
         });
@@ -330,12 +336,13 @@ export const createMeeting = async (req, res) => {
             await notificationService.scheduleMeetingNotifications(meeting);
             console.log('Meeting notifications scheduled successfully');
             
-            // Send immediate success notification to volunteer
+            // Send immediate success notification to volunteer (time in their timezone)
+            const volunteerTzForNotif = await getUserTimezone(meeting.volunteer_id || meeting.volunteerId);
             await notificationService.sendNotification({
                 recipient_id: meeting.volunteer_id || meeting.volunteerId,
                 recipient_role: 'volunteer',
                 title: '✅ Meeting Scheduled Successfully!',
-                message: `Your meeting with ${studentName || 'student'} has been scheduled for ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleDateString()} at ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleTimeString()}. You'll receive reminders before the meeting starts.`,
+                message: `Your meeting with ${studentName || 'student'} has been scheduled for ${formatInTimezone(meeting.scheduled_time || meeting.scheduledTime, volunteerTzForNotif)}. You'll receive reminders before the meeting starts.`,
                 type: 'meeting_scheduled',
                 priority: 'high',
                 metadata: {
@@ -358,7 +365,7 @@ export const createMeeting = async (req, res) => {
                     recipient_id: studentUserIdForNotifications,
                     recipient_role: 'student',
                     title: '🎉 New Meeting Scheduled!',
-                    message: `A volunteer has scheduled a meeting with you for ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleDateString()} at ${new Date(meeting.scheduled_time || meeting.scheduledTime).toLocaleTimeString()}. We'll send you reminders!`,
+                    message: `A volunteer has scheduled a meeting with you for ${formatInTimezone(meeting.scheduled_time || meeting.scheduledTime, 'Africa/Nairobi')}. We'll send you reminders!`,
                     type: 'meeting_scheduled',
                     priority: 'high',
                     metadata: {
@@ -464,7 +471,73 @@ export const updateMeeting = async (req, res) => {
         
         // Check if this is a reschedule (time change)
         const isReschedule = scheduledTime && scheduledTime !== meeting.scheduledTime;
-        
+
+        // CRITICAL: Enforce 1-call-per-day-per-student on reschedule
+        if (isReschedule) {
+            // Reject past times and times outside student availability (EAT)
+            const newTime = new Date(scheduledTime);
+            if (isNaN(newTime.getTime()) || newTime <= new Date()) {
+                return res.status(400).json({ error: 'Cannot reschedule a meeting to a past time' });
+            }
+            const eatParts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false, weekday: 'short'
+            }).formatToParts(newTime);
+            const eatHour = parseInt(eatParts.find(p => p.type === 'hour').value, 10);
+            const eatMin = parseInt(eatParts.find(p => p.type === 'minute').value, 10);
+            const eatWeekday = eatParts.find(p => p.type === 'weekday').value;
+            const eatTotalMin = eatHour * 60 + eatMin;
+            if (eatWeekday === 'Sun') {
+                return res.status(400).json({ error: 'Students are unavailable on Sundays. Please select Monday through Saturday.' });
+            }
+            const inMorning = eatTotalMin >= 450 && eatTotalMin < 480;
+            const inEvening = eatTotalMin >= 960 && eatTotalMin < 1080;
+            if (!inMorning && !inEvening) {
+                return res.status(400).json({ error: 'Students are only available 7:30-8:00 AM and 4:00-6:00 PM EAT. Please select a time within these windows.' });
+            }
+
+            const studentId = meeting.student_id;
+            const studentTimezone = await getUserTimezone(studentId);
+            const { startOfDay, endOfDay } = getDayBoundariesInTimezone(scheduledTime, studentTimezone);
+
+            const dailyConflictQuery = `
+                SELECT id, scheduled_time, volunteer_id
+                FROM meetings
+                WHERE student_id = $1
+                  AND scheduled_time >= $2
+                  AND scheduled_time < $3
+                  AND status IN ('scheduled', 'in_progress')
+                  AND id != $4
+            `;
+            const { rows: dailyConflicts } = await pool.query(dailyConflictQuery, [studentId, startOfDay, endOfDay, id]);
+
+            if (dailyConflicts.length > 0) {
+                return res.status(409).json({
+                    error: 'Student already has a meeting scheduled for this date. Each student can only have one meeting per day.',
+                    existingMeeting: {
+                        id: dailyConflicts[0].id,
+                        scheduledTime: dailyConflicts[0].scheduled_time
+                    }
+                });
+            }
+
+            // Check concurrent meeting capacity for the new time slot (exclude this meeting)
+            const maxConcurrent = await configService.getMaxConcurrentPerSlot();
+            const capacityQuery = `
+                SELECT COUNT(*) as slot_count
+                FROM meetings
+                WHERE scheduled_time = $1
+                  AND status IN ('scheduled', 'in_progress')
+                  AND id != $2
+            `;
+            const { rows: [{ slot_count }] } = await pool.query(capacityQuery, [scheduledTime, id]);
+            if (parseInt(slot_count) >= maxConcurrent) {
+                return res.status(409).json({
+                    error: 'This time slot is fully booked. Please choose a different time.',
+                    code: 'SLOT_CAPACITY_REACHED'
+                });
+            }
+        }
+
         // Prepare update data
         const updateData = {
             scheduledTime: scheduledTime || meeting.scheduledTime,
@@ -735,13 +808,24 @@ export const getMeetingsByStudentId = async (req, res) => {
             console.log('Looking up student by admission number:', studentId);
             // Find student by admission number
             const student = await User.findByUsernameAndRole(studentId, 'student');
-            
+
             if (!student) {
                 return res.status(404).json({ error: 'Student not found with the given admission number' });
             }
-            
+
             actualStudentId = student.id;
             console.log('Found student with ID:', actualStudentId);
+        } else {
+            // Numeric ID — could be students.id (table PK) instead of users.id
+            // meetings.student_id stores users.id, so resolve via students table
+            const resolveResult = await pool.query(
+                'SELECT user_id FROM students WHERE id = $1', [studentId]
+            );
+            if (resolveResult.rows.length > 0) {
+                actualStudentId = resolveResult.rows[0].user_id;
+                console.log('Resolved students.id', studentId, '→ users.id', actualStudentId);
+            }
+            // If no match in students table, keep original ID (it may already be users.id)
         }
 
         // Helper function to determine real-time meeting status

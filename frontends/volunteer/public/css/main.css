@@ -10,7 +10,7 @@ body.page-ready {
 /* Custom styles for the page - Mobile First Approach */
 body {
     font-family: var(--brand-body-family, 'Poppins', sans-serif);
-    background-color: #f0f4ff; /* Fallback color */
+    background-color: #f4f5ee; /* Fallback color */
     overflow-x: hidden;
     width: 100%;
     margin: 0;
@@ -50,7 +50,7 @@ body:has(#home-unauthenticated-nav) {
 
 /* UPDATED: Clean professional background */
 .gradient-bg {
-    background-color: #f0f4ff;
+    background-color: #f4f5ee;
     /* No gradient for professional look */
 }
 
@@ -99,19 +99,13 @@ body:has(#home-unauthenticated-nav) {
 }
 
 /* ============================================
-   Home Page Unauthenticated Nav - Scroll Effect
-   Transparent at top, glass background on scroll
+   Home Page Unauthenticated Nav
+   Solid white at all times (no transparent-then-scroll effect)
    ============================================ */
-#home-unauthenticated-nav {
-    background: transparent;
-    transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
-}
-
+#home-unauthenticated-nav,
 #home-unauthenticated-nav.scrolled {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* Decorative blobs - hide on mobile for performance */

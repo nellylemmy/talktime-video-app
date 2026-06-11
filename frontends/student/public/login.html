@@ -5,22 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TalkTime - Student Login</title>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
 
     <!-- Google Fonts: Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
 
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
 
     <!-- JWT Authentication Utilities -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
     <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
+    <script src="/shared/js/modal-utils.js?v=4"></script>
 
     <style>
         * {
@@ -127,7 +125,7 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--brand-secondary);
-            background-color: rgba(56, 103, 255, 0.1);
+            background-color: rgba(95, 106, 45, 0.1);
             padding: 4px 12px;
             border-radius: 20px;
             margin-bottom: 8px;
@@ -313,9 +311,9 @@
         .bg-green-100 { background-color: #dcfce7; }
         .bg-red-100 { background-color: #fee2e2; }
         .bg-yellow-100 { background-color: #fef9c3; }
-        .bg-blue-100 { background-color: #dbeafe; }
+        .bg-blue-100 { background-color: #e7e9d9; }
         .bg-gray-100 { background-color: #f3f4f6; }
-        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-600 { background-color: #54602a; }
         .bg-green-600 { background-color: #16a34a; }
         .bg-red-600 { background-color: #dc2626; }
         .text-white { color: #fff; }
@@ -326,7 +324,7 @@
         .text-green-600 { color: #16a34a; }
         .text-red-600 { color: #dc2626; }
         .text-yellow-600 { color: #ca8a04; }
-        .text-blue-600 { color: #2563eb; }
+        .text-blue-600 { color: #54602a; }
         .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
         .font-medium { font-weight: 500; }
         .font-semibold { font-weight: 600; }
@@ -358,16 +356,16 @@
         .w-8 { width: 2rem; }
         .h-8 { height: 2rem; }
         .flex-shrink-0 { flex-shrink: 0; }
-        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-blue-700:hover { background-color: #4d561f; }
         .hover\:bg-green-700:hover { background-color: #15803d; }
         .hover\:bg-red-700:hover { background-color: #b91c1c; }
         .hover\:bg-gray-200:hover { background-color: #e5e7eb; }
         .hover\:text-gray-600:hover { color: #4b5563; }
         .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
         .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
-        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .focus\:border-blue-500:focus { border-color: #3b82f6; }
+        .focus\:ring-2:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:ring-blue-500:focus { box-shadow: 0 0 0 2px rgba(95, 106, 45, 0.5); }
+        .focus\:border-blue-500:focus { border-color: #5f6a2d; }
 
         /* Modal input field override */
         #talktime-modal-container input[type="text"],
@@ -401,7 +399,7 @@
                 <span class="logo-text">TALK TIME</span>
             </a>
             <div class="powered-by">
-                <img src="https://adeafoundation.org/wp-content/uploads/2018/02/ADEA_Logo_rev.jpg" alt="ADEA Foundation">
+                <img src="/shared/images/adea-logo.jpg" alt="ADEA Foundation">
                 <a href="https://adeafoundation.org" target="_blank" rel="noopener">Powered by ADEA Foundation</a>
             </div>
         </div>

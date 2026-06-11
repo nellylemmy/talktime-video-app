@@ -318,11 +318,11 @@ export const getAllMeetings = async (req, res) => {
             LEFT JOIN users su ON m.student_id = su.id AND su.role = 'student'
             LEFT JOIN users v ON m.volunteer_id = v.id
             LEFT JOIN users rb ON m.rescheduled_by = rb.id
-            ORDER BY m.scheduled_time DESC
+            ORDER BY m.id DESC
         `;
-        
+
         const result = await pool.query(query);
-        
+
         // Format the meetings data
         const meetings = result.rows.map(meeting => ({
             id: meeting.id,
@@ -483,9 +483,10 @@ export const createStudent = async (req, res) => {
                 age,
                 gender,
                 is_approved,
+                timezone,
                 created_at,
                 updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Africa/Nairobi', NOW(), NOW())
             RETURNING id
         `;
 
@@ -888,7 +889,7 @@ export const getAllVolunteers = async (req, res) => {
             const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
             const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
             const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
-            const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+            const isRestricted = total >= 5 && (cancelled >= 5 || missed >= 4);
 
             return {
                 id: v.id,
@@ -970,7 +971,7 @@ export const getVolunteerPerformance = async (req, res) => {
         const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
         const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
         const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
-        const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+        const isRestricted = total >= 5 && (cancelled >= 5 || missed >= 4);
 
         // Get meetings that could be cleared (canceled/missed, not already cleared)
         const clearableResult = await pool.query(`
@@ -1154,7 +1155,7 @@ export const getVolunteerDetails = async (req, res) => {
         const cancelledRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
         const missedRate = total > 0 ? Math.round((missed / total) * 100) : 0;
         const reputationScore = Math.max(0, Math.round(100 - (cancelledRate * 1.5) - (missedRate * 2)));
-        const isRestricted = total > 0 && (cancelledRate >= 40 || missedRate >= 30 || reputationScore < 30);
+        const isRestricted = total >= 5 && (cancelled >= 5 || missed >= 4);
 
         // Get meeting history (last 100)
         const meetingsResult = await pool.query(`

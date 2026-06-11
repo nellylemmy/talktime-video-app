@@ -47,12 +47,12 @@ class Meeting {
         const query = `
             SELECT
                 m.id,
-                m.student_id as studentId,
+                m.student_id as "studentId",
                 COALESCE(s.full_name, su.full_name, s_user.full_name) as name,
                 COALESCE(s.admission_number, su.username, s_user.username) as "admissionNumber",
                 COALESCE(s.photo_url, su.profile_image, s_user.profile_image) as "profileImage",
                 m.scheduled_time as time,
-                m.room_id as roomId,
+                m.room_id as "roomId",
                 m.status
             FROM meetings m
             LEFT JOIN users su ON m.student_id = su.id AND su.role = 'student'
@@ -83,11 +83,11 @@ class Meeting {
         const query = `
             SELECT
                 m.id,
-                m.student_id as studentId,
+                m.student_id as "studentId",
                 COALESCE(s.full_name, su.full_name, s_user.full_name) as name,
                 COALESCE(s.photo_url, su.profile_image, s_user.profile_image) as "profileImage",
                 m.scheduled_time as time,
-                m.room_id as roomId,
+                m.room_id as "roomId",
                 m.status
             FROM meetings m
             LEFT JOIN users su ON m.student_id = su.id AND su.role = 'student'
@@ -95,6 +95,7 @@ class Meeting {
             LEFT JOIN users s_user ON s.user_id = s_user.id
             WHERE m.volunteer_id = $1
               AND m.scheduled_time < NOW()
+              AND m.status = 'completed'
               AND (su.id IS NOT NULL OR s.id IS NOT NULL)
             ORDER BY m.scheduled_time DESC;
         `;

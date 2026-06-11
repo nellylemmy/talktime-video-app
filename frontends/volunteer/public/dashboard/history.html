@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>TalkTime - Call History | Volunteer Dashboard</title>
+     <title>TalkTime - Meeting History | Volunteer Dashboard</title>
     <!-- Early auth redirect - prevents FOUC on protected pages -->
     <script>
         if (!localStorage.getItem('volunteer_talktime_access_token')) {
@@ -14,8 +14,12 @@
         }
     </script>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
     <meta name="description" content="View your past TalkTime English practice sessions with Maasai students. Track your impact and review feedback from previous conversations.">
     <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/dashboard/history">
     <meta name="robots" content="index, follow">
@@ -31,12 +35,13 @@
     <link rel="stylesheet" href="/volunteer/css/volunteer-dashboard.css">
 
     <!-- Deferred Scripts (non-render-blocking) -->
-    <script defer src="/shared/js/brand-config.js"></script>
-    <script defer src="/volunteer/partials/nav-loader.js"></script>
-    <script defer src="/volunteer/js/dashboard-nav.js"></script>
-    <script defer src="/volunteer/js/modal-utils.js"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js"></script>
-    <script defer src="/shared/js/newsletter-widget.js"></script>
+    <script defer src="/shared/js/brand-config.js?v=6"></script>
+    <script defer src="/volunteer/partials/nav-loader.js?v=7"></script>
+    <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
+    <script defer src="/shared/js/modal-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
+    <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
 
     <style>
         /* Page-specific styles - Most styles now in volunteer-dashboard.css */
@@ -64,6 +69,7 @@
     </style>
 </head>
 <body class="dashboard-page" style="opacity:0">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
     <!-- Background Blobs - Hidden on mobile for performance -->
     <div class="blob bg-brand-primary w-96 h-96 top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
     <div class="blob bg-brand-secondary w-96 h-96 bottom-0 right-0 translate-x-1/2 translate-y-1/2"></div>
@@ -73,40 +79,39 @@
 
     <!-- Main Content Area -->
     <main class="content-area">
-        <div class="section-header">
-            <i class="fas fa-history text-brand-primary"></i>
-            Call History & Feedback
+        <div class="max-w-3xl mx-auto w-full">
+        <div class="mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Meeting History</h1>
+            <p class="text-sm text-gray-500 mt-1">Your past meetings and the feedback you left.</p>
         </div>
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-            <div class="glass-bg p-2 sm:p-3 rounded-xl text-center">
+            <div class="settings-card text-center" style="margin-bottom:0;padding:14px 8px;">
                 <div class="text-lg sm:text-xl font-bold text-success" id="successful-count">0</div>
                 <div class="text-xs text-gray-600">Successful</div>
             </div>
-            <div class="glass-bg p-2 sm:p-3 rounded-xl text-center">
+            <div class="settings-card text-center" style="margin-bottom:0;padding:14px 8px;">
                 <div class="text-lg sm:text-xl font-bold text-error" id="missed-count">0</div>
                 <div class="text-xs text-gray-600">Missed</div>
             </div>
-            <div class="glass-bg p-2 sm:p-3 rounded-xl text-center">
+            <div class="settings-card text-center" style="margin-bottom:0;padding:14px 8px;">
                 <div class="text-lg sm:text-xl font-bold text-brand-primary" id="cancelled-count">0</div>
                 <div class="text-xs text-gray-600">Cancelled</div>
             </div>
         </div>
 
         <!-- Filter Tabs -->
-        <div class="glass-bg p-1.5 rounded-xl mb-4">
-            <div class="flex flex-wrap gap-1">
-                <button class="history-filter-btn flex-1 min-w-0 py-2 px-2 sm:px-3 rounded-lg font-medium transition-colors bg-brand-primary text-white text-sm" data-filter="successful">
+        <div class="tt-segmented mb-4">
+                <button class="history-filter-btn active flex-1 min-w-0 text-sm" data-filter="successful">
                     <i class="fas fa-check-circle mr-1 hidden sm:inline"></i><span class="truncate">Successful</span> (<span id="tab-successful-count">0</span>)
                 </button>
-                <button class="history-filter-btn flex-1 min-w-0 py-2 px-2 sm:px-3 rounded-lg font-medium transition-colors text-gray-600 hover:bg-white/50 text-sm" data-filter="missed">
+                <button class="history-filter-btn flex-1 min-w-0 text-sm" data-filter="missed">
                     <i class="fas fa-phone-slash mr-1 hidden sm:inline"></i><span class="truncate">Missed</span> (<span id="tab-missed-count">0</span>)
                 </button>
-                <button class="history-filter-btn flex-1 min-w-0 py-2 px-2 sm:px-3 rounded-lg font-medium transition-colors text-gray-600 hover:bg-white/50 text-sm" data-filter="cancelled">
+                <button class="history-filter-btn flex-1 min-w-0 text-sm" data-filter="cancelled">
                     <i class="fas fa-ban mr-1 hidden sm:inline"></i><span class="truncate">Cancelled</span> (<span id="tab-cancelled-count">0</span>)
                 </button>
-            </div>
         </div>
 
         <!-- History Content -->
@@ -115,7 +120,7 @@
         </div>
 
         <!-- Pagination -->
-        <div id="history-pagination" class="flex flex-col items-center glass-bg p-3 sm:p-4 rounded-xl mt-4 gap-2">
+        <div id="history-pagination" class="settings-card flex flex-col items-center mt-4 gap-2" style="padding:14px;">
             <div class="text-sm text-gray-600 text-center">
                 Showing <span id="history-start">0</span>-<span id="history-end">0</span> of <span id="history-total">0</span>
             </div>
@@ -132,6 +137,7 @@
 
         <!-- Feedback Section -->
         <div id="feedback-container" class="hidden mt-6"></div>
+        </div>
     </main>
     
     <!-- Notification Toast -->
@@ -279,9 +285,9 @@
             // Update active tab
             historyFilterBtns.forEach(btn => {
                 if (btn.dataset.filter === filter) {
-                    btn.className = 'history-filter-btn flex-1 min-w-0 py-2 px-2 sm:px-3 rounded-lg font-medium transition-colors bg-brand-primary text-white text-sm';
+                    btn.className = 'history-filter-btn active flex-1 min-w-0 text-sm';
                 } else {
-                    btn.className = 'history-filter-btn flex-1 min-w-0 py-2 px-2 sm:px-3 rounded-lg font-medium transition-colors text-gray-600 hover:bg-white/50 text-sm';
+                    btn.className = 'history-filter-btn flex-1 min-w-0 text-sm';
                 }
             });
             

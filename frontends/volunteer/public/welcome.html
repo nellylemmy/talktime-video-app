@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Invited — Become a TalkTime Volunteer</title>
+    <meta name="description" content="Spend 30 minutes on a friendly video call helping a Maasai student in Rombo, Kenya practice English. Free, one-on-one, from anywhere. An invitation from ADEA Foundation.">
+
+    <!-- Brand Theme System -->
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <!-- Anti-FOUC -->
+    <script src="/shared/js/anti-fouc.js?v=4"></script>
+    <script src="/shared/js/brand-config.js?v=6"></script>
+    <link rel="icon" type="image/x-icon" href="/talktime.ico">
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
+
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
+    <!-- Google Fonts: Inter & Poppins -->
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
+    <!-- Shared lazy-image + brand utilities -->
+    <link rel="stylesheet" href="/volunteer/css/main.css">
+
+    <style>
+        html, body { overflow-x: hidden; max-width: 100vw; scroll-behavior: smooth; }
+
+        /* The desk: warm, soft, with gentle brand light pooling in the corners */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ece6db;
+            background-image:
+                radial-gradient(60rem 60rem at 12% -10%, rgba(17,108,0,.10), transparent 60%),
+                radial-gradient(60rem 60rem at 92% 8%, rgba(209,1,0,.08), transparent 60%);
+            background-attachment: fixed;
+        }
+
+        /* ADEA green — used where brand blue used to be */
+        :root { --adea-green: #116C00; }
+
+        /* The sheet of stationery */
+        .letter {
+            background: #fffdf9;
+            box-shadow:
+                0 1px 0 rgba(0,0,0,.02),
+                0 30px 60px -25px rgba(17,108,0,.22),
+                0 12px 24px -18px rgba(0,0,0,.25);
+            border-radius: 6px;
+        }
+        /* hairline edge so the paper reads as a physical sheet */
+        .letter::before {
+            content: ""; position: absolute; inset: 0; border-radius: 6px;
+            border: 1px solid rgba(0,0,0,.05); pointer-events: none;
+        }
+
+        /* Letterpress opening — drop cap on the first paragraph */
+        .letter-open::first-letter {
+            font-family: 'Poppins', sans-serif; font-weight: 800;
+            font-size: 3.3em; line-height: .82; float: left;
+            margin: .06em .14em 0 0; color: var(--brand-primary);
+        }
+
+        /* Eyebrow / overline used like an invitation header */
+        .overline {
+            font-size: 1.05rem; font-weight: 700; letter-spacing: .18em;
+            text-transform: uppercase; color: var(--brand-primary);
+        }
+
+        /* Perforated rule — the "tear here / invitation" cue */
+        .rule-dashed { border: none; border-top: 1.5px dashed rgba(0,0,0,.14); }
+        .rule-brand { border: none; height: 2px; width: 3rem;
+            background: var(--brand-primary); border-radius: 2px; }
+
+        /* A section heading inside the letter, with a short brand underscore */
+        .movement h2 { font-family: 'Poppins', sans-serif; }
+
+        /* Enclosed photograph — a matte-framed keepsake tucked into the letter */
+        .enclosed { background: #fff; padding: .6rem; border-radius: 4px;
+            box-shadow: 0 18px 40px -18px rgba(17,108,0,.40), 0 2px 6px rgba(0,0,0,.08); }
+
+        /* Inline fact tags */
+        .tag { display: inline-flex; align-items: center; gap: .5rem;
+            border: 1px solid rgba(0,0,0,.10); background: #fff;
+            padding: .4rem .85rem; border-radius: 9999px; font-size: .85rem; color: #374151; }
+
+        /* Ghost button hover (brand classes aren't registered with the Tailwind CDN) */
+        .btn-ghost:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+
+        /* Tone down the shared pulse-zoom-red on this page: gentle glow, no scale */
+        body .pulse-zoom-red { animation: softGlow 3s ease-in-out infinite; }
+        @keyframes softGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(209,1,0,.35); }
+            50%      { box-shadow: 0 0 0 7px rgba(209,1,0,0); }
+        }
+        @media (prefers-reduced-motion: reduce) { body .pulse-zoom-red { animation: none; } }
+
+        .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+        .reveal.in { opacity: 1; transform: none; }
+        @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+    </style>
+</head>
+<body class="text-gray-800" style="opacity:0;">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
+
+    <main class="px-4 sm:px-6 py-10 sm:py-16">
+        <!-- ============ THE LETTER ============ -->
+        <article class="letter relative max-w-3xl mx-auto px-6 sm:px-12 lg:px-16 py-10 sm:py-14">
+
+            <!-- ---- Letterhead ---- -->
+            <header class="flex items-start justify-between gap-4 pb-5">
+                <div class="flex flex-col">
+                    <span class="flex items-center text-xl font-bold" style="font-family:'Poppins'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-2" viewBox="0 0 24 24" fill="none">
+                            <path stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2z"></path>
+                        </svg>
+                        <span style="color: #000000;">TALK TIME</span>
+                    </span>
+                    <a href="https://adeafoundation.org" target="_blank" rel="noopener" class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-primary transition-colors mt-1">
+                        <img src="/shared/images/adea-logo.jpg" alt="" class="w-4 h-4 rounded-full object-cover border border-gray-200">
+                        Powered by ADEA Foundation
+                    </a>
+                </div>
+                <a href="/volunteer/login" class="inline-flex items-center text-sm font-semibold text-gray-700 hover:text-brand-primary transition-colors whitespace-nowrap">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Log In
+                </a>
+            </header>
+            <hr class="rule-dashed">
+
+            <!-- ---- Opening / the invitation ---- -->
+            <section class="pt-8 sm:pt-10">
+                <div class="mb-4">
+                    <span class="overline">An invitation</span>
+                </div>
+                <h1 class="font-extrabold text-gray-900 leading-[1.08] mb-6" style="font-family:'Poppins'; font-size: clamp(2rem, 5.5vw, 3.1rem);">
+                    Become a TalkTime volunteer
+                </h1>
+                <p class="letter-open text-lg text-gray-700 leading-relaxed mb-8">
+                    Spend <strong class="text-gray-900">30 minutes</strong> on a friendly video call helping a Maasai student in Rombo, Kenya practice English and build confidence.
+                </p>
+
+                <!-- Enclosed photograph: Kilimanjaro, with its note -->
+                <figure class="enclosed reveal mx-auto max-w-xl mb-9">
+                    <div class="relative rounded-[3px] overflow-hidden aspect-[16/10]">
+                        <div class="lazy-image-wrapper cover w-full h-full">
+                            <img src="/volunteer/kilimanjaro.webp" alt="Mount Kilimanjaro rising above the Rombo plains in Kenya" loading="eager" class="lazy-image w-full h-full object-cover" style="object-position:28% 55%;" onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');">
+                        </div>
+                        <div class="absolute inset-x-0 bottom-0 h-1/2" style="background:linear-gradient(to top, rgba(17,108,0,.75), transparent);"></div>
+                        <figcaption class="absolute bottom-3 left-4 right-4 text-white">
+                            <p class="text-xs uppercase tracking-wider opacity-90 mb-1">Rombo, Kenya</p>
+                            <p class="text-sm font-medium leading-snug">Since 2003, the ADEA Foundation has worked alongside the Maasai community here in Rombo.</p>
+                        </figcaption>
+                    </div>
+                </figure>
+
+                <div class="flex flex-col sm:flex-row gap-3 mb-7">
+                    <a href="/volunteer/login" class="pulse-zoom-red inline-flex items-center justify-center bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all transform hover:scale-105">
+                        <i class="fas fa-heart mr-3"></i>Become a Volunteer
+                    </a>
+                    <a href="#how-it-works" class="btn-ghost inline-flex items-center justify-center bg-white text-gray-700 font-semibold px-8 py-4 rounded-xl border border-gray-200 transition-all">
+                        See how it works
+                    </a>
+                </div>
+                <div class="flex flex-wrap gap-2.5">
+                    <span class="tag"><i class="far fa-clock" style="color:var(--adea-green)"></i> 30-minute calls</span>
+                    <span class="tag"><i class="fas fa-gift text-brand-primary"></i> 100% free</span>
+                    <span class="tag"><i class="fas fa-video" style="color:var(--adea-green)"></i> One-on-one video</span>
+                </div>
+            </section>
+
+            <hr class="rule-dashed my-12">
+
+            <!-- ---- What is TalkTime ---- -->
+            <section class="movement reveal">
+                <hr class="rule-brand mb-5">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">What is TalkTime?</h2>
+                <p class="text-lg text-gray-700 leading-relaxed max-w-2xl">
+                    TalkTime is a free video mentoring platform from the ADEA Foundation. It connects volunteers around the world with Maasai students in Rombo, Kenya for one-on-one English conversations — boosting fluency and confidence, one call at a time.
+                </p>
+                <div class="grid sm:grid-cols-3 gap-5 mt-8">
+                    <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
+                        <i class="far fa-clock text-2xl mb-3" style="color:var(--adea-green)"></i>
+                        <h3 class="font-bold text-gray-900 mb-1">30 minutes</h3>
+                        <p class="text-sm text-gray-600">Each call runs 30 minutes — enough to connect, never a burden on your week.</p>
+                    </div>
+                    <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
+                        <i class="fas fa-comments text-2xl text-brand-primary mb-3"></i>
+                        <h3 class="font-bold text-gray-900 mb-1">Just conversation</h3>
+                        <p class="text-sm text-gray-600">No teaching degree, no lesson plans. Friendly talk is the whole job.</p>
+                    </div>
+                    <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
+                        <i class="fas fa-globe-africa text-2xl mb-3" style="color:var(--adea-green)"></i>
+                        <h3 class="font-bold text-gray-900 mb-1">From anywhere</h3>
+                        <p class="text-sm text-gray-600">Secure browser video. All you need is a device, a connection, and a smile.</p>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="rule-dashed my-12">
+
+            <!-- ---- How it works ---- -->
+            <section id="how-it-works" class="movement reveal relative">
+                <!-- Maasai elder accent, tucked in the margin -->
+                <div class="hidden lg:block absolute -right-10 xl:-right-14 bottom-0 pointer-events-none z-0 opacity-10">
+                    <img src="/volunteer/old-maasai.webp" alt="A Maasai elder from the Rombo community" loading="lazy" class="h-52 xl:h-60 w-auto object-contain object-bottom">
+                </div>
+                <div class="relative z-10">
+                    <hr class="rule-brand mb-5">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">How it works</h2>
+                    <p class="text-gray-600 mb-8">Three steps from invitation to your first conversation.</p>
+                    <ol class="space-y-6">
+                        <li class="flex items-start gap-5">
+                            <span class="shrink-0 w-12 h-12 rounded-full bg-white border-2 text-brand-primary flex items-center justify-center text-xl font-bold shadow-sm" style="font-family:'Poppins'; border-color:var(--brand-primary)">1</span>
+                            <div>
+                                <h3 class="font-bold text-gray-900 mb-1">Create your account</h3>
+                                <p class="text-sm text-gray-600">Sign up as a volunteer in a couple of minutes. Choose how you want to help.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-5">
+                            <span class="shrink-0 w-12 h-12 rounded-full bg-white border-2 flex items-center justify-center text-xl font-bold shadow-sm" style="font-family:'Poppins'; color:var(--adea-green); border-color:var(--adea-green)">2</span>
+                            <div>
+                                <h3 class="font-bold text-gray-900 mb-1">Schedule a call</h3>
+                                <p class="text-sm text-gray-600">Pick a student and book a time that suits you. You'll get reminders 30, 10, and 5 minutes before.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-5">
+                            <span class="shrink-0 w-12 h-12 rounded-full bg-white border-2 text-brand-primary flex items-center justify-center text-xl font-bold shadow-sm" style="font-family:'Poppins'; border-color:var(--brand-primary)">3</span>
+                            <div>
+                                <h3 class="font-bold text-gray-900 mb-1">Talk for 30 minutes</h3>
+                                <p class="text-sm text-gray-600">Meet on a secure video call, chat, and watch a young person's confidence grow.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+
+            <hr class="rule-dashed my-12">
+
+            <!-- ---- Two ways to volunteer ---- -->
+            <section class="movement reveal">
+                <hr class="rule-brand mb-5">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Two ways to volunteer</h2>
+                <p class="text-gray-600 mb-8 max-w-2xl">Whether you're a professional with time to give or a student earning service hours, there's a place for you.</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Standard -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5" style="background:rgba(17,108,0,.10); color:var(--adea-green)"><i class="fas fa-hands-helping"></i></div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Standard Volunteer</h3>
+                        <p class="text-gray-600 mb-5">Help Maasai students practice English through conversation. Perfect for professionals, retirees, and anyone with time to spare and a heart to serve.</p>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-start gap-2"><i class="fas fa-check text-green-600 mt-1"></i> Flexible scheduling — book when it suits you</li>
+                            <li class="flex items-start gap-2"><i class="fas fa-check text-green-600 mt-1"></i> One-on-one calls with students</li>
+                        </ul>
+                    </div>
+                    <!-- Student -->
+                    <div class="bg-white rounded-2xl p-8 shadow-md border-2 relative" style="border-color:var(--brand-primary)">
+                        <span class="absolute top-5 right-5 text-xs font-bold uppercase tracking-wide bg-red-50 text-brand-primary px-3 py-1 rounded-full">Enhanced benefits</span>
+                        <div class="w-12 h-12 rounded-xl bg-red-50 text-brand-primary flex items-center justify-center text-xl mb-5"><i class="fas fa-user-graduate"></i></div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Student Volunteer</h3>
+                        <p class="text-gray-600 mb-5">Are you a student? Earn community service hours and connect with peers in Rombo — a meaningful way to give back while building cross-cultural friendships.</p>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-start gap-2"><i class="fas fa-star text-brand-primary mt-1"></i> Certificates &amp; official documentation</li>
+                            <li class="flex items-start gap-2"><i class="fas fa-star text-brand-primary mt-1"></i> Impact tracking &amp; school recognition</li>
+                            <li class="flex items-start gap-2"><i class="fas fa-shield-alt text-gray-400 mt-1"></i> Parental approval required if under 18</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="rule-dashed my-12">
+
+            <!-- ---- Signature / sign-off ---- -->
+            <footer class="reveal">
+                <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+                    <div>
+                        <p class="font-bold text-2xl text-gray-900 mb-1" style="font-family:'Poppins'">TALKTIME</p>
+                        <p class="text-sm text-gray-600 max-w-md">Built by ADEA Foundation for Maasai students — Empowering Through Conversation.</p>
+                        <a href="https://adeafoundation.org" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 text-sm text-brand-primary underline underline-offset-4 transition-colors" style="--tw-text-opacity:1" onmouseover="this.style.color='var(--adea-green)'" onmouseout="this.style.color=''">Visit ADEA Foundation</a>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="/volunteer/login" class="text-sm font-semibold text-gray-700 hover:text-brand-primary transition-colors">Log In</a>
+                    </div>
+                </div>
+            </footer>
+
+        </article>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('page-ready');
+
+            // Reveal-on-scroll (respects prefers-reduced-motion via CSS)
+            const reveals = document.querySelectorAll('.reveal');
+            if ('IntersectionObserver' in window && reveals.length) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+                }, { threshold: 0.12 });
+                reveals.forEach((el) => io.observe(el));
+            } else {
+                reveals.forEach((el) => el.classList.add('in'));
+            }
+
+            // Hydrate any images already cached (skip onload)
+            document.querySelectorAll('.lazy-image').forEach((img) => {
+                if (img.complete && img.naturalHeight !== 0) {
+                    img.classList.add('loaded');
+                    if (img.parentElement.classList.contains('lazy-image-wrapper')) img.parentElement.classList.add('loaded');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

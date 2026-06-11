@@ -2,43 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Who We Are - TalkTime by ADEA Foundation</title>
+    <link rel="manifest" href="/volunteer/manifest.json">
+    <meta name="theme-color" content="#D10100">
+    <link rel="apple-touch-icon" href="/volunteer/icons/apple-touch-icon.png">
+    <script defer src="/shared/js/pwa-install.js?v=4"></script>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <meta name="description" content="Learn about ADEA Foundation's mission to empower Maasai youth through TalkTime - connecting communities through education and language exchange.">
     <link rel="canonical" href="https://talktime.adeafoundation.org/volunteer/who-we-are.html">
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/shared/css/tailwind.min.css">
     
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
 
     <!-- Main Styles (includes responsive framework) -->
     <link rel="stylesheet" href="css/main.css" />
     <!-- JWT Authentication Utility -->
-    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
     
     <!-- Newsletter Widget -->
-    <script src="/shared/js/newsletter-widget.js"></script>
+    <script src="/shared/js/newsletter-widget.js?v=4"></script>
     <!-- Enhanced Mobile Navigation -->
-    <script src="/volunteer/js/enhanced-mobile-nav.js"></script>
+    <script src="/volunteer/js/enhanced-mobile-nav.js?v=6"></script>
     
     <!-- Socket.IO Client -->
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    <script src="/shared/js/vendor/socket.io.min.js?v=2"></script>
     
     <!-- Navigation Loader -->
-    <script src="/volunteer/partials/nav-loader.js"></script>
+    <script src="/volunteer/partials/nav-loader.js?v=7"></script>
     
     <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
+    <script src="/shared/js/modal-utils.js?v=4"></script>
 
     <!-- Google Fonts: Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/fonts/google/fonts.css">
     
     <!-- Initialize TalkTimeAuth -->
     <script>
@@ -81,7 +83,8 @@
         }
     </style>
 </head>
-<body style="opacity:0;background-color: #f0f4ff;" class="text-gray-800">
+<body style="opacity:0;background-color: #f4f5ee;" class="text-gray-800">
+<script>/* fail-open: reveal the page even if a later script fails to parse on older browsers */setTimeout(function(){document.body.classList.add("page-ready");document.body.style.opacity="1";},1500);</script>
     <!-- Background Blobs -->
     <div class="blob w-96 h-96 bg-brand-secondary top-[-10rem] left-[-10rem]"></div>
     <div class="blob w-96 h-96 bg-brand-primary bottom-[-5rem] right-[-10rem]"></div>
@@ -111,7 +114,7 @@
                     <a href="#our-mission" class="glass-bg hover:shadow-lg text-gray-800 px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
                         <i class="fas fa-heart mr-3 text-pink-500"></i>Learn Our Story
                     </a>
-                    <a href="#get-involved" class="text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105" style="background:#D10100;">
+                    <a href="/volunteer/signup" class="text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105" style="background:#D10100;">
                         <i class="fas fa-hands-helping mr-3"></i>Get Involved
                     </a>
                 </div>

@@ -32,3 +32,13 @@ backend/database-backup-*.json
 
 # Agent working directory
 .agent/
+.superpowers/
+
+# Runtime data and local artifacts
+backend/uploads/
+*.bak-*
+*.v600.bak
+*.heic
+WhatsApp*
+Screenshot*.png
+docs/superpowers/

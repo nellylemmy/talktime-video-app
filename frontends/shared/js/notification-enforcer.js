@@ -93,17 +93,24 @@ class TalkTimeNotificationEnforcer {
             return false;
         }
 
-        // Show if permission is default (not granted or denied)
+        // Show if permission is default (not granted or denied), honoring a recent dismissal
         if (Notification.permission === 'default') {
+            const dismissedUntil = parseInt(localStorage.getItem('talktime_notification_dismissed_until') || '0', 10);
+            if (Date.now() <= dismissedUntil) {
+                console.log('[TalkTime] Permission modal dismissed recently - not re-showing yet');
+                return false;
+            }
             console.log('[TalkTime] Notification permission is default - showing modal');
             return true;
         }
 
-        // Show if permission was denied but it's mandatory
+        // If the user denied notifications, do not re-block them - the browser
+        // cannot re-prompt anyway. Respect a dismissal cooldown instead.
         if (Notification.permission === 'denied') {
             const dismissedPermanently = localStorage.getItem('talktime_notification_dismissed');
-            if (!dismissedPermanently) {
-                console.log('[TalkTime] Notification permission denied but not permanently dismissed');
+            const dismissedUntil = parseInt(localStorage.getItem('talktime_notification_dismissed_until') || '0', 10);
+            if (!dismissedPermanently && Date.now() > dismissedUntil) {
+                console.log('[TalkTime] Notification permission denied but not dismissed recently');
                 return true;
             }
         }
@@ -117,7 +124,7 @@ class TalkTimeNotificationEnforcer {
         const modal = new NotificationPermissionModal({
             title: 'Enable TalkTime Notifications',
             message: 'TalkTime works best with notifications enabled. Stay connected with instant meeting reminders, call alerts, and important updates that help you never miss a conversation.',
-            mandatory: true, // Make it mandatory for better engagement
+            mandatory: false, // Dismissible: never trap the user (browser cannot re-prompt after deny anyway)
             allowButtonText: 'Enable Notifications Now',
             onAllow: (permission) => {
                 console.log('[TalkTime] User granted notification permission:', permission);
@@ -189,7 +196,7 @@ class TalkTimeNotificationEnforcer {
         // Emit custom event for other scripts
         document.dispatchEvent(new CustomEvent('talktimeNotificationReady', {
             detail: {
-                permission: Notification.permission,
+                permission: ('Notification' in window) ? Notification.permission : 'unsupported',
                 initialized: true,
                 timestamp: new Date().toISOString()
             }
@@ -246,8 +253,13 @@ class TalkTimeNotificationEnforcer {
     }
 
     initializeSocketListeners() {
-        // Initialize Socket.IO for real-time notifications
-        if (typeof io !== 'undefined') {
+        // Initialize Socket.IO for real-time notifications.
+        // Skip when not logged in - the server requires a JWT on every connection.
+        let hasToken = false;
+        try {
+            hasToken = ['volunteer', 'student', 'admin'].some(r => localStorage.getItem(`${r}_talktime_access_token`));
+        } catch (e) { /* storage blocked */ }
+        if (typeof io !== 'undefined' && hasToken) {
             console.log('[TalkTime] Initializing Socket.IO notification listeners');
 
             const socket = io();
@@ -444,7 +456,7 @@ class TalkTimeNotificationEnforcer {
         // Trigger sound notification
         this.triggerNotificationSound(data);
 
-        if (Notification.permission === 'granted') {
+        if (('Notification' in window) && Notification.permission === 'granted') {
             const notification = new Notification(data.notification.title, {
                 body: data.notification.message,
                 icon: data.notification.icon_url || '/talktime.ico',
@@ -504,7 +516,7 @@ class TalkTimeNotificationEnforcer {
             }
         }));
 
-        if (Notification.permission === 'granted') {
+        if (('Notification' in window) && Notification.permission === 'granted') {
             const { actions, vibrate, ...safeOptions } = data.notificationData;
             const notification = new Notification(data.notificationData.title, {
                 ...safeOptions,
@@ -570,7 +582,7 @@ class TalkTimeNotificationEnforcer {
     handleRemindLater(meetingId) {
         // Set a 5-minute reminder
         setTimeout(() => {
-            if (Notification.permission === 'granted') {
+            if (('Notification' in window) && Notification.permission === 'granted') {
                 new Notification('Meeting Reminder', {
                     body: 'Your meeting is starting soon!',
                     tag: `meeting-${meetingId}-reminder`,
@@ -599,9 +611,22 @@ class TalkTimeNotificationEnforcer {
                 throw new Error('No user ID available for subscription');
             }
 
+            // Backend requires a JWT; identity is taken from the token server-side
+            let token = null;
+            try {
+                for (const role of ['volunteer', 'student', 'admin']) {
+                    token = localStorage.getItem(`${role}_talktime_access_token`);
+                    if (token) break;
+                }
+            } catch (e) { /* storage blocked */ }
+            if (!token) {
+                console.log('[TalkTime] Not logged in - skipping push subscription');
+                return;
+            }
+
             const response = await fetch('/api/v1/push-notifications/subscribe', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 credentials: 'include',
                 body: JSON.stringify({
                     subscription,
@@ -692,7 +717,7 @@ class TalkTimeNotificationEnforcer {
 
         // Fallback: load the notification modal script if it's not available
         const script = document.createElement('script');
-        script.src = '/shared/js/notification-permission-modal.js';
+        script.src = '/shared/js/notification-permission-modal.js?v=3';
         script.onload = () => {
             console.log('[TalkTime] Notification modal script loaded');
             this.loadingModal = false;
@@ -748,11 +773,9 @@ class TalkTimeNotificationEnforcer {
             }
         }
 
-        // For development/testing, use a default test user ID (student from database)
-        const testUserId = 23; // ADM0001-anderson-gatere student
-        sessionStorage.setItem('talktime_user_id', testUserId.toString());
-        console.log('[TalkTime] Using test userId:', testUserId);
-        return testUserId;
+        // No authenticated user id available - do not register push for a guessed identity
+        console.log('[TalkTime] No user id available; skipping push registration');
+        return null;
     }
 
     // Static method to check if enforcer is ready

@@ -21,14 +21,17 @@ services:
       - ./frontends/student/public:/var/www/frontend/student
       - ./frontends/call:/var/www/frontend/call
       - ./frontends/shared:/var/www/frontend/shared
+      - ./frontends/common:/var/www/frontend/common
       - ./frontends/notification-sw.js:/var/www/frontend/notification-sw.js
       - ./frontends/sw.js:/var/www/frontend/sw.js:ro
+      - /root/ADEA/shared/maintenance.html:/usr/share/nginx/html/maintenance.html:ro
+      - /root/ADEA/shared/flags/talktime:/etc/nginx/maintenance-dir:ro
     depends_on:
       - backend
     networks:
       talktime_network:
         ipv4_address: 172.19.0.20
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -79,7 +82,7 @@ services:
       - redis
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -102,7 +105,7 @@ services:
       - ./db/init:/docker-entrypoint-initdb.d:ro
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -121,7 +124,7 @@ services:
       - redis_data:/data
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -135,7 +138,7 @@ services:
   coturn:
     image: coturn/coturn:4.6.3
     container_name: talktime_coturn
-    restart: unless-stopped
+    restart: on-failure:3
     network_mode: host
     volumes:
       - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
@@ -169,7 +172,7 @@ services:
       - redis
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -211,7 +214,7 @@ services:
       - auth-service
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -254,7 +257,7 @@ services:
       - db
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -295,7 +298,7 @@ services:
       - redis
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -335,7 +338,7 @@ services:
       - db
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:
@@ -374,7 +377,7 @@ services:
       - redis
     networks:
       - talktime_network
-    restart: unless-stopped
+    restart: on-failure:3
     deploy:
       resources:
         limits:

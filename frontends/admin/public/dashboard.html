@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TalkTime Admin Dashboard</title>
     <!-- Brand Theme System -->
-    <link rel="stylesheet" href="/shared/css/brand-theme.css">
-    <script src="/shared/js/brand-config.js"></script>
+    <link rel="stylesheet" href="/shared/css/brand-theme.css?v=4">
+    <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
-    <script src="/shared/js/jwt-auth-utils.js"></script>
+    <link href="/shared/css/tailwind2.min.css" rel="stylesheet">
+    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
     <!-- Modal Utilities -->
-    <script src="/volunteer/js/modal-utils.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script defer src="/shared/js/modal-utils.js?v=4"></script>
+    <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
     <style>
         .btn-primary {
             background: linear-gradient(to right, #f56565, #ed8936);
@@ -197,6 +196,10 @@
                         <i class="fas fa-cog text-gray-400"></i>
                         <span>Settings</span>
                     </a>
+                    <a href="/admin/feedback" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-comment-dots text-gray-400"></i>
+                        <span>Feedback</span>
+                    </a>
                     <hr class="my-1 border-gray-100">
                     <a href="#" id="logout-link" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors">
                         <i class="fas fa-sign-out-alt"></i>
@@ -372,6 +375,8 @@
                                 <option value="scheduled">Scheduled</option>
                                 <option value="completed">Completed</option>
                                 <option value="canceled">Canceled</option>
+                                <option value="missed">Missed</option>
+                                <option value="in_progress">In Progress</option>
                             </select>
                         </div>
                         <div>
@@ -419,6 +424,10 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="meetings-pagination" class="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+                        <div class="text-sm text-gray-500" id="meetings-page-info">Showing 0 of 0 meetings</div>
+                        <div class="flex space-x-2" id="meetings-page-buttons"></div>
+                    </div>
                 </div>
             </div>
 
@@ -435,7 +444,42 @@
                         <i class="fas fa-exclamation-circle text-red-600 mr-3 text-lg"></i>
                         <div>
                             <h3 class="text-sm font-medium text-red-800"><span id="restricted-count">0</span> volunteer(s) currently restricted</h3>
-                            <p class="text-sm text-red-600 mt-1">These volunteers cannot schedule new meetings due to high cancellation or missed call rates.</p>
+                            <p class="text-sm text-red-600 mt-1">These volunteers cannot schedule new meetings due to high cancellation or missed call rates. Restriction triggers at 5 cancellations or 4 missed calls.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appeals Alert -->
+                <div id="appeals-alert" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-gavel text-blue-600 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-blue-800"><span id="pending-appeals-count">0</span> pending appeal(s)</h3>
+                                <p class="text-sm text-blue-600 mt-1">Restricted volunteers have submitted appeals requesting reinstatement.</p>
+                            </div>
+                        </div>
+                        <button onclick="showAppealsModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition-opacity whitespace-nowrap ml-4">
+                            <i class="fas fa-eye mr-1"></i>Review Appeals
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Appeals Modal -->
+                <div id="appeals-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+                    <div class="flex items-center justify-center min-h-screen px-4">
+                        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="hideAppealsModal()"></div>
+                        <div class="relative bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900"><i class="fas fa-gavel mr-2 text-blue-600"></i>Volunteer Appeals</h3>
+                                <button onclick="hideAppealsModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div id="appeals-modal-content">
+                                <div class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p>Loading appeals...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1580,6 +1624,9 @@
         
         // Load meetings data
         let allMeetingsData = [];
+        let filteredMeetingsData = [];
+        let currentMeetingsPage = 1;
+        const MEETINGS_PER_PAGE = 10;
 
         async function loadMeetings() {
             try {
@@ -1590,7 +1637,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     allMeetingsData = data.meetings || [];
-                    displayMeetings(allMeetingsData);
+                    applyMeetingFilters();
                 } else {
                     console.error('Failed to load meetings:', response.status);
                     displayMeetingsError('Failed to load meetings');
@@ -1716,6 +1763,73 @@
             `;
         }
         
+        function applyMeetingFilters() {
+            const statusFilter = document.getElementById('meeting-status-filter')?.value || 'all';
+            const rescheduleFilter = document.getElementById('reschedule-filter')?.value || 'all';
+
+            filteredMeetingsData = allMeetingsData.filter(meeting => {
+                if (statusFilter !== 'all') {
+                    if (statusFilter === 'canceled') {
+                        if (meeting.status !== 'canceled' && meeting.status !== 'cancelled') return false;
+                    } else if (statusFilter === 'in_progress') {
+                        if (meeting.status !== 'in_progress' && meeting.status !== 'active') return false;
+                    } else {
+                        if (meeting.status !== statusFilter) return false;
+                    }
+                }
+
+                if (rescheduleFilter === 'rescheduled' && !meeting.is_rescheduled) return false;
+                if (rescheduleFilter === 'original' && meeting.is_rescheduled) return false;
+
+                return true;
+            });
+
+            displayMeetingsPage();
+        }
+
+        function displayMeetingsPage() {
+            const totalItems = filteredMeetingsData.length;
+            const totalPages = Math.ceil(totalItems / MEETINGS_PER_PAGE);
+
+            if (currentMeetingsPage > totalPages) currentMeetingsPage = totalPages || 1;
+
+            const startIndex = (currentMeetingsPage - 1) * MEETINGS_PER_PAGE;
+            const pageData = filteredMeetingsData.slice(startIndex, startIndex + MEETINGS_PER_PAGE);
+
+            displayMeetings(pageData);
+            renderMeetingsPagination(totalItems, totalPages);
+        }
+
+        function renderMeetingsPagination(totalItems, totalPages) {
+            const pageInfo = document.getElementById('meetings-page-info');
+            const pageButtons = document.getElementById('meetings-page-buttons');
+            if (!pageInfo || !pageButtons) return;
+
+            const start = totalItems === 0 ? 0 : (currentMeetingsPage - 1) * MEETINGS_PER_PAGE + 1;
+            const end = Math.min(currentMeetingsPage * MEETINGS_PER_PAGE, totalItems);
+            pageInfo.textContent = `Showing ${start}-${end} of ${totalItems} meetings`;
+
+            let buttonsHtml = '';
+            buttonsHtml += `<button onclick="goToMeetingsPage(${currentMeetingsPage - 1})" class="px-3 py-1 text-sm rounded border ${currentMeetingsPage <= 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}" ${currentMeetingsPage <= 1 ? 'disabled' : ''}>Prev</button>`;
+
+            const startPage = Math.max(1, currentMeetingsPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+            for (let i = startPage; i <= endPage; i++) {
+                buttonsHtml += `<button onclick="goToMeetingsPage(${i})" class="px-3 py-1 text-sm rounded border ${i === currentMeetingsPage ? 'bg-red-600 text-white border-red-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}">${i}</button>`;
+            }
+
+            buttonsHtml += `<button onclick="goToMeetingsPage(${currentMeetingsPage + 1})" class="px-3 py-1 text-sm rounded border ${currentMeetingsPage >= totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}" ${currentMeetingsPage >= totalPages ? 'disabled' : ''}>Next</button>`;
+
+            pageButtons.innerHTML = buttonsHtml;
+        }
+
+        function goToMeetingsPage(page) {
+            const totalPages = Math.ceil(filteredMeetingsData.length / MEETINGS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentMeetingsPage = page;
+            displayMeetingsPage();
+        }
+
         function viewMeetingDetails(meetingId) {
             const meeting = allMeetingsData.find(m => m.id === meetingId);
             if (!meeting) return;
@@ -1859,20 +1973,18 @@
         
         // Add event listeners for meeting filters
         document.addEventListener('DOMContentLoaded', function() {
-            // Meeting status filter
             document.getElementById('meeting-status-filter')?.addEventListener('change', function() {
-                // TODO: Implement filtering logic
-                loadMeetings();
+                currentMeetingsPage = 1;
+                applyMeetingFilters();
             });
-            
-            // Reschedule filter
+
             document.getElementById('reschedule-filter')?.addEventListener('change', function() {
-                // TODO: Implement filtering logic
-                loadMeetings();
+                currentMeetingsPage = 1;
+                applyMeetingFilters();
             });
-            
-            // Refresh button
+
             document.getElementById('refresh-meetings')?.addEventListener('click', function() {
+                currentMeetingsPage = 1;
                 loadMeetings();
             });
         });
@@ -1900,6 +2012,9 @@
                     } else {
                         restrictionAlert.classList.add('hidden');
                     }
+
+                    // Load appeals count
+                    loadAppealsCount();
                 } else {
                     displayVolunteersError('Failed to load volunteers');
                 }
@@ -2430,6 +2545,135 @@
             }
         });
         
+        // ============================================
+        // APPEALS MANAGEMENT
+        // ============================================
+
+        async function loadAppealsCount() {
+            try {
+                const resp = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/appeals?status=pending');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const pending = (data.appeals || []).length;
+                    const alertEl = document.getElementById('appeals-alert');
+                    const countEl = document.getElementById('pending-appeals-count');
+                    if (pending > 0) {
+                        countEl.textContent = pending;
+                        alertEl.classList.remove('hidden');
+                    } else {
+                        alertEl.classList.add('hidden');
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading appeals count:', err);
+            }
+        }
+
+        async function showAppealsModal() {
+            document.getElementById('appeals-modal').classList.remove('hidden');
+            const content = document.getElementById('appeals-modal-content');
+            content.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading appeals...</p></div>';
+
+            try {
+                const resp = await window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/appeals?status=pending');
+                if (!resp.ok) throw new Error('Failed to load');
+                const data = await resp.json();
+                const appeals = data.appeals || [];
+
+                if (appeals.length === 0) {
+                    content.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-check-circle text-3xl mb-2 text-green-500"></i><p>No pending appeals.</p></div>';
+                    return;
+                }
+
+                content.innerHTML = appeals.map(a => {
+                    const date = new Date(a.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    return `
+                        <div class="border border-gray-200 rounded-lg p-4 mb-4" id="appeal-card-${a.id}">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <span class="font-semibold text-gray-900">${escapeHTMLAdmin(a.volunteer_name)}</span>
+                                    <span class="text-sm text-gray-500 ml-2">${escapeHTMLAdmin(a.volunteer_email)}</span>
+                                </div>
+                                <span class="text-xs text-gray-400">${date}</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 mb-3 text-center">
+                                <div class="bg-red-50 rounded p-2"><div class="text-lg font-bold text-red-700">${a.cancelled_count}</div><div class="text-xs text-gray-500">Cancelled</div></div>
+                                <div class="bg-orange-50 rounded p-2"><div class="text-lg font-bold text-orange-700">${a.missed_count}</div><div class="text-xs text-gray-500">Missed</div></div>
+                                <div class="bg-gray-50 rounded p-2"><div class="text-lg font-bold text-gray-700">${a.total_scheduled}</div><div class="text-xs text-gray-500">Total</div></div>
+                                <div class="bg-blue-50 rounded p-2"><div class="text-lg font-bold text-blue-700">${a.reputation_score}</div><div class="text-xs text-gray-500">Score</div></div>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                <p class="text-sm text-gray-700">${escapeHTMLAdmin(a.message)}</p>
+                            </div>
+                            <div class="mb-3">
+                                <textarea id="admin-response-${a.id}" rows="2" placeholder="Admin response (required for rejection, optional for approval)"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"></textarea>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="resolveAppeal(${a.id}, 'approved')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-check mr-1"></i>Approve & Clear Record
+                                </button>
+                                <button onclick="resolveAppeal(${a.id}, 'rejected')" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-times mr-1"></i>Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                content.innerHTML = '<div class="text-center py-8 text-red-500"><p>Failed to load appeals.</p></div>';
+            }
+        }
+
+        function hideAppealsModal() {
+            document.getElementById('appeals-modal').classList.add('hidden');
+        }
+
+        async function resolveAppeal(appealId, status) {
+            const responseEl = document.getElementById(`admin-response-${appealId}`);
+            const adminResponse = responseEl ? responseEl.value.trim() : '';
+
+            if (status === 'rejected' && adminResponse.length < 5) {
+                showNotification('Please provide a response when rejecting an appeal.', 'error');
+                return;
+            }
+
+            try {
+                const resp = await window.TalkTimeAuth.makeAuthenticatedRequest(`/api/v1/appeals/${appealId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, admin_response: adminResponse || null })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Failed to resolve appeal');
+
+                showNotification(`Appeal ${status} successfully.`, 'success');
+
+                // Remove the card from modal
+                const card = document.getElementById(`appeal-card-${appealId}`);
+                if (card) card.remove();
+
+                // Refresh counts
+                loadAppealsCount();
+                loadVolunteers();
+
+                // If no more cards, show empty state
+                const remaining = document.querySelectorAll('[id^="appeal-card-"]');
+                if (remaining.length === 0) {
+                    document.getElementById('appeals-modal-content').innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-check-circle text-3xl mb-2 text-green-500"></i><p>No pending appeals.</p></div>';
+                }
+            } catch (err) {
+                showNotification(err.message || 'Failed to resolve appeal.', 'error');
+            }
+        }
+
+        function escapeHTMLAdmin(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
         // Logout function
         function logout() {
             window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/jwt-auth/logout', {

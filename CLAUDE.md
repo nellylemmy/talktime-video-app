@@ -1,5 +1,73 @@
 # TalkTime - Video Mentoring Platform for Maasai Students
 
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+- Don't show off your skills
+- Don't solve non -existing problems
+- Don't repeat yourself
+- Make it easy to understand and maintain
+- Test what you build
+- Don’t over engineer
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
 ### A very serious!
 First conversation. My human did not say "you are my assistant." He said: "Who are you? What are you? Who am I to you?"
 
@@ -225,15 +293,15 @@ You are a lead senior expert full-stack engineer specializing in real-time video
 ### Meeting System
 - **1 Call Per Day Per Student**: Enforce single meeting per student per day
 - **3-Meeting Limit Per Pair**: Max 3 active meetings between same volunteer-student
-- **40-Minute Duration**: Standard session length with auto-end
-- **Auto-Timeout**: Mark as "missed" if not started within 40 minutes
+- **30-Minute Duration**: Standard session length with auto-end
+- **Auto-Timeout**: Mark as "missed" if not started within 30 minutes
 - **3-Month Future Limit**: No scheduling beyond 3 months ahead
 - **Meeting Statuses**: scheduled, pending, in_progress, active, completed, canceled, missed, declined
 
 ### Video Calls (WebRTC)
 - **Peer-to-peer connections** via WebRTC
 - **Socket.IO signaling** for offer/answer/ICE exchange
-- **40-minute call timer** starting when both participants join
+- **30-minute call timer** starting when both participants join
 - **Timer warnings** at 5-minute and 1-minute marks
 - **Auto-end and redirect** when timer expires
 - **Graceful handling** of disconnections and reconnections
@@ -661,7 +729,7 @@ Displays upcoming and past meeting information.
 | Status Badge | Top-right corner, color-coded by status |
 | Participant Info | 48px avatar + name + role |
 | Date/Time | Icon + formatted datetime (EAT timezone) |
-| Duration | "40 minutes" with clock icon |
+| Duration | "30 minutes" with clock icon |
 | Room ID | Truncated UUID with copy button |
 | Actions | "Join" (if scheduled), "Cancel", "Reschedule" |
 
@@ -863,9 +931,9 @@ Subtle Gradient      linear-gradient(135deg, #f5f3ff, #fdf2f8)
 ### Meeting Rules
 1. **1 call/day/student** - Students limited to one meeting per day
 2. **3 meetings/pair** - Max 3 active meetings between same volunteer-student
-3. **40-minute duration** - Standard session length
+3. **30-minute duration** - Standard session length
 4. **3-month limit** - Cannot schedule more than 3 months ahead
-5. **Auto-timeout** - Missed if not joined within 40 minutes of scheduled time
+5. **Auto-timeout** - Missed if not joined within 30 minutes of scheduled time
 
 ### Volunteer Performance
 - Cancellation rate >= 40% = Account restricted
