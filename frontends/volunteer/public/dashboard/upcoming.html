@@ -40,7 +40,8 @@
     <script defer src="/volunteer/partials/nav-loader.js?v=7"></script>
     <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
     <script defer src="/shared/js/modal-utils.js?v=4"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=5"></script>
+    <script defer src="/shared/js/swr-fetch.js?v=1"></script>
     <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
     <script defer src="/common/js/restriction-banner.js?v=4"></script>
     <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
@@ -303,8 +304,9 @@
                 
                 // Show success notification
                 showNotification('Meeting cancelled successfully');
-                
-                // Refresh the dashboard by reloading data from the server
+
+                // Drop stale snapshots, then refresh from the server
+                if (window.swrInvalidate) { window.swrInvalidate('dashboard-data'); window.swrInvalidate('my-students'); }
                 loadDashboardData();
             })
             .catch(error => {
@@ -425,19 +427,8 @@
                 return;
             }
 
-            // Fetch volunteer dashboard data from the backend API
-            window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/dashboard-data', {
-                method: 'GET'
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Dashboard data received:', data);
-                    
+            // Render callback for the SWR layer (instant cached paint + revalidate)
+            const renderUpcomingData = (data) => {
                     // Load upcoming meetings
                     if (upcomingMeetingsContainer && data.meetings.upcoming && data.meetings.upcoming.length > 0) {
                         renderUpcomingMeetings(data.meetings.upcoming);
@@ -454,11 +445,20 @@
                             '<i class="fas fa-calendar-plus"></i>Schedule a Meeting</a>' +
                             '</div>';
                     }
-                })
-                .catch(error => {
-                    console.error('Error loading dashboard data:', error);
-                    showNotification('Failed to load dashboard data. Please refresh the page.', 'error');
-                });
+            };
+
+            const upcomingFetch = window.swrFetch
+                ? window.swrFetch({ key: 'dashboard-data', url: '/api/v1/volunteers/dashboard-data', container: '#upcoming-meetings', render: renderUpcomingData })
+                : window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/dashboard-data', { method: 'GET' })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(d => { renderUpcomingData(d); return d; });
+            upcomingFetch.catch(error => {
+                console.error('Error loading dashboard data:', error);
+                showNotification('Failed to load dashboard data. Please refresh the page.', 'error');
+            });
         }
         
         // Function to get initials from a name

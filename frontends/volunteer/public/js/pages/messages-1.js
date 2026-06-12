@@ -252,20 +252,7 @@
             console.log('Loading messages...');
 
             try {
-                // Add timestamp to bust any cache
-                const url = '/api/v1/volunteers/me/messages?_t=' + Date.now();
-                const response = await window.TalkTimeAuth.authenticatedRequest(url, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-
+                const renderMessagesData = (data) => {
                     if (data.success && data.data) {
                         allMessages = data.data;
                         renderConversations(data.data);
@@ -275,9 +262,24 @@
                     } else {
                         renderConversations([]);
                     }
+                };
+
+                if (window.swrFetch) {
+                    // Instant paint from snapshot + ETag revalidation (304 when unchanged)
+                    await window.swrFetch({
+                        key: 'messages',
+                        url: '/api/v1/volunteers/me/messages',
+                        container: '#messages-list',
+                        render: renderMessagesData
+                    });
                 } else {
-                    console.error('Failed to fetch messages, status:', response.status);
-                    renderConversations([]);
+                    const response = await window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/me/messages', { method: 'GET' });
+                    if (response.ok) {
+                        renderMessagesData(await response.json());
+                    } else {
+                        console.error('Failed to fetch messages, status:', response.status);
+                        renderConversations([]);
+                    }
                 }
             } catch (error) {
                 console.error('Network error fetching messages:', error);
@@ -584,6 +586,7 @@
                         };
                         allMessages.unshift(realMsg);
                         renderConversations(allMessages);
+                        if (window.swrInvalidate) window.swrInvalidate('messages');
                     } else {
                         throw new Error(data.message || 'Failed to send');
                     }

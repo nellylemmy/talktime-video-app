@@ -13,6 +13,22 @@
             const scheduleButtonContainer = document.getElementById('schedule-button-container');
             const notificationEl = document.getElementById('notification');
 
+            // Instant calls are admin-controlled platform-wide (off by default).
+            // Flag fetched once; any rendered Instant Call button is removed when disabled.
+            let instantCallsEnabled = false;
+            const instantCallFlagReady = fetch('/api/v1/config')
+                .then(r => r.json())
+                .then(d => { instantCallsEnabled = !!(d.config && d.config['instant_call.enabled']); })
+                .catch(() => {});
+            function enforceInstantCallFlag() {
+                instantCallFlagReady.then(() => {
+                    if (!instantCallsEnabled) {
+                        const btn = document.getElementById('instant-call-btn');
+                        if (btn) btn.remove();
+                    }
+                });
+            }
+
             // --- Utility Functions ---
             function showNotification(message, type = 'success') {
                 notificationEl.textContent = message;
@@ -41,7 +57,8 @@
                         studentId: id,
                         studentAdmission: admission,
                         studentName: decodeURIComponent(name),
-                        meetingId: meeting
+                        meetingId: meeting,
+                        action: urlParams.get('action')
                     };
                 }
 
@@ -102,6 +119,12 @@
                 // Name
                 if (studentNameEl) {
                     studentNameEl.textContent = student.name || 'Student';
+                }
+
+                // Quick-action deep link from My Schedules: open the chat right away
+                const urlAction = getUrlParams();
+                if (urlAction && urlAction.action === 'message' && window.openMessageModal) {
+                    window.openMessageModal(student.userId || student.id, student.name || 'Student');
                 }
 
                 // Profile photo — real image or initials fallback
@@ -333,6 +356,7 @@
                     </button>
                 </div>
             `;
+                enforceInstantCallFlag();
             }
 
             // Function to render reschedule button
@@ -403,6 +427,7 @@
                         });
                     }
                     document.getElementById('instant-call-btn').addEventListener('click', initiateInstantCall);
+                    enforceInstantCallFlag();
                 } else {
                     // If another volunteer owns this meeting, show reschedule + message
                     scheduleButtonContainer.innerHTML = `
@@ -425,6 +450,7 @@
                         </button>
                     </div>
                 `;
+                    enforceInstantCallFlag();
                 }
             }
 
@@ -449,9 +475,13 @@
                     interfaceHtml += `<p class="text-xs text-orange-600 mb-3"><i class="fas fa-info-circle mr-1"></i>${meetingCount}/${limit} meetings - limit reached</p>`;
                 }
 
-                // Meetings list (if any)
-                if (volunteerStudentMeetings && volunteerStudentMeetings.length > 0) {
-                    const sortedMeetings = [...volunteerStudentMeetings].sort((a, b) => {
+                // Meetings list (if any) — canceled ones hidden, they add clutter without useful info
+                const visibleMeetings = (volunteerStudentMeetings || []).filter(m => {
+                    const s = (m.realTimeStatus || m.status || '').toLowerCase();
+                    return s !== 'canceled' && s !== 'cancelled';
+                });
+                if (visibleMeetings.length > 0) {
+                    const sortedMeetings = [...visibleMeetings].sort((a, b) => {
                         const dateA = new Date(a.scheduled_time);
                         const dateB = new Date(b.scheduled_time);
                         const now = new Date();
@@ -473,13 +503,11 @@
                         let statusText = '';
                         let statusClass = 'text-gray-500';
                         let showJoin = false;
-                        let showActions = false;
 
                         switch (realTimeStatus) {
                             case 'upcoming':
                                 statusText = isToday ? 'Today' : 'Scheduled';
                                 statusClass = 'text-blue-600';
-                                showActions = true;
                                 break;
                             case 'in_progress':
                             case 'missed_start':
@@ -495,10 +523,6 @@
                                 statusText = 'Missed';
                                 statusClass = 'text-orange-500';
                                 break;
-                            case 'canceled':
-                                statusText = 'Canceled';
-                                statusClass = 'text-gray-400';
-                                break;
                             default:
                                 statusText = meeting.status || '';
                         }
@@ -506,23 +530,17 @@
                         const dateStr = meetingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                         const timeStr = meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
 
-                        // Add blue border for upcoming meetings
-                        const borderClass = showActions || showJoin ? 'border border-blue-200' : '';
+                        // Rows are info-only — all actions live in the single button bar below
+                        const borderClass = showJoin ? 'border border-blue-200' : '';
 
                         interfaceHtml += `
                         <div class="py-2.5 px-3 bg-gray-50 rounded-lg text-sm ${borderClass}">
-                            <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center justify-between">
                                 <span class="text-gray-700 font-medium">${dateStr}, ${timeStr}</span>
                                 <span class="${statusClass} text-xs">${statusText}</span>
                             </div>
                             ${showJoin ? `
-                                <a href="/call/call.html?room=${meeting.roomId || meeting.id}&role=volunteer" class="block w-full text-center text-xs bg-green-600 text-white py-2 px-3 rounded-lg hover:bg-green-700 font-medium">Join Call</a>
-                            ` : ''}
-                            ${showActions ? `
-                                <div class="flex gap-2 mt-1">
-                                    <a href="/volunteer/dashboard/schedule.html?id=${msgUserId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}&meeting=${meeting.id}" class="flex-1 flex items-center justify-center text-xs bg-blue-600 text-white py-1.5 px-3 rounded-lg hover:bg-blue-700 font-medium">Reschedule</a>
-                                    <button class="cancel-meeting-btn flex-1 flex items-center justify-center text-xs border-2 border-red-500 text-red-600 py-1.5 px-3 rounded-lg hover:bg-red-50 font-medium" data-meeting-id="${meeting.id}" data-student-name="${studentName}">Cancel</button>
-                                </div>
+                                <a href="/call/call.html?room=${meeting.roomId || meeting.id}&role=volunteer" class="block w-full text-center text-xs bg-green-600 text-white py-2 px-3 rounded-lg hover:bg-green-700 font-medium mt-2">Join Call</a>
                             ` : ''}
                         </div>`;
                     });
@@ -530,43 +548,74 @@
                     interfaceHtml += `</div></div>`;
                 }
 
-                // Action buttons — use meetingId from URL (passed from student list), fall back to activeMeeting
-                const rescheduleMeetingId = params.meetingId || (activeMeeting ? activeMeeting.id : null);
-                const scheduleUrl = `/volunteer/dashboard/schedule.html?id=${msgUserId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}` + (rescheduleMeetingId ? `&meeting=${rescheduleMeetingId}` : '');
-                const btnLabel = rescheduleMeetingId ? 'Reschedule' : 'Schedule';
+                // Single action bar — Reschedule/Cancel target the next upcoming meeting
+                const nextUpcoming = visibleMeetings
+                    .filter(m => (m.realTimeStatus || m.status) === 'upcoming')
+                    .sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time))[0] || null;
+                const baseScheduleUrl = `/volunteer/dashboard/schedule.html?id=${msgUserId}&admission=${params.studentAdmission}&name=${encodeURIComponent(params.studentName)}`;
+                const actionBtnClass = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors';
 
-                interfaceHtml += `<div class="flex gap-2">`;
-                if (rescheduleMeetingId || canScheduleMore) {
+                // Auto-start countdown for the next upcoming meeting
+                if (nextUpcoming) {
                     interfaceHtml += `
-                    <a href="${scheduleUrl}"
-                       class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                        <i class="fas fa-calendar-alt"></i><span>${btnLabel}</span>
+                    <div data-countdown-band class="schedule-countdown-band">
+                        <div class="scb-timer" id="detail-countdown-${nextUpcoming.id}" data-start-time="${nextUpcoming.scheduled_time}">--</div>
+                        <div class="scb-sub">Meeting starts automatically. No action needed — your call opens by itself when the timer reaches zero. Just be ready.</div>
+                    </div>`;
+                }
+
+                interfaceHtml += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">`;
+                if (nextUpcoming) {
+                    interfaceHtml += `
+                    <a href="${baseScheduleUrl}&meeting=${nextUpcoming.id}"
+                       class="${actionBtnClass} bg-blue-600 text-white hover:bg-blue-700">
+                        <i class="fas fa-calendar-alt"></i><span>Reschedule</span>
+                    </a>`;
+                } else if (canScheduleMore) {
+                    interfaceHtml += `
+                    <a href="${baseScheduleUrl}"
+                       class="${actionBtnClass} bg-blue-600 text-white hover:bg-blue-700">
+                        <i class="fas fa-calendar-alt"></i><span>Schedule</span>
                     </a>`;
                 } else {
                     interfaceHtml += `
-                    <button disabled class="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-400 py-2.5 px-4 rounded-lg text-sm cursor-not-allowed">
+                    <button disabled class="${actionBtnClass} bg-gray-200 text-gray-400 cursor-not-allowed">
                         <i class="fas fa-calendar-alt"></i><span>Limit Reached</span>
                     </button>`;
                 }
                 interfaceHtml += `
-                    <button id="instant-call-btn" class="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                    <button id="instant-call-btn" class="${actionBtnClass} bg-green-600 text-white hover:bg-green-700"
                             data-student-id="${numericId}" data-student-name="${studentName}">
                         <i class="fas fa-video"></i><span>Instant Call</span>
                     </button>
                     <button onclick="openMessageModal('${msgUserId}', '${studentName.replace(/'/g, "\\'")}')"
-                            class="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            class="${actionBtnClass} bg-gray-100 text-gray-800 hover:bg-gray-200"
                             title="Message ${studentName}">
                         <i class="far fa-comment-dots"></i><span>Message</span>
-                    </button>
-                </div>`;
+                    </button>`;
+                if (nextUpcoming) {
+                    interfaceHtml += `
+                    <button class="cancel-meeting-btn ${actionBtnClass}" style="background:rgba(209,1,0,0.09);color:#991b1b;"
+                            data-meeting-id="${nextUpcoming.id}" data-student-name="${studentName}">
+                        <i class="far fa-calendar-times"></i><span>Cancel</span>
+                    </button>`;
+                }
+                interfaceHtml += `</div>`;
 
                 scheduleButtonContainer.innerHTML = interfaceHtml;
+
+                // Start the live countdown (shared ticker from meeting-auto-launch.js)
+                if (nextUpcoming && window.renderMeetingCountdown) {
+                    const countdownEl = document.getElementById('detail-countdown-' + nextUpcoming.id);
+                    if (countdownEl) window.renderMeetingCountdown(countdownEl, nextUpcoming.scheduled_time);
+                }
 
                 // Add event listener for instant call button
                 const instantCallBtn = document.getElementById('instant-call-btn');
                 if (instantCallBtn) {
                     instantCallBtn.addEventListener('click', initiateInstantCall);
                 }
+                enforceInstantCallFlag();
 
                 // Add event listeners for all cancel meeting buttons
                 const cancelButtons = scheduleButtonContainer.querySelectorAll('.cancel-meeting-btn');

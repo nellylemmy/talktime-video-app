@@ -37,18 +37,28 @@
                     ...currentFilters
                 });
 
-                const response = await window.TalkTimeAuth.authenticatedRequest(`/api/v1/notifications?${queryParams}`);
-                
-                if (!response.ok) {
-                    throw new Error('Failed to load notifications');
+                // Handle both field names (unreadCount from notification-service, unread_count from backend)
+                const renderNotifData = (data) => {
+                    displayNotifications(data.notifications);
+                    updatePagination(data.pagination);
+                    updateUnreadCount(data.unreadCount || data.unread_count || 0);
+                };
+
+                if (window.swrFetch) {
+                    await window.swrFetch({
+                        key: 'notifications:' + queryParams.toString(),
+                        url: `/api/v1/notifications?${queryParams}`,
+                        container: '#notifications-list',
+                        render: renderNotifData
+                    });
+                } else {
+                    const response = await window.TalkTimeAuth.authenticatedRequest(`/api/v1/notifications?${queryParams}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to load notifications');
+                    }
+                    renderNotifData(await response.json());
                 }
 
-                const data = await response.json();
-                displayNotifications(data.notifications);
-                updatePagination(data.pagination);
-                // Handle both field names (unreadCount from notification-service, unread_count from backend)
-                updateUnreadCount(data.unreadCount || data.unread_count || 0);
-                
             } catch (error) {
                 console.error('Error loading notifications:', error);
                 showToast('Failed to load notifications', 'error');
@@ -378,6 +388,7 @@
 
                     if (response.ok) {
                         showToast('All notifications marked as read', 'success');
+                        if (window.swrInvalidate) window.swrInvalidate('notifications');
                         loadNotifications();
                     }
                 } catch (error) {
@@ -426,6 +437,7 @@
 
                 if (response.ok) {
                     showToast('Notification marked as read', 'success');
+                    if (window.swrInvalidate) window.swrInvalidate('notifications');
                     loadNotifications();
                 }
             } catch (error) {
@@ -450,6 +462,7 @@
 
                 if (response.ok) {
                     showToast('Notification deleted', 'success');
+                    if (window.swrInvalidate) window.swrInvalidate('notifications');
                     loadNotifications();
                 }
             } catch (error) {

@@ -55,10 +55,11 @@ export class ParentalApprovalService {
      */
     static async approveParentalConsent(token) {
         const query = `
-            UPDATE users 
+            UPDATE users
             SET parent_approved = true,
-                parent_approved_at = CURRENT_TIMESTAMP
-            WHERE parent_approval_token = $1 
+                parent_approved_at = CURRENT_TIMESTAMP,
+                is_approved = true
+            WHERE parent_approval_token = $1
                 AND parent_approved IS NOT TRUE
                 AND parent_approval_sent_at > CURRENT_TIMESTAMP - INTERVAL '7 days'
             RETURNING id, full_name, email, volunteer_type, is_under_18

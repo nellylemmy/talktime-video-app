@@ -41,7 +41,8 @@
     <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
     <script defer src="/shared/js/modal-utils.js?v=4"></script>
     <script defer src="/volunteer/components/approval-status.js?v=4"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=5"></script>
+    <script defer src="/shared/js/swr-fetch.js?v=1"></script>
     <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
     <script defer src="/common/js/restriction-banner.js?v=4"></script>
     <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
@@ -780,32 +781,26 @@
 
     /* Auto-start countdown band - compact single-line strip */
     .schedule-countdown-band {
-        margin-top: 10px; padding: 9px 12px; border-radius: 10px; text-align: left;
+        margin-top: 10px; padding: 12px 14px; border-radius: 10px; text-align: left;
         display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px;
         background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(16,185,129,0.04));
         border: 1px solid rgba(16,185,129,0.25);
         transition: background 0.3s ease, border-color 0.3s ease;
     }
-    .schedule-countdown-band .scb-label {
-        font-size: 12.5px; font-weight: 600; color: #059669;
-        display: inline-flex; align-items: center; gap: 6px;
-    }
     .schedule-countdown-band .scb-timer {
-        font-size: 15px; line-height: 1.2; font-weight: 700; color: #065f46;
-        font-variant-numeric: tabular-nums; margin: 0; display: inline;
+        font-size: clamp(30px, 7vw, 40px); line-height: 1.15; font-weight: 700; color: #064e3b;
+        font-variant-numeric: tabular-nums; margin: 0; display: inline; letter-spacing: -0.01em;
     }
     .schedule-countdown-band .scb-sub {
-        flex-basis: 100%; font-size: 11.5px; color: #9ca3af; line-height: 1.3;
+        flex-basis: 100%; font-size: 17px; font-weight: 500; color: #1f2937; line-height: 1.5; margin-top: 4px;
     }
     .schedule-countdown-band.urgency-soon {
         background: linear-gradient(135deg, #fef3c7, #fffbeb); border-color: #fde68a;
     }
-    .schedule-countdown-band.urgency-soon .scb-label,
     .schedule-countdown-band.urgency-soon .scb-timer { color: #92400e; }
     .schedule-countdown-band.urgency-now {
         background: linear-gradient(135deg, #fee2e2, #fef2f2); border-color: #fecaca;
     }
-    .schedule-countdown-band.urgency-now .scb-label,
     .schedule-countdown-band.urgency-now .scb-timer { color: #991b1b; }
     @media (prefers-reduced-motion: no-preference) {
         .schedule-countdown-band.urgency-now { animation: scbPulse 1.4s ease-in-out infinite; }
@@ -813,6 +808,26 @@
     @keyframes scbPulse {
         0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
         50% { box-shadow: 0 0 0 6px rgba(239,68,68,0.08); }
+    }
+
+    /* Soft-filled quick-action pills on each schedule card — justified across the card width */
+    .sc-quick { display: flex; gap: 8px; margin-top: 10px; }
+    .sc-qbtn {
+        flex: 1 1 0; min-width: 0;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        font-size: 13px; font-weight: 600; line-height: 1; white-space: nowrap;
+        padding: 9px 6px; border-radius: 9999px;
+        background: #f3f4f6; border: none; color: #1f2937;
+        cursor: pointer; transition: background 0.15s ease;
+    }
+    .sc-qbtn:hover { background: #e5e7eb; }
+    .sc-qbtn-green { background: rgba(22,163,74,0.13); color: #14532d; }
+    .sc-qbtn-green:hover { background: rgba(22,163,74,0.22); }
+    .sc-qbtn-red { background: rgba(209,1,0,0.09); color: #991b1b; }
+    .sc-qbtn-red:hover { background: rgba(209,1,0,0.16); }
+    .sc-qbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 379px) {
+        .sc-qbtn i { display: none; } /* labels alone fit 320px screens */
     }
     </style>
 </head>
@@ -892,7 +907,7 @@
                     <section class="mb-8 md:mb-12">
                         <div class="mb-4 md:mb-6">
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-900">My Schedules</h2>
-                            <p class="text-sm text-gray-500 mt-1">Your students and upcoming time together - schedule, call or message them.</p>
+                            <p class="text-sm text-gray-500 mt-1">Tap a student to see details, reschedule or send a message.</p>
                         </div>
                         <div id="student-list-available" class="student-list mt-3 sm:mt-4 w-full">
                             <!-- Cards injected by JS -->
@@ -915,7 +930,7 @@
     <!-- Notification Toast -->
     <div id="notification" class="hidden fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-success text-white px-6 py-3 rounded-lg shadow-lg"></div>
 
-    <script src="/volunteer/js/pages/students-1.js?v=5"></script>
+    <script src="/volunteer/js/pages/students-1.js?v=11"></script>
 
     <!-- Initialize Navigation -->
     <script>

@@ -22,7 +22,7 @@
     <!-- JWT Authentication Utilities -->
     <script src="/volunteer/js/jwt-auth.js?v=4"></script>
     <script src="/shared/js/modal-utils.js?v=4"></script>
-    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=5"></script>
     <script src="/shared/js/realtime-notifications.js?v=4"></script>
 
     <style>
@@ -540,6 +540,11 @@
                     throw new Error(result.message || result.error || 'Login failed');
                 }
             } catch (error) {
+                // Account exists but awaits approval — send to the dedicated explainer page
+                if (error.code === 'PENDING_APPROVAL') {
+                    window.location.href = '/volunteer/pending-approval.html';
+                    return;
+                }
                 // Show professional modal error instead of console error or alert
                 if (window.showNotification) {
                     window.showNotification(

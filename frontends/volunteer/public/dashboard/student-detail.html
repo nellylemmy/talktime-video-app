@@ -39,13 +39,14 @@
 
     <!-- Deferred Scripts (non-render-blocking) -->
     <script defer src="/shared/js/brand-config.js?v=6"></script>
-    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=5"></script>
     <script defer src="/common/js/restriction-banner.js?v=4"></script>
     <script defer src="/shared/js/newsletter-widget.js?v=4"></script>
     <script defer src="/volunteer/partials/nav-loader.js?v=7"></script>
     <script defer src="/volunteer/js/dashboard-nav.js?v=7"></script>
     <script defer src="/shared/js/modal-utils.js?v=4"></script>
     <script defer src="/shared/js/realtime-notifications.js?v=4"></script>
+    <script defer src="/shared/js/meeting-auto-launch.js?v=4"></script>
 
     <style>
         /* Student detail page styles - Clean, minimal design */
@@ -273,6 +274,37 @@
             .conversation-panel { height: 75vh; border-radius: 16px; margin: auto; }
             .conversation-modal { align-items: center; }
         }
+
+        /* Auto-start countdown band — same compact strip as My Schedules */
+        .schedule-countdown-band {
+            margin: 10px 0; padding: 12px 14px; border-radius: 10px; text-align: left;
+            display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(16,185,129,0.04));
+            border: 1px solid rgba(16,185,129,0.25);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .schedule-countdown-band .scb-timer {
+            font-size: clamp(30px, 7vw, 40px); line-height: 1.15; font-weight: 700; color: #064e3b;
+            font-variant-numeric: tabular-nums; margin: 0; display: inline; letter-spacing: -0.01em;
+        }
+        .schedule-countdown-band .scb-sub {
+            flex-basis: 100%; font-size: 17px; font-weight: 500; color: #1f2937; line-height: 1.5; margin-top: 4px;
+        }
+        .schedule-countdown-band.urgency-soon {
+            background: linear-gradient(135deg, #fef3c7, #fffbeb); border-color: #fde68a;
+        }
+        .schedule-countdown-band.urgency-soon .scb-timer { color: #92400e; }
+        .schedule-countdown-band.urgency-now {
+            background: linear-gradient(135deg, #fee2e2, #fef2f2); border-color: #fecaca;
+        }
+        .schedule-countdown-band.urgency-now .scb-timer { color: #991b1b; }
+        @media (prefers-reduced-motion: no-preference) {
+            .schedule-countdown-band.urgency-now { animation: scbPulse 1.4s ease-in-out infinite; }
+        }
+        @keyframes scbPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+            50% { box-shadow: 0 0 0 6px rgba(239,68,68,0.08); }
+        }
     </style>
 </head>
 
@@ -378,7 +410,7 @@
     </div>
 
     <!-- Socket.IO loaded from CDN in head section -->
-    <script src="/volunteer/js/pages/student-detail-1.js?v=4"></script>
+    <script src="/volunteer/js/pages/student-detail-1.js?v=12"></script>
 
     <!-- Initialize Navigation -->
     <script>

@@ -15,6 +15,7 @@ import {
     getAllVolunteers,
     getVolunteerPerformance,
     clearVolunteerRecord,
+    approveVolunteer,
     getVolunteerDetails,
     deleteVolunteer,
     getVolunteerActivity,
@@ -60,6 +61,7 @@ router.get('/volunteers/:id/performance', adminOnlyJWT, getVolunteerPerformance)
 router.get('/volunteers/:id/activity', adminOnlyJWT, getVolunteerActivity);
 router.delete('/volunteers/:id', adminOnlyJWT, deleteVolunteer);
 router.post('/volunteers/:id/clear-record', adminOnlyJWT, clearVolunteerRecord);
+router.post('/volunteers/:id/approve', adminOnlyJWT, approveVolunteer);
 
 // Analytics routes (served from monolith instead of broken microservice)
 router.get('/analytics/system-stats', adminOnlyJWT, getAnalyticsSystemStats);

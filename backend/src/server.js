@@ -92,6 +92,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // API Routes - All routes now use JWT authentication exclusively
 // No session-based authentication is used anywhere in the application
 
+// GET API responses: private, no-cache → browsers/clients may store but MUST
+// revalidate (If-None-Match → 304 empty body when unchanged). Route handlers
+// that set their own Cache-Control (e.g. newsletter image proxy) override this.
+app.use('/api/v1', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.set('Cache-Control', 'private, no-cache');
+  }
+  next();
+});
+
 // Public routes (no authentication required)
 app.use('/api/v1/parental-approval', parentalApprovalRoutes); // Parental approval routes
 app.use('/api/v1/push-notifications', pushNotificationRoutes); // Push notification routes (VAPID key is public)

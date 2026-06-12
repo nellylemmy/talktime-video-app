@@ -9,7 +9,7 @@
     <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <link href="/shared/css/tailwind2.min.css" rel="stylesheet">
-    <script src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script src="/shared/js/jwt-auth-utils.js?v=5"></script>
     <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
     <style>
         .btn-primary {
@@ -119,6 +119,30 @@
             <div class="border-b border-gray-200 pb-5 mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Admin Settings</h1>
                 <p class="mt-2 text-sm text-gray-500">Manage your account settings and system preferences.</p>
+            </div>
+
+            <!-- Platform Controls (applies to all users) -->
+            <div class="settings-card bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mr-4">
+                        <i class="fas fa-toggle-on text-red-700"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Platform Controls</h2>
+                        <p class="text-sm text-gray-500">Feature switches that apply to everyone, instantly</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between py-2">
+                    <div>
+                        <div class="font-medium text-gray-900">Instant calls</div>
+                        <div class="text-sm text-gray-500">Let volunteers start an immediate call with an online student. When off, the feature is hidden and blocked for all volunteers.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="instant-call-enabled" disabled>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
             </div>
 
             <!-- Account Settings -->
@@ -287,7 +311,49 @@
 
             // Setup event listeners
             setupEventListeners();
+
+            // Platform controls
+            loadPlatformControls();
         });
+
+        function loadPlatformControls() {
+            const toggle = document.getElementById('instant-call-enabled');
+            window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/admin/settings/category/instant_calls', { method: 'GET' })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) throw new Error('Failed to load settings');
+                    const setting = (data.settings || []).find(s => s.key === 'instant_call.enabled');
+                    toggle.checked = setting ? setting.value === true : false;
+                    toggle.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Failed to load platform controls:', error);
+                    showToast('Could not load platform controls', 'error');
+                });
+
+            toggle.addEventListener('change', function() {
+                const enabled = toggle.checked;
+                toggle.disabled = true;
+                window.TalkTimeAuth.makeAuthenticatedRequest('/api/v1/admin/settings/instant_call.enabled', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: enabled })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) throw new Error(data.error || 'Update failed');
+                        showToast(`Instant calls turned ${enabled ? 'on' : 'off'} for everyone`, 'success');
+                    })
+                    .catch(error => {
+                        console.error('Failed to update instant call setting:', error);
+                        toggle.checked = !enabled;
+                        showToast('Could not update instant calls setting', 'error');
+                    })
+                    .finally(() => {
+                        toggle.disabled = false;
+                    });
+            });
+        }
 
         function checkAdminAuth() {
             // Use async API verification like dashboard does

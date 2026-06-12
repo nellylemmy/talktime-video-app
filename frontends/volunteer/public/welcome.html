@@ -131,7 +131,11 @@
             <hr class="rule-dashed">
 
             <!-- ---- Opening / the invitation ---- -->
-            <section class="pt-8 sm:pt-10">
+            <section class="pt-8 sm:pt-10 relative" style="overflow:visible;">
+                <!-- Decorative ADEA seal, letterhead-style (hidden on small screens) -->
+                <img src="/shared/images/adea-logo-large.jpg" alt="" aria-hidden="true"
+                     class="hidden md:block pointer-events-none select-none"
+                     style="position:absolute;top:8px;right:-8px;width:clamp(110px,14vw,170px);height:auto;border-radius:50%;opacity:0.10;filter:grayscale(35%);z-index:0;">
                 <div class="mb-4">
                     <span class="overline">An invitation</span>
                 </div>
@@ -183,17 +187,17 @@
                 <div class="grid sm:grid-cols-3 gap-5 mt-8">
                     <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
                         <i class="far fa-clock text-2xl mb-3" style="color:var(--adea-green)"></i>
-                        <h3 class="font-bold text-gray-900 mb-1">30 minutes</h3>
+                        <h3 class="font-bold text-gray-900 mb-1" style="font-size:clamp(.9rem,1.6vw,1.05rem);white-space:nowrap;">30 minutes</h3>
                         <p class="text-sm text-gray-600">Each call runs 30 minutes — enough to connect, never a burden on your week.</p>
                     </div>
                     <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
                         <i class="fas fa-comments text-2xl text-brand-primary mb-3"></i>
-                        <h3 class="font-bold text-gray-900 mb-1">Just conversation</h3>
+                        <h3 class="font-bold text-gray-900 mb-1" style="font-size:clamp(.9rem,1.6vw,1.05rem);white-space:nowrap;">Just conversation</h3>
                         <p class="text-sm text-gray-600">No teaching degree, no lesson plans. Friendly talk is the whole job.</p>
                     </div>
                     <div class="bg-white/70 rounded-2xl p-6 border border-gray-200/70">
                         <i class="fas fa-globe-africa text-2xl mb-3" style="color:var(--adea-green)"></i>
-                        <h3 class="font-bold text-gray-900 mb-1">From anywhere</h3>
+                        <h3 class="font-bold text-gray-900 mb-1" style="font-size:clamp(.9rem,1.6vw,1.05rem);white-space:nowrap;">From anywhere</h3>
                         <p class="text-sm text-gray-600">Secure browser video. All you need is a device, a connection, and a smile.</p>
                     </div>
                 </div>
@@ -246,7 +250,7 @@
                 <p class="text-gray-600 mb-8 max-w-2xl">Whether you're a professional with time to give or a student earning service hours, there's a place for you.</p>
                 <div class="grid md:grid-cols-2 gap-6">
                     <!-- Standard -->
-                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+                    <div class="bg-white rounded-2xl p-8 shadow-sm" style="border:1px solid rgba(95,106,45,0.30);">
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-5" style="background:rgba(17,108,0,.10); color:var(--adea-green)"><i class="fas fa-hands-helping"></i></div>
                         <h3 class="text-xl font-bold text-gray-900 mb-2">Standard Volunteer</h3>
                         <p class="text-gray-600 mb-5">Help Maasai students practice English through conversation. Perfect for professionals, retirees, and anyone with time to spare and a heart to serve.</p>
@@ -256,7 +260,7 @@
                         </ul>
                     </div>
                     <!-- Student -->
-                    <div class="bg-white rounded-2xl p-8 shadow-md border-2 relative" style="border-color:var(--brand-primary)">
+                    <div class="bg-white rounded-2xl p-8 shadow-sm relative" style="border:1px solid rgba(209,1,0,0.28);">
                         <span class="absolute top-5 right-5 text-xs font-bold uppercase tracking-wide bg-red-50 text-brand-primary px-3 py-1 rounded-full">Enhanced benefits</span>
                         <div class="w-12 h-12 rounded-xl bg-red-50 text-brand-primary flex items-center justify-center text-xl mb-5"><i class="fas fa-user-graduate"></i></div>
                         <h3 class="text-xl font-bold text-gray-900 mb-2">Student Volunteer</h3>

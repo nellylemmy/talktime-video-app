@@ -11,6 +11,7 @@ import pool from '../../../config/database.js';
 import { createJWTMiddleware } from '../../../utils/jwt.js';
 import Meeting from '../../../models/Meeting.js';
 import * as notificationService from '../../../services/notificationService.js';
+import { getSetting } from '../../../services/configService.js';
 
 const router = express.Router();
 const volunteerJWTMiddleware = createJWTMiddleware(['volunteer']);
@@ -594,6 +595,15 @@ router.put('/settings', async (req, res) => {
  */
 router.post('/instant-call/notify', async (req, res) => {
     try {
+        // Admin-controlled master switch — instant calls are off platform-wide unless enabled
+        const instantCallsEnabled = await getSetting('instant_call.enabled');
+        if (!instantCallsEnabled) {
+            return res.status(403).json({
+                success: false,
+                error: 'Instant calls are currently disabled'
+            });
+        }
+
         const { studentId, studentName, roomId, callUrl, volunteerName, volunteerImage } = req.body;
         const volunteerId = req.user.id;
 

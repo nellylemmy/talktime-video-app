@@ -9,7 +9,7 @@
     <script src="/shared/js/brand-config.js?v=6"></script>
     <link rel="icon" type="image/x-icon" href="/talktime.ico">
     <link href="/shared/css/tailwind2.min.css" rel="stylesheet">
-    <script defer src="/shared/js/jwt-auth-utils.js?v=4"></script>
+    <script defer src="/shared/js/jwt-auth-utils.js?v=5"></script>
     <!-- Modal Utilities -->
     <script defer src="/shared/js/modal-utils.js?v=4"></script>
     <link rel="stylesheet" href="/shared/fonts/fontawesome/all.min.css">
@@ -2043,9 +2043,18 @@
                                    v.reputationScore >= 50 ? 'text-yellow-600' :
                                    v.reputationScore >= 30 ? 'text-orange-600' : 'text-red-700';
 
-                const statusBadge = v.isRestricted
+                const isPending = v.isApproved === false;
+                const statusBadge = isPending
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-hourglass-half mr-1"></i>Pending approval</span>'
+                    : v.isRestricted
                     ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-ban mr-1"></i>Restricted</span>'
                     : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Active</span>';
+
+                const approveBtn = isPending
+                    ? `<button onclick="approveVolunteer(${v.id}, '${v.fullName.replace(/'/g, "\\'")}')" class="text-green-700 hover:text-green-900 text-sm font-medium mr-3" title="Approve this volunteer so they can log in">
+                         <i class="fas fa-user-check mr-1"></i>Approve
+                       </button>`
+                    : '';
 
                 const clearBtn = v.isRestricted
                     ? `<button onclick="clearVolunteerRecord(${v.id}, '${v.fullName.replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-900 text-sm font-medium mr-3" title="Clear bad record">
@@ -2054,7 +2063,7 @@
                     : '';
 
                 return `
-                    <tr class="${v.isRestricted ? 'bg-red-50' : ''}">
+                    <tr class="${isPending ? 'bg-yellow-50' : v.isRestricted ? 'bg-red-50' : ''}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -2074,7 +2083,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm ${scoreColor} font-bold">${v.reputationScore}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${clearBtn}
+                            ${approveBtn}${clearBtn}
                             <button onclick="viewVolunteerPerformance(${v.id})" class="text-blue-600 hover:text-blue-900 text-sm font-medium" title="View details">
                                 <i class="fas fa-chart-bar mr-1"></i>Details
                             </button>
@@ -2499,6 +2508,38 @@
                 console.error('Error clearing volunteer record:', error);
                 if (window.showNotification) {
                     window.showNotification('Network error while clearing record', 'error', { title: 'Error' });
+                }
+            }
+        }
+
+        async function approveVolunteer(volunteerId, volunteerName) {
+            if (!confirm(`Approve ${volunteerName}?\n\nThey will be able to log in and start volunteering immediately.`)) {
+                return;
+            }
+
+            try {
+                const response = await window.TalkTimeAuth.makeAuthenticatedRequest(`/api/v1/admin/volunteers/${volunteerId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (window.showNotification) {
+                        window.showNotification(`${data.message}`, 'success', { title: 'Volunteer Approved' });
+                    }
+                    loadVolunteers();
+                } else {
+                    const error = await response.json();
+                    if (window.showNotification) {
+                        window.showNotification(error.error || 'Failed to approve volunteer', 'error', { title: 'Error' });
+                    }
+                }
+            } catch (error) {
+                console.error('Error approving volunteer:', error);
+                if (window.showNotification) {
+                    window.showNotification('Network error while approving volunteer', 'error', { title: 'Error' });
                 }
             }
         }

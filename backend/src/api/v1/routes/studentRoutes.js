@@ -106,8 +106,8 @@ router.get('/me/meetings/upcoming', studentJWTMiddleware, async (req, res) => {
             FROM meetings m
             JOIN users v ON m.volunteer_id = v.id
             WHERE (m.student_id = $1 OR m.student_id = $2)
-            AND m.scheduled_time > NOW()
-            AND m.status IN ('scheduled', 'confirmed', 'pending')
+            AND m.scheduled_time > NOW() - INTERVAL '40 minutes'
+            AND m.status IN ('scheduled', 'confirmed', 'pending', 'in_progress', 'active')
             AND m.is_instant = FALSE
             ORDER BY m.scheduled_time ASC
         `;

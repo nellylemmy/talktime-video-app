@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
     'meeting.max_concurrent_per_slot': 4,
 
     // Instant call settings
+    'instant_call.enabled': false,
     'instant_call.response_timeout_seconds': 180,
     'instant_call.cleanup_interval_minutes': 3,
 

@@ -1297,11 +1297,16 @@
                         console.log(`📹 Remote has video: ${hasRemoteVideo}`);
 
                         if (remoteVideo) {
-                            remoteVideo.srcObject = remoteStream;
-                            // Explicitly play to ensure audio works on mobile browsers
-                            remoteVideo.play().catch(e => {
-                                console.warn('Remote video autoplay blocked, retrying on gesture:', e.message);
-                            });
+                            // ontrack fires once per track (audio + video) with the same stream —
+                            // reassigning srcObject aborts the pending play() with a spurious
+                            // "interrupted by a new load request" warning. Only set when changed.
+                            if (remoteVideo.srcObject !== remoteStream) {
+                                remoteVideo.srcObject = remoteStream;
+                                // Explicitly play to ensure audio works on mobile browsers
+                                remoteVideo.play().catch(e => {
+                                    console.warn('Remote video autoplay blocked, retrying on gesture:', e.message);
+                                });
+                            }
                             console.log('✅ Remote video stream set successfully');
 
                             // Switch to video call view when we receive remote stream
@@ -1466,67 +1471,110 @@
         let hasLocalCamera = true;
         let hasLocalMicrophone = true;
 
-        // Start Waiting Video
-        async function startWaitingVideo() {
-            console.log('🎥 Starting waiting video with audio...');
+        // Acquire a microphone track: default device first, then each input
+        // explicitly (old/external USB mics sometimes fail as "default").
+        async function getAudioStreamWithFallback() {
+            try {
+                return await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (error) {
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') throw error;
+                console.warn('🎤 Default mic failed (' + error.name + '), trying each device...');
+                let devices = [];
+                try {
+                    devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId);
+                } catch (e) { /* enumeration unavailable */ }
+                for (const d of devices) {
+                    try {
+                        return await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: d.deviceId } } });
+                    } catch (e) { await new Promise(r => setTimeout(r, 300)); }
+                }
+                throw error;
+            }
+        }
 
-            // First, check what devices are available
+        // Acquire a camera track via a fallback ladder. Old/external USB cameras
+        // often reject the browser's default request but accept a low-res mode or
+        // an explicit deviceId — so we walk from friendly to forceful:
+        //   1. modest 640x480@15 (most compatible mode for old webcams)
+        //   2. bare video:true (browser default)
+        //   3. each video device explicitly, modest then bare
+        //   4. last-ditch ultra-low (352x288@10)
+        async function getVideoStreamWithFallback() {
+            const attempts = [
+                { video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } } },
+                { video: true }
+            ];
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                const audioDevices = devices.filter(d => d.kind === 'audioinput');
-
-                hasLocalCamera = videoDevices.length > 0;
-                hasLocalMicrophone = audioDevices.length > 0;
-
-                console.log(`📷 Camera available: ${hasLocalCamera}, 🎤 Microphone available: ${hasLocalMicrophone}`);
-            } catch (e) {
-                console.warn('Could not enumerate devices:', e);
-            }
-
-            // Try to get video + audio first
-            try {
-                waitingLocalStream = await navigator.mediaDevices.getUserMedia({
-                    video: hasLocalCamera,
-                    audio: true
+                devices.filter(d => d.kind === 'videoinput' && d.deviceId).forEach(d => {
+                    attempts.push({ video: { deviceId: { exact: d.deviceId }, width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } } });
+                    attempts.push({ video: { deviceId: { exact: d.deviceId } } });
                 });
-                waitingLocalVideo.srcObject = waitingLocalStream;
+            } catch (e) { /* enumeration unavailable — generic attempts still run */ }
+            attempts.push({ video: { width: { max: 352 }, height: { max: 288 }, frameRate: { max: 10 } } });
 
-                // Check if we actually got video
-                const videoTracks = waitingLocalStream.getVideoTracks();
-                if (videoTracks.length === 0) {
-                    hasLocalCamera = false;
-                    console.log('📷 No video track obtained - showing avatar');
-                    showLocalAvatarOnWaitingScreen();
-                } else {
-                    console.log('✅ Waiting video stream created successfully with video');
-                }
-
-                return waitingLocalStream;
-            } catch (error) {
-                console.warn('⚠️ Could not get video, trying audio only:', error.message);
-                hasLocalCamera = false;
-
-                // Try audio only
+            let lastError = null;
+            for (const constraints of attempts) {
                 try {
-                    waitingLocalStream = await navigator.mediaDevices.getUserMedia({
-                        video: false,
-                        audio: true
-                    });
-                    console.log('✅ Audio-only stream created - no camera available');
-                    showLocalAvatarOnWaitingScreen();
-                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError' || error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                        showMediaErrorBanner(error, true);
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    if (stream.getVideoTracks().length > 0) {
+                        console.log('✅ Camera acquired with constraints:', JSON.stringify(constraints));
+                        return { stream, error: null };
                     }
-                    return waitingLocalStream;
-                } catch (audioError) {
-                    console.error('❌ Could not access microphone either:', audioError);
-                    hasLocalMicrophone = false;
-                    showLocalAvatarOnWaitingScreen();
-                    showMediaErrorBanner(audioError);
-                    return null;
+                    stream.getTracks().forEach(t => t.stop());
+                } catch (error) {
+                    lastError = error;
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') break;
+                    console.warn('📷 Camera attempt failed (' + error.name + '), trying next...');
+                    // Old USB cameras need a moment to release after a failed claim
+                    await new Promise(r => setTimeout(r, 300));
                 }
             }
+            return { stream: null, error: lastError };
+        }
+
+        // Start Waiting Video
+        async function startWaitingVideo() {
+            console.log('🎥 Starting waiting media (audio first, then video ladder)...');
+
+            // Audio FIRST and separately — voice must survive any camera failure.
+            // The grant also exposes real device ids for the video ladder below.
+            let audioStream = null;
+            try {
+                audioStream = await getAudioStreamWithFallback();
+                hasLocalMicrophone = true;
+            } catch (audioError) {
+                console.error('❌ Could not access microphone:', audioError);
+                hasLocalMicrophone = false;
+            }
+
+            const videoResult = await getVideoStreamWithFallback();
+
+            if (videoResult.stream) {
+                hasLocalCamera = true;
+                waitingLocalStream = new MediaStream([
+                    ...videoResult.stream.getVideoTracks(),
+                    ...(audioStream ? audioStream.getAudioTracks() : [])
+                ]);
+                waitingLocalVideo.srcObject = waitingLocalStream;
+                console.log('✅ Waiting stream ready with video' + (audioStream ? ' + audio' : ' (no mic)'));
+                if (!audioStream) showMediaErrorBanner({ name: 'MicOnlyFailure' });
+                return waitingLocalStream;
+            }
+
+            hasLocalCamera = false;
+            showLocalAvatarOnWaitingScreen();
+
+            if (audioStream) {
+                waitingLocalStream = audioStream;
+                console.log('✅ Audio-only stream - camera unavailable after all fallbacks');
+                if (videoResult.error) showMediaErrorBanner(videoResult.error, true);
+                return waitingLocalStream;
+            }
+
+            console.error('❌ No media at all');
+            showMediaErrorBanner(videoResult.error || { name: 'Unknown' });
+            return null;
         }
 
         // Explain media failures on the waiting screen instead of failing silently
@@ -1548,6 +1596,12 @@
             } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
                 title.textContent = 'No camera or microphone found';
                 hint.textContent = 'Connect a camera or microphone, or join from a device that has one, then reload this page.';
+            } else if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+                title.textContent = 'Your camera could not start - the other person cannot see you';
+                hint.textContent = 'Your microphone works, so you can still talk. Try unplugging the camera, plugging it back in, and reloading this page.';
+            } else if (name === 'MicOnlyFailure') {
+                title.textContent = 'Your microphone could not start - the other person cannot hear you';
+                hint.textContent = 'Your camera works. Check the microphone is plugged in and not used by another app, then reload this page.';
             } else {
                 title.textContent = 'Could not access camera or microphone';
                 hint.textContent = 'Check your browser permissions for this site, then reload this page.';
@@ -1679,11 +1733,17 @@
                         ...audioStream.getAudioTracks()
                     ]);
                 } else {
-                    // Get local media stream
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true
-                    });
+                    // Same audio-first + video-ladder acquisition as the waiting screen
+                    const audioStream = await getAudioStreamWithFallback().catch(() => null);
+                    const videoResult = await getVideoStreamWithFallback();
+                    const tracks = [
+                        ...(videoResult.stream ? videoResult.stream.getVideoTracks() : []),
+                        ...(audioStream ? audioStream.getAudioTracks() : [])
+                    ];
+                    if (tracks.length === 0) {
+                        throw (videoResult.error || new Error('Could not access camera or microphone'));
+                    }
+                    localStream = new MediaStream(tracks);
                 }
 
                 localVideo.srcObject = localStream;

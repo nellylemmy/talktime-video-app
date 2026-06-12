@@ -208,9 +208,13 @@
             }
         }
         let bookedSlots = {};
+        let cardCountdownIntervals = [];
 
         // --- Event Listeners ---
         document.addEventListener('click', e => {
+            // Quick-action pills handle themselves — don't treat as a card tap
+            if (e.target.closest('[data-quick-actions]')) return;
+
             // Student card click
             if (e.target.closest('.student-card')) {
                 const studentCard = e.target.closest('.student-card');
@@ -230,6 +234,37 @@
                 let detailUrl = `/volunteer/dashboard/student-detail.html?id=${studentId}&admission=${studentAdmission}&name=${encodeURIComponent(studentName)}`;
                 if (meetingId) detailUrl += `&meeting=${meetingId}`;
                 window.location.href = detailUrl;
+            }
+        });
+
+        // Quick-action: cancel meeting straight from the card
+        document.addEventListener('click', async e => {
+            const btn = e.target.closest('.sc-cancel-btn');
+            if (!btn) return;
+            const meetingId = btn.dataset.meetingId;
+            const name = btn.dataset.studentName || 'this student';
+            let confirmed = true;
+            if (window.showConfirmation) {
+                confirmed = await window.showConfirmation(
+                    'Are you sure you want to cancel your meeting with ' + name + '?',
+                    { title: 'Cancel Meeting', confirmText: 'Cancel Meeting', cancelText: 'Keep Meeting' }
+                );
+            }
+            if (!confirmed) return;
+            btn.disabled = true;
+            try {
+                const res = await window.TalkTimeAuth.authenticatedRequest('/api/v1/meetings/' + meetingId, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!res.ok) throw new Error('Failed to cancel meeting');
+                showNotification('Meeting cancelled successfully');
+                if (window.swrInvalidate) { window.swrInvalidate('my-students'); window.swrInvalidate('dashboard-data'); }
+                loadDashboardData();
+            } catch (err) {
+                console.error('Error cancelling meeting:', err);
+                showNotification('Failed to cancel meeting', 'error');
+                btn.disabled = false;
             }
         });
 
@@ -283,8 +318,7 @@
                     'All meetings include a secure video room that\'s ready when you are',
                     'Consider the student\'s school hours when picking meeting times',
                     'Your impact grows with each conversation - every meeting matters!',
-                    'Tap a student to view their profile and meeting history',
-                    'Instant calls are available when students are online and ready'
+                    'Tap a student to view their profile and meeting history'
                 ];
                 let tipIndex = 0;
                 let tipInterval = null;
@@ -385,24 +419,10 @@
                 document.getElementById('student-list-unavailable').innerHTML = '<div class="text-center py-4"><p class="text-gray-500">Loading unavailable students...</p></div>';
             }
             
-            // Fire both independent requests in parallel; the chain consumes
-            // my-students after dashboard data renders
-            const myStudentsPromise = window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/my-students', {
-                method: 'GET'
-            });
-            window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/dashboard-data', {
-                method: 'GET'
-            })
-            .then(response => {
-                console.log('Dashboard API response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`Failed to load dashboard data: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Dashboard data loaded:', data);
-                
+            // Render functions consumed by the SWR layer: instant paint from the
+            // last snapshot, shimmer while revalidating, re-render only on change.
+            function renderDashboardData(data) {
+
                 // Update badge counts in the dashboard nav
                 if (window.VolunteerDashboardNav && data.meetings && data.meetings.upcoming) {
                     window.VolunteerDashboardNav.updateUpcomingBadge(data.meetings.upcoming.length);
@@ -506,17 +526,16 @@
                     }
                 }
 
-                // My Students request was fired in parallel at chain start
-                return myStudentsPromise;
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load students: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
+            }
+
+            function renderMyStudents(data) {
                 const myStudents = data.data || [];
+                // Soonest meeting first; students with no upcoming meeting sink to the bottom
+                myStudents.sort((a, b) => {
+                    const ta = a.nextMeeting ? new Date(a.nextMeeting.scheduledTime).getTime() : Infinity;
+                    const tb = b.nextMeeting ? new Date(b.nextMeeting.scheduledTime).getTime() : Infinity;
+                    return ta - tb;
+                });
                 students = myStudents;
 
                 if (availableStudentsContainer) {
@@ -570,11 +589,25 @@
                             const mid = student.nextMeeting && student.nextMeeting.id ? student.nextMeeting.id : '';
                             const countdownBand = nextTime
                                 ? '<div data-countdown-band class="schedule-countdown-band">' +
-                                      '<div class="scb-label"><i class="fas fa-clock"></i><span>Starts automatically in</span></div>' +
                                       '<div class="scb-timer" id="schedule-countdown-' + mid + '" data-start-time="' + student.nextMeeting.scheduledTime + '">--</div>' +
-                                      '<div class="scb-sub">No action needed — your call opens by itself when the timer reaches zero. Just be ready.</div>' +
+                                      '<div class="scb-sub">Meeting starts automatically. No action needed — your call opens by itself when the timer reaches zero. Just be ready.</div>' +
                                   '</div>'
                                 : '';
+
+                            // Thin quick-action pills — full actions live on the detail page.
+                            // Instant Call is deliberately never offered here.
+                            const admission = student.admissionNumber || student.id;
+                            const schedParams = 'id=' + (student.userId || student.id) + '&admission=' + admission + '&name=' + encodeURIComponent(studentName);
+                            const detailParams = 'id=' + student.id + '&admission=' + admission + '&name=' + encodeURIComponent(studentName);
+                            const quickActions = '<div class="sc-quick" data-quick-actions>' +
+                                (nextTime
+                                    ? '<a href="/volunteer/dashboard/schedule.html?' + schedParams + '&meeting=' + mid + '" class="sc-qbtn sc-qbtn-green"><i class="fas fa-calendar-alt"></i>Reschedule</a>'
+                                    : '<a href="/volunteer/dashboard/schedule.html?' + schedParams + '" class="sc-qbtn sc-qbtn-green"><i class="fas fa-calendar-plus"></i>Schedule</a>') +
+                                '<a href="/volunteer/dashboard/student-detail.html?' + detailParams + (mid ? '&meeting=' + mid : '') + '&action=message" class="sc-qbtn"><i class="far fa-comment-dots"></i>Message</a>' +
+                                (nextTime
+                                    ? '<button type="button" class="sc-qbtn sc-qbtn-red sc-cancel-btn" data-meeting-id="' + mid + '" data-student-name="' + studentName + '"><i class="far fa-calendar-times"></i>Cancel</button>'
+                                    : '') +
+                            '</div>';
 
                             return '<div class="student-card cursor-pointer" data-student-id="' + student.id + '" data-student-admission="' + (student.admissionNumber || student.id) + '" data-student-name="' + studentName + '" data-meeting-id="' + (student.nextMeeting && student.nextMeeting.id ? student.nextMeeting.id : '') + '" style="padding:12px 16px;border:1px solid rgba(22,163,74,0.15);transition:border-color 0.15s ease" onmouseenter="this.style.borderColor=\'rgba(22,163,74,0.4)\'" onmouseleave="this.style.borderColor=\'rgba(22,163,74,0.15)\'">' +
                                 '<div style="display:flex;align-items:center;gap:16px">' +
@@ -591,19 +624,29 @@
                                         (meetingInfo ? '<div style="font-size:14px;color:#16a34a;font-weight:500">' + meetingInfo + '</div>' : '') +
                                         '<div style="font-size:12px;color:#9ca3af;margin-top:2px;">' + meetingCount + ' meeting' + (meetingCount !== 1 ? 's' : '') + '</div>' +
                                     '</div>' +
-                                    '<svg style="width:30px;height:30px;color:#9ca3af;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+                                    '<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;color:#16a34a">' +
+                                        '<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+                                        '<span style="font-size:10.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap">Details</span>' +
+                                    '</div>' +
                                 '</div>' +
                                 countdownBand +
+                                quickActions +
                             '</div>' +
                             (!isLast ? '<div style="height:1px;background:#f3f4f6;margin-left:102px"></div>' : '');
                         }).join('');
                         availableStudentsContainer.innerHTML = cardsHtml;
 
-                        // Start the live countdowns inside each card that has an upcoming meeting
+                        // Start the live countdowns — clear previous tickers first so
+                        // the cached-paint + fresh-paint double render can't leak intervals
+                        cardCountdownIntervals.forEach(clearInterval);
+                        cardCountdownIntervals = [];
                         myStudents.forEach(s => {
                             if (s.nextMeeting && s.nextMeeting.id && window.renderMeetingCountdown) {
                                 const el = document.getElementById('schedule-countdown-' + s.nextMeeting.id);
-                                if (el) window.renderMeetingCountdown(el, s.nextMeeting.scheduledTime);
+                                if (el) {
+                                    const iid = window.renderMeetingCountdown(el, s.nextMeeting.scheduledTime);
+                                    if (iid) cardCountdownIntervals.push(iid);
+                                }
                             }
                         });
 
@@ -611,7 +654,22 @@
                         if (scheduleCta) scheduleCta.classList.remove('hidden');
                     }
                 }
-            })
+            }
+
+            // SWR when available (instant cached paint + shimmer revalidate); plain fetch otherwise
+            const fetchDashboard = window.swrFetch
+                ? window.swrFetch({ key: 'dashboard-data', url: '/api/v1/volunteers/dashboard-data', render: renderDashboardData })
+                : window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/dashboard-data', { method: 'GET' })
+                    .then(r => { if (!r.ok) throw new Error('Failed to load dashboard data: ' + r.status); return r.json(); })
+                    .then(d => { renderDashboardData(d); return d; });
+            fetchDashboard.catch(error => console.error('Error loading dashboard data:', error));
+
+            const fetchStudents = window.swrFetch
+                ? window.swrFetch({ key: 'my-students', url: '/api/v1/volunteers/my-students', container: availableStudentsContainer, render: renderMyStudents })
+                : window.TalkTimeAuth.authenticatedRequest('/api/v1/volunteers/my-students', { method: 'GET' })
+                    .then(r => { if (!r.ok) throw new Error('Failed to load students: ' + r.status); return r.json(); })
+                    .then(d => { renderMyStudents(d); return d; });
+            fetchStudents
             .catch(error => {
                 console.error('Error loading my students:', error);
                 showNotification('Failed to load student data: ' + error.message, 'error');

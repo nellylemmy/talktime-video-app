@@ -245,8 +245,10 @@ class TalkTimeJWTAuth {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Login failed');
+                const errorData = await response.json().catch(() => ({}));
+                const err = new Error(errorData.error || errorData.message || 'Login failed');
+                err.code = errorData.code; // e.g. PENDING_APPROVAL — pages branch on this
+                throw err;
             }
 
             const data = await response.json();

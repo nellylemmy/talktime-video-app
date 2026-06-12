@@ -866,6 +866,7 @@ export const getAllVolunteers = async (req, res) => {
                 u.volunteer_type,
                 u.profile_image,
                 u.created_at,
+                u.is_approved,
                 COUNT(m.id) FILTER (WHERE m.status = 'completed' AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as completed_calls,
                 COUNT(m.id) FILTER (WHERE m.status IN ('canceled', 'cancelled') AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as cancelled_calls,
                 COUNT(m.id) FILTER (WHERE m.status = 'missed' AND m.scheduled_time < NOW() AND (m.cleared_by_admin IS NULL OR m.cleared_by_admin = FALSE)) as missed_calls,
@@ -898,6 +899,7 @@ export const getAllVolunteers = async (req, res) => {
                 volunteerType: v.volunteer_type,
                 profileImage: v.profile_image,
                 createdAt: v.created_at,
+                isApproved: v.is_approved !== false,
                 completedCalls: completed,
                 cancelledCalls: cancelled,
                 missedCalls: missed,
@@ -923,6 +925,45 @@ export const getAllVolunteers = async (req, res) => {
             error: 'Failed to fetch volunteers',
             details: error.message
         });
+    }
+};
+
+/**
+ * Approve a pending volunteer account (admin override for the
+ * parental-approval email flow — also the only path while SMTP is off)
+ */
+export const approveVolunteer = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await pool.query(
+            `UPDATE users
+             SET is_approved = true,
+                 parent_approved = COALESCE(parent_approved, true),
+                 parent_approved_at = COALESCE(parent_approved_at, NOW()),
+                 updated_at = NOW()
+             WHERE id = $1 AND role = 'volunteer'
+             RETURNING id, full_name, email, is_approved`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Volunteer not found' });
+        }
+
+        res.json({
+            success: true,
+            volunteer: {
+                id: result.rows[0].id,
+                fullName: result.rows[0].full_name,
+                email: result.rows[0].email,
+                isApproved: result.rows[0].is_approved
+            },
+            message: `${result.rows[0].full_name} approved — they can log in now`
+        });
+    } catch (error) {
+        console.error('Error approving volunteer:', error);
+        res.status(500).json({ error: 'Failed to approve volunteer', details: error.message });
     }
 };
 
